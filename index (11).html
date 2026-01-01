@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>UNO CAOS: Edição Definitiva</title>
+<title>UNO</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
     :root { 
@@ -117,7 +117,7 @@
 <body>
 
 <div id="screen-login" class="screen active">
-    <h1>UNO CAOS</h1>
+    <h1>UNO</h1>
     <p style="color:#aaa; font-style:italic; margin-bottom: 30px;">Edição "Perdendo Amigos"</p>
     
     <input type="text" id="pName" placeholder="Seu Nickname" maxlength="12">
@@ -143,7 +143,7 @@
     <h2 style="color:var(--gold); font-size: 40px;">SALA: <span id="lblPin">...</span></h2>
     <div id="lobbyList" style="width:100%; display:flex; flex-direction:column; align-items:center; gap: 10px; margin: 20px 0;"></div>
     <p id="lobbyMsg" style="animation: float 2s infinite ease-in-out;">Aguardando Host iniciar o apocalipse...</p>
-    <button id="btnStart" class="hidden" onclick="startGame()">INICIAR O CAOS</button>
+    <button id="btnStart" class="hidden" onclick="startGame()">INICIAR</button>
 </div>
 
 <div id="screen-game" class="screen" style="padding:0; justify-content: flex-start;">
@@ -191,7 +191,7 @@
 </div>
 
 <div id="modal-chaos" class="modal hidden">
-    <h3 style="color:var(--white); text-shadow:0 0 10px var(--primary); font-size:24px;">ESCOLHA O CAOS</h3>
+    <h3 style="color:var(--white); text-shadow:0 0 10px var(--primary); font-size:24px;">ESCOLHA O MOTIVO PARA FINALIZAR SUA AMIZADE</h3>
     <div class="grid-2" style="max-height:80vh; overflow-y:auto; padding-bottom: 50px;">
         <button class="effect-btn" onclick="selectChaos('draw50')">
             <span style="font-size:20px">📚</span> PUXE 50
@@ -340,8 +340,8 @@ window.joinRoom = async () => {
 
 function validateProfile() {
     me.name = document.getElementById('pName').value || 'Player ' + Math.floor(Math.random()*100);
-    me.avatar = document.getEle
-me.color = document.getElementById('pColor').value;
+    me.avatar = document.getElementById('pAvatar').value;
+    me.color = document.getElementById('pColor').value;
     me.isImg = me.avatar.match(/\.(jpeg|jpg|gif|png)$/) != null;
     return true;
 }
