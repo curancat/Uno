@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>UNO CAOS: Edição Definitiva</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+    :root { 
+        --bg: #0f0c29; 
+        --bg-grad: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        --surface: rgba(255, 255, 255, 0.1);
+        --glass: rgba(0, 0, 0, 0.7);
+        --primary: #ff0055; 
+        --red: #ff3e3e; --blue: #3e3eff; --green: #3eff3e; --yellow: #ffcc00;
+        --white: #ffffff; --black: #1a1a1a; --gold: #ffd700;
+    }
+    * { box-sizing: border-box; user-select: none; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+    
+    body { margin: 0; background: var(--bg-grad); color: white; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+    
+    /* Animações Globais */
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+    @keyframes shine { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 0, 85, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0); } }
+
+    /* Telas */
+    .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.3s; opacity: 0; }
+    .screen.active { display: flex; opacity: 1; }
+    
+    /* UI Elements */
+    h1 { font-size: 3rem; margin: 0; text-shadow: 0 5px 15px rgba(0,0,0,0.5); letter-spacing: 5px; background: linear-gradient(to right, #ff0055, #ffcc00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    input { padding: 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 12px; margin: 10px; width: 100%; max-width: 320px; font-size: 16px; text-align: center; backdrop-filter: blur(5px); transition: 0.3s; }
+    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 15px var(--primary); }
+    
+    button { padding: 15px; background: linear-gradient(45deg, var(--primary), #990033); color: white; border: none; border-radius: 12px; margin: 10px; width: 100%; max-width: 320px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 5px 15px rgba(255, 0, 85, 0.4); text-transform: uppercase; letter-spacing: 1px; }
+    button:active { transform: scale(0.95); }
+    button:disabled { background: #555; box-shadow: none; cursor: not-allowed; opacity: 0.6; }
+
+    /* Área do Jogo */
+    .game-container { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; }
+    
+    .top-info { display: flex; justify-content: space-between; padding: 15px; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); width: 100%; border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 10; font-size: 14px; font-weight: bold; }
+    
+    /* Oponentes */
+    .opponents { display: flex; gap: 10px; overflow-x: auto; padding: 10px; height: 140px; width: 100%; align-items: flex-start; scrollbar-width: none; }
+    .opponent { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 8px; min-width: 90px; text-align: center; position: relative; transition: 0.3s; display: flex; flex-direction: column; align-items: center; }
+    .opponent.turn { border: 2px solid var(--green); box-shadow: 0 0 20px var(--green); transform: scale(1.05) translateY(5px); background: rgba(0,255,0,0.1); }
+    .opp-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #333; margin-bottom: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 25px; display: flex; align-items: center; justify-content: center; }
+    
+    /* Mesa */
+    .table { flex: 1; display: flex; align-items: center; justify-content: center; gap: 30px; position: relative; perspective: 1000px; }
+    
+    /* Baralhos */
+    .deck-pile, .card { width: 100px; height: 145px; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: 0.3s; position: relative; }
+    
+    .deck-pile { background: #222; border: 2px solid #555; display: flex; align-items: center; justify-content: center; cursor: pointer; background-image: repeating-linear-gradient(45deg, #333 0, #333 10px, #222 10px, #222 20px); }
+    .deck-pile:active { transform: scale(0.95); }
+
+    /* Carta Visual */
+    .card { display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; font-size: 45px; border: 4px solid white; cursor: pointer; z-index: 1; background: #333; user-select: none; }
+    .card span { position: absolute; }
+    .card .val-center { font-size: 50px; text-shadow: 2px 2px 0px rgba(0,0,0,0.3); }
+    .card .val-mini { font-size: 18px; position: absolute; padding: 5px; }
+    .card .top-left { top: 2px; left: 2px; }
+    .card .bottom-right { bottom: 2px; right: 2px; transform: rotate(180deg); }
+    
+    /* Cores das Cartas */
+    .card.red { background: var(--red); box-shadow: 0 0 15px var(--red); }
+    .card.blue { background: var(--blue); box-shadow: 0 0 15px var(--blue); }
+    .card.green { background: var(--green); color: black; text-shadow: none; box-shadow: 0 0 15px var(--green); }
+    .card.yellow { background: var(--yellow); color: black; text-shadow: none; box-shadow: 0 0 15px var(--yellow); }
+    .card.black { background: var(--black); border-color: var(--gold); color: white; background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMjIyIi8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMzMzMiLz4KPC9zdmc+'); }
+    .card.white { background: white; color: black; border: 4px solid var(--primary); text-shadow: none; animation: rainbow-border 2s infinite linear; }
+    
+    @keyframes rainbow-border { 0%{border-color:red; box-shadow:0 0 10px red} 33%{border-color:green; box-shadow:0 0 10px green} 66%{border-color:blue; box-shadow:0 0 10px blue} 100%{border-color:red; box-shadow:0 0 10px red} }
+
+    /* Modo Diamante */
+    body.diamond-mode .card:not(.black):not(.white) { background: var(--blue) !important; color: white !important; text-shadow: 1px 1px 0 #000 !important; box-shadow: 0 0 15px cyan !important; border-color: cyan !important; }
+    body.diamond-mode { background: #000022; }
+
+    /* Mão do Jogador */
+    .my-hand-container { width: 100%; position: relative; z-index: 100; height: 180px; }
+    .my-hand { height: 100%; display: flex; align-items: flex-end; padding: 10px 20px; overflow-x: auto; gap: -30px; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); scrollbar-width: none; }
+    .my-hand .card { min-width: 100px; margin-right: -40px; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: bottom center; }
+    .my-hand .card:hover { transform: translateY(-40px) scale(1.2) rotate(0deg) !important; z-index: 999; box-shadow: 0 20px 30px rgba(0,0,0,0.5); }
+    .my-hand .card:nth-child(even) { transform: rotate(2deg); }
+    .my-hand .card:nth-child(odd) { transform: rotate(-2deg); }
+
+    /* God Mode UI */
+    .god-controls { position: absolute; right: 10px; top: 80px; display: flex; flex-direction: column; gap: 10px; z-index: 900; }
+    .god-btn { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(45deg, gold, orange); border: 2px solid white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px gold; animation: pulse 1s infinite; cursor: pointer; }
+    .god-label { font-size: 10px; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; text-align: center; }
+
+    /* Modais / Overlays */
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .hidden { display: none !important; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; }
+    .effect-btn { height: auto; min-height: 80px; background: rgba(30,30,40,0.9); border: 1px solid var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; box-shadow: 0 5px 0 #500; }
+    .effect-btn:hover { transform: translateY(-2px); filter: brightness(1.2); }
+    .effect-desc { font-size: 10px; font-weight: normal; color: #aaa; margin-top: 5px; }
+
+    /* Botão Reação (Carta 9) */
+    #reaction-btn { position: absolute; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, #ff0000 0%, #990000 100%); border: 6px solid white; animation: pulse-red 0.5s infinite; cursor: pointer; display: none; z-index: 3000; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 50px red; }
+    #reaction-btn::after { content: '!'; font-size: 60px; color: white; font-weight: bold; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+    /* Indicador Cor */
+    #colorIndicator { width: 60px; height: 60px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 20px rgba(255,255,255,0.5); position: absolute; bottom: -20px; z-index: 5; transition: 0.5s; }
+
+    .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 15px 30px; border-radius: 30px; border: 1px solid var(--primary); z-index: 5000; animation: slideDown 0.5s; font-weight: bold; color: white; white-space: nowrap; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    @keyframes slideDown { from{opacity:0; transform:translate(-50%, -50px)} to{opacity:1; transform:translate(-50%, 0)} }
+</style>
+</head>
+<body>
+
+<div id="screen-login" class="screen active">
+    <h1>UNO CAOS</h1>
+    <p style="color:#aaa; font-style:italic; margin-bottom: 30px;">Edição "Perdendo Amigos"</p>
+    
+    <input type="text" id="pName" placeholder="Seu Nickname" maxlength="12">
+    <input type="text" id="pAvatar" placeholder="Emoji (ex: 😈)" value="😈">
+    
+    <div style="display:flex; gap:15px; justify-content:center; margin:20px;">
+        <div style="width:40px; height:40px; background:var(--red); border-radius:50%; cursor:pointer; border:3px solid rgba(255,255,255,0.2)" onclick="pickColor(this, '#ff3e3e')"></div>
+        <div style="width:40px; height:40px; background:var(--blue); border-radius:50%; cursor:pointer; border:3px solid rgba(255,255,255,0.2)" onclick="pickColor(this, '#3e3eff')"></div>
+        <div style="width:40px; height:40px; background:var(--green); border-radius:50%; cursor:pointer; border:3px solid rgba(255,255,255,0.2)" onclick="pickColor(this, '#3eff3e')"></div>
+        <div style="width:40px; height:40px; background:var(--yellow); border-radius:50%; cursor:pointer; border:3px solid rgba(255,255,255,0.2)" onclick="pickColor(this, '#ffcc00')"></div>
+    </div>
+    <input type="hidden" id="pColor" value="#ff3e3e">
+
+    <button onclick="createRoom()">CRIAR SALA</button>
+    
+    <div style="display:flex; width:100%; max-width:320px; gap:10px; margin-top:10px;">
+        <input type="number" id="roomPin" placeholder="PIN" style="margin:0">
+        <button onclick="joinRoom()" style="margin:0">ENTRAR</button>
+    </div>
+</div>
+
+<div id="screen-lobby" class="screen">
+    <h2 style="color:var(--gold); font-size: 40px;">SALA: <span id="lblPin">...</span></h2>
+    <div id="lobbyList" style="width:100%; display:flex; flex-direction:column; align-items:center; gap: 10px; margin: 20px 0;"></div>
+    <p id="lobbyMsg" style="animation: float 2s infinite ease-in-out;">Aguardando Host iniciar o apocalipse...</p>
+    <button id="btnStart" class="hidden" onclick="startGame()">INICIAR O CAOS</button>
+</div>
+
+<div id="screen-game" class="screen" style="padding:0; justify-content: flex-start;">
+    <div class="top-info">
+        <span id="turnIndicator">...</span>
+        <span id="deckCount">📦 0</span>
+    </div>
+
+    <div class="opponents" id="opponentsArea"></div>
+
+    <div class="table">
+        <div class="deck-pile" onclick="drawCardAction()">
+            <span style="font-size:40px">UNO</span>
+        </div>
+        
+        <div id="discardPile"></div>
+        <div id="colorIndicator"></div>
+    </div>
+
+    <div id="godControls" class="god-controls hidden">
+        <div class="god-btn" onclick="openGodMenu()">⚡</div>
+        <div class="god-label" id="godTurnsLeft">3 Turnos</div>
+    </div>
+
+    <div class="my-hand-container">
+        <div class="my-hand" id="myHandArea"></div>
+    </div>
+</div>
+
+<div id="screen-score" class="screen">
+    <h1 style="color:var(--gold)">FIM DE JOGO</h1>
+    <h2 id="winnerName" style="font-size:30px; text-transform:uppercase;"></h2>
+    <div id="scoreList" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:20px;"></div>
+    <button onclick="location.reload()" style="margin-top:30px">MENU PRINCIPAL</button>
+</div>
+
+<div id="modal-color" class="modal hidden">
+    <h3>Escolha a Cor</h3>
+    <div class="grid-2">
+        <button style="background:var(--red)" onclick="resolveColor('red')">VERMELHO</button>
+        <button style="background:var(--blue)" onclick="resolveColor('blue')">AZUL</button>
+        <button style="background:var(--green)" onclick="resolveColor('green')">VERDE</button>
+        <button style="background:var(--yellow)" onclick="resolveColor('yellow')">AMARELO</button>
+    </div>
+</div>
+
+<div id="modal-chaos" class="modal hidden">
+    <h3 style="color:var(--white); text-shadow:0 0 10px var(--primary); font-size:24px;">ESCOLHA O CAOS</h3>
+    <div class="grid-2" style="max-height:80vh; overflow-y:auto; padding-bottom: 50px;">
+        <button class="effect-btn" onclick="selectChaos('draw50')">
+            <span style="font-size:20px">📚</span> PUXE 50
+            <span class="effect-desc">Próximo compra 50 cartas</span>
+        </button>
+        <button class="effect-btn" onclick="selectChaos('communism')">
+            <span style="font-size:20px">☭</span> COMUNISMO
+            <span class="effect-desc">Redistribuição igualitária</span>
+        </button>
+        <button class="effect-btn" onclick="selectChaos('pivot')">
+            <span style="font-size:20px">🔄</span> PIVÔ
+            <span class="effect-desc">Troca de mãos a cada 5s</span>
+        </button>
+        <button class="effect-btn" onclick="selectChaos('coup')">
+            <span style="font-size:20px">⚔️</span> GOLPE
+            <span class="effect-desc">Você ganha 3 brancas, todos +25</span>
+        </button>
+        <button class="effect-btn" onclick="selectChaos('diamond')">
+            <span style="font-size:20px">💎</span> DIAMANTE
+            <span class="effect-desc">Tudo azul por 6 turnos</span>
+        </button>
+        <button class="effect-btn" onclick="selectChaos('hotpotato')">
+            <span style="font-size:20px">🥔</span> BATATA QUENTE
+            <span class="effect-desc">Próximo +25 cartas</span>
+        </button>
+        <button class="effect-btn" onclick="selectChaos('illuminati')">
+            <span style="font-size:20px">👁️</span> ILLUMINATI
+            <span class="effect-desc">Veja mãos por 5 turnos</span>
+        </button>
+        <button class="effect-btn" onclick="selectChaos('inevitable')">
+            <span style="font-size:20px">🫰</span> INEVITÁVEL
+            <span class="effect-desc">70% do seu deck some</span>
+        </button>
+        <button class="effect-btn" onclick="selectChaos('chaos')">
+            <span style="font-size:20px">💣</span> CAOS TOTAL
+            <span class="effect-desc">1 carta p/ todos + Botão Morte</span>
+        </button>
+        <button class="effect-btn" onclick="selectChaos('god')">
+            <span style="font-size:20px">⚡</span> EU SOU DEUS
+            <span class="effect-desc">Poder infinito por 3 turnos</span>
+        </button>
+    </div>
+    <button onclick="closeChaosModal()" style="margin-top:10px; background:#444;">CANCELAR</button>
+</div>
+
+<div id="modal-zero" class="modal hidden">
+    <h3>AÇÃO DO ZERO</h3>
+    <p>Escolha o destino do seu oponente</p>
+    <button onclick="resolveZero('spy')">ESPIAR (Ver mão)</button>
+    <button id="btnSwap" onclick="resolveZero('swap')" disabled>TROCAR MÃOS (Requer Combo)</button>
+</div>
+
+<div id="reaction-btn" onclick="clickReaction()"></div>
+
+<script type="module">
+// --- CONFIGURAÇÃO FIREBASE ---
+// INSIRA SUAS CHAVES AQUI PARA FUNCIONAR ONLINE
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyD_eQJQK_MI3On3pLh-p3esuCbW_NE-QGk",
+  authDomain: "unok-b3c61.firebaseapp.com",
+  databaseURL: "https://unok-b3c61-default-rtdb.firebaseio.com",
+  projectId: "unok-b3c61",
+  storageBucket: "unok-b3c61.firebasestorage.app",
+  messagingSenderId: "913517311468",
+  appId: "1:913517311468:web:5926a77640f0930eff3cc9",
+  measurementId: "G-3TV3TTXES8"
+};
+
+// Fallback para não crashar se não configurar
+let app, db;
+try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+} catch(e) {
+    console.warn("Firebase não configurado corretamente. O jogo funcionará apenas visualmente ou travará ao tentar criar sala.");
+}
+
+// --- ESTADO GLOBAL ---
+let me = { 
+    id: Math.random().toString(36).substr(2,9), 
+    name: '', 
+    avatar: '', 
+    color: '#ff3e3e',
+    isGodCasting: false // Flag para quando usar o poder de Deus sem jogar carta
+};
+let roomId = null;
+let roomData = null;
+let unsub = null;
+let pendingCard = null; 
+let pivotTimer = null;
+
+// --- AUDIO & UI ---
+const playSound = (type) => { 
+    // Implementar sons aqui se desejar
+};
+window.pickColor = (el, c) => {
+    document.querySelectorAll('#screen-login div div').forEach(d => d.style.border = '3px solid rgba(255,255,255,0.2)');
+    el.style.border = '3px solid white';
+    document.getElementById('pColor').value = c;
+}
+
+// --- FUNÇÕES DE SALA ---
+window.createRoom = async () => {
+    if(!validateProfile()) return;
+    roomId = Math.floor(1000 + Math.random() * 9000).toString();
+    const initData = {
+        pin: roomId, host: me.id, state: 'lobby',
+        players: [me], deck: [], discard: [],
+        turn: 0, dir: 1, accum: 0, color: '',
+        effects: { 
+            silence: 0, silenceColor: '', 
+            diamond: 0, 
+            illuminati: 0,
+            pivot: 0,
+            reaction: null 
+        },
+        godData: {} // Armazena { playerId: turnsLeft }
+    };
+    try {
+        await setDoc(doc(db, "rooms", roomId), initData);
+        enterRoom();
+    } catch(e) { alert("Erro ao criar sala. Verifique configuração do Firebase."); }
+};
+
+window.joinRoom = async () => {
+    if(!validateProfile()) return;
+    roomId = document.getElementById('roomPin').value;
+    if(!roomId) return alert("Digite o PIN");
+    const ref = doc(db, "rooms", roomId);
+    try {
+        const snap = await getDoc(ref);
+        if(snap.exists()) {
+            const data = snap.data();
+            if(data.state !== 'lobby') return alert("Jogo já começou!");
+            if(data.players.length >= 10) return alert("Sala cheia!");
+            if(!data.players.find(p=>p.id===me.id)) {
+                await updateDoc(ref, { players: arrayUnion(me) });
+            }
+            enterRoom();
+        } else { alert("Sala não encontrada"); }
+    } catch(e) { alert("Erro de conexão."); }
+};
+
+function validateProfile() {
+    me.name = document.getElementById('pName').value || 'Player ' + Math.floor(Math.random()*100);
+    me.avatar = document.getEle
+me.color = document.getElementById('pColor').value;
+    me.isImg = me.avatar.match(/\.(jpeg|jpg|gif|png)$/) != null;
+    return true;
+}
+
+function enterRoom() {
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-lobby').classList.add('active');
+    document.getElementById('lblPin').innerText = roomId;
+
+    if(unsub) unsub();
+    unsub = onSnapshot(doc(db, "rooms", roomId), (snap) => {
+        if(!snap.exists()) return location.reload();
+        roomData = snap.data();
+        
+        if(roomData.state === 'lobby') renderLobby();
+        else if(roomData.state === 'game') renderGame();
+        else if(roomData.state === 'finished') renderScore();
+        
+        if(me.id === roomData.host && roomData.state === 'game') handleHostEffects();
+    });
+}
+
+function renderLobby() {
+    const list = document.getElementById('lobbyList');
+    list.innerHTML = roomData.players.map(p => `
+        <div style="background:rgba(255,255,255,0.05); padding:10px; width:100%; max-width:320px; border-left:5px solid ${p.color}; border-radius:5px; display:flex; align-items:center; gap:15px; box-shadow:0 4px 6px rgba(0,0,0,0.3)">
+            ${p.isImg ? `<img src="${p.avatar}" style="width:40px;height:40px;border-radius:50%">` : `<span style="font-size:25px">${p.avatar}</span>`}
+            <b style="font-size:18px">${p.name}</b>
+        </div>
+    `).join('');
+    
+    if(me.id === roomData.host) document.getElementById('btnStart').classList.remove('hidden');
+    else document.getElementById('lobbyMsg').innerText = "O Host está preparando as bombas...";
+}
+
+// --- LÓGICA DO JOGO (SETUP) ---
+window.startGame = async () => {
+    const deck = generateDeck();
+    let players = roomData.players.map(p => ({ ...p, hand: [], godTurns: 0 }));
+    
+    // Distribuir 7 cartas
+    for(let i=0; i<7; i++) {
+        players.forEach(p => { if(deck.length) p.hand.push(deck.pop()); });
+    }
+    
+    let startCard = deck.pop();
+    while(['white','black','+2','rev','skip'].includes(startCard.v) || startCard.v === 0 || startCard.v === 7 || startCard.v === 9) {
+        deck.unshift(startCard);
+        startCard = deck.pop();
+    }
+
+    await updateDoc(doc(db, "rooms", roomId), {
+        state: 'game', deck, discard: [startCard], players,
+        color: startCard.c, turn: 0, effects: roomData.effects, godData: {}
+    });
+};
+
+function generateDeck() {
+    let d = [];
+    const colors = ['red','blue','green','yellow'];
+    colors.forEach(c => {
+        d.push({c, v:0, t:'n'}, {c, v:7, t:'n'}, {c, v:9, t:'n'}); 
+        for(let i=1; i<=6; i++) { d.push({c, v:i, t:'n'}, {c, v:i, t:'n'}); }
+        ['skip','rev','+2'].forEach(t => d.push({c, v:t, t:'a'}));
+    });
+    // Cartas Caos & Wilds
+    for(let i=0; i<4; i++) d.push({c:'black', v:'?', t:'w'}, {c:'black', v:'+4', t:'w'});
+    for(let i=0; i<3; i++) d.push({c:'white', v:'☠️', t:'wh'}); // 3 cartas brancas
+    return d.sort(() => Math.random() - 0.5);
+}
+
+// --- RENDERIZAÇÃO DO JOGO ---
+function renderGame() {
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-game').classList.add('active');
+
+    const currentPlayer = roomData.players[roomData.turn];
+    const isMe = currentPlayer.id === me.id;
+    
+    // Header Info
+    const turnText = document.getElementById('turnIndicator');
+    turnText.innerHTML = isMe ? `<span style="color:var(--green); text-shadow:0 0 10px lime">SUA VEZ!</span>` : `Vez de: ${currentPlayer.name}`;
+    document.getElementById('deckCount').innerText = `📦 ${roomData.deck.length}`;
+
+    // Modos Visuais
+    if(roomData.effects.diamond > 0) document.body.classList.add('diamond-mode');
+    else document.body.classList.remove('diamond-mode');
+    
+    checkReactionState();
+
+    // Mesa
+    const top = roomData.discard[roomData.discard.length-1];
+    document.getElementById('discardPile').innerHTML = renderCardHTML(top);
+    
+    // Indicador Cor
+    const ind = document.getElementById('colorIndicator');
+    const colorMap = { 'red': 'var(--red)', 'blue': 'var(--blue)', 'green': 'var(--green)', 'yellow': 'var(--yellow)', 'white': 'linear-gradient(45deg,red,blue,green,yellow)' };
+    let finalColor = roomData.effects.diamond > 0 ? 'var(--blue)' : (colorMap[roomData.color] || '#333');
+    ind.style.background = finalColor;
+    ind.style.borderColor = roomData.effects.diamond > 0 ? 'cyan' : 'white';
+
+    // Minha Mão
+    const myIdx = roomData.players.findIndex(p=>p.id===me.id);
+    const myData = roomData.players[myIdx];
+    
+    // Verifica Modo Deus UI
+    const godTurns = roomData.godData && roomData.godData[me.id] ? roomData.godData[me.id] : 0;
+    const godCtrl = document.getElementById('godControls');
+    if(godTurns > 0) {
+        godCtrl.classList.remove('hidden');
+        document.getElementById('godTurnsLeft').innerText = `${godTurns} Rodadas`;
+    } else {
+        godCtrl.classList.add('hidden');
+    }
+
+    const handHTML = myData.hand.map((c, i) => {
+        let forcedColor = roomData.effects.diamond > 0 && c.c !== 'black' && c.c !== 'white' ? 'blue' : '';
+        return renderCardHTML(c, i, true, forcedColor);
+    }).join('');
+    document.getElementById('myHandArea').innerHTML = handHTML;
+
+    // Oponentes
+    const oppHTML = roomData.players.map((p, i) => {
+        if(p.id === me.id) return '';
+        const isTurn = i === roomData.turn;
+        const showCards = roomData.effects.illuminati > 0;
+        
+        // Visualização das cartas (mini)
+        let miniCards = '';
+        if(showCards) {
+            miniCards = `<div style="display:flex; gap:2px; margin-top:5px; flex-wrap:wrap; justify-content:center; max-width:80px;">
+                ${p.hand.map(c => `<div style="width:10px; height:15px; background:${c.c==='black'?'#333':c.c}; border:1px solid white;"></div>`).join('')}
+            </div>`;
+        }
+
+        return `
+            <div class="opponent ${isTurn ? 'turn' : ''}">
+                ${p.isImg ? `<img src="${p.avatar}" class="opp-avatar">` : `<div class="opp-avatar">${p.avatar}</div>`}
+                <div style="font-size:12px; font-weight:bold; overflow:hidden; text-overflow:ellipsis; width:100%; white-space:nowrap;">${p.name}</div>
+                <div style="font-size:16px; margin-top:2px; color:#aaa;">🎴 ${p.hand.length}</div>
+                ${miniCards}
+                ${roomData.godData && roomData.godData[p.id] > 0 ? '<span style="position:absolute; top:-10px; right:-5px; font-size:20px;">⚡</span>' : ''}
+            </div>
+        `;
+    }).join('');
+    document.getElementById('opponentsArea').innerHTML = oppHTML;
+}
+
+function renderCardHTML(c, idx = null, clickable = false, forceColor = null) {
+    const colorClass = forceColor || c.c;
+    const onclick = clickable ? `onclick="playCard(${idx})"` : '';
+    let displayVal = c.v;
+    if(c.c === 'white') displayVal = '☠️';
+    if(c.v === 'Cor') displayVal = '🌈';
+
+    // Ícones para cartas especiais
+    const icons = { 'skip': '🚫', 'rev': '🔁', '+2': '+2', '+4': '+4' };
+    if(icons[c.v]) displayVal = icons[c.v];
+
+    return `
+        <div class="card ${colorClass}" ${onclick}>
+            <span class="val-mini top-left">${displayVal}</span>
+            <span class="val-center">${displayVal}</span>
+            <span class="val-mini bottom-right">${displayVal}</span>
+        </div>
+    `;
+}
+
+// --- JOGAR CARTA ---
+window.playCard = (idx) => {
+    // Reset da flag de Deus (pois está jogando carta normal)
+    me.isGodCasting = false;
+
+    if(roomData.players[roomData.turn].id !== me.id) return toast("Não é sua vez!");
+    if(roomData.effects.reaction) return;
+
+    const card = roomData.players.find(p=>p.id===me.id).hand[idx];
+    const top = roomData.discard[roomData.discard.length-1];
+    
+    const currentColor = roomData.effects.diamond > 0 ? 'blue' : roomData.color;
+    const cardColor = roomData.effects.diamond > 0 && card.c !== 'black' && card.c !== 'white' ? 'blue' : card.c;
+
+    // Regra Silêncio (7)
+    if(roomData.effects.silence > 0) {
+        if(cardColor !== roomData.effects.silenceColor && card.c !== 'black' && card.c !== 'white') {
+            drawCards(1);
+            toast("🤫 SILÊNCIO! Cor errada. +1 carta.");
+            return; 
+        }
+    }
+
+    // Validação
+    let valid = false;
+    if(card.c === 'black' || card.c === 'white') valid = true;
+    else if(cardColor === currentColor || card.v === top.v) valid = true;
+    
+    // Validação de Combo 0 (se mesa é 0 e jogo 0)
+    
+    if(valid) {
+        pendingCard = { card, idx };
+        
+        if(card.c === 'black') return document.getElementById('modal-color').classList.remove('hidden');
+        if(card.c === 'white') return document.getElementById('modal-chaos').classList.remove('hidden');
+        if(card.v === 0) return showZeroOptions(top.v === 0);
+        
+        commitPlay({});
+    } else {
+        toast("Jogada Inválida!");
+    }
+};
+
+window.resolveColor = (color) => {
+    document.getElementById('modal-color').classList.add('hidden');
+    commitPlay({ nextColor: color });
+};
+
+// --- MODO DEUS (MENU) ---
+window.openGodMenu = () => {
+    // Ativa flag que estamos usando poder divino (não consome carta da mão)
+    me.isGodCasting = true;
+    document.getElementById('modal-chaos').classList.remove('hidden');
+};
+
+window.closeChaosModal = () => {
+    document.getElementById('modal-chaos').classList.add('hidden');
+    me.isGodCasting = false;
+};
+
+// --- LÓGICA DO 0 ---
+function showZeroOptions(canSwap) {
+    document.getElementById('modal-zero').classList.remove('hidden');
+    const btnSwap = document.getElementById('btnSwap');
+    btnSwap.disabled = !canSwap;
+    btnSwap.style.opacity = !canSwap ? 0.5 : 1;
+}
+
+window.resolveZero = async (action) => {
+    document.getElementById('modal-zero').classList.add('hidden');
+    if(action === 'swap') commitPlay({ effect: 'swap_hands' });
+    else {
+        // Espiar próximo jogador
+        let nextP = roomData.players[(roomData.turn + roomData.dir + roomData.players.length) % roomData.players.length];
+        const cards = nextP.hand.map(c=> c.c === 'white' ? '☠️' : c.v).join(', ');
+        alert(`Mão de ${nextP.name}:\n${cards}`);
+        commitPlay({});
+    }
+};
+
+// --- CARTA BRANCA & CAOS ---
+window.selectChaos = (effectId) => {
+    document.getElementById('modal-chaos').classList.add('hidden');
+    
+    // Se for modo Deus Casting, não define próxima cor baseada em carta, mantem a atual
+    let nextC = me.isGodCasting ? roomData.color : 'white'; 
+    
+    commitPlay({ chaosEffect: effectId, nextColor: nextC });
+};
+
+// --- COMMIT FINAL ---
+async function commitPlay(opts) {
+    let players = JSON.parse(JSON.stringify(roomData.players)); // Deep copy
+    let meIdx = players.findIndex(p=>p.id===me.id);
+    let card = pendingCard ? pendingCard.card : null;
+    let updates = {};
+
+    // Se NÃO for God Casting (ou seja, jogou uma carta real)
+    if (!me.isGodCasting && card) {
+        players[meIdx].hand.splice(pendingCard.idx, 1);
+        updates.discard = arrayUnion(card);
+        updates.color = opts.nextColor || card.c;
+    } else {
+        // Se foi God Casting, não remove carta, não muda discard
+        updates.color = roomData.color; // Mantém cor
+        card = { v: 'GOD', c: 'white' }; // Carta virtual para lógica abaixo
+    }
+
+    updates.players = players;
+
+    // Lógica de Direção/Pulos (Só se for carta jogada, não God Power puro)
+    let skip = 0;
+    if(!me.isGodCasting) {
+        if(card.v === 'skip') skip = 1;
+        if(card.v === 'rev') updates.dir = roomData.dir * -1;
+        if(card.v === '+2') updates.accum = roomData.accum + 2;
+        if(card.v === '+4') updates.accum = roomData.accum + 4;
+        if(card.v === '?' && card.c === 'black') updates.accum = roomData.accum + 2; // ? vale +2
+        
+        if(card.v === 7) {
+            updates['effects.silence'] = (roomData.effects.silence || 0) + 2;
+            updates['effects.silenceColor'] = updates.color;
+        }
+        if(card.v === 9) {
+            updates['effects.reaction'] = { startTime: Date.now(), clicks: [] };
+        }
+        if(opts.effect === 'swap_hands') {
+            let nextIdx = (roomData.turn + (updates.dir || roomData.dir)) % players.length;
+            if(nextIdx < 0) nextIdx += players.length;
+            let temp = players[meIdx].hand;
+            players[meIdx].hand = players[nextIdx].hand;
+            players[nextIdx].hand = temp;
+        }
+    }
+
+    // APLICAR CAOS
+    if(opts.chaosEffect) {
+        applyChaosLogic(opts.chaosEffect, updates, players, meIdx);
+    }
+
+    // Atualizar Contadores de Deus
+    let godData = {...(roomData.godData || {})};
+    // Decrementa contador de quem jogou (se tiver ativo)
+    if (godData[me.id] > 0) {
+        godData[me.id]--;
+        if(godData[me.id] <= 0) delete godData[me.id];
+    }
+    updates.godData = godData;
+
+    // Verificar Vitória
+    if(players[meIdx].hand.length === 0 && !opts.chaosEffect?.includes('chaos')) {
+        updates.state = 'finished';
+        updates.winner = me.id;
+    } else {
+        // Passar turno
+        let e = {...roomData.effects};
+        // Decrementar efeitos globais
+        ['diamond','illuminati','silence','pivot'].forEach(k => { if(e[k]>0) e[k]--; });
+        
+        // Merge updates
+        Object.keys(updates).forEach(k => { if(k.startsWith('effects.')) e[k.split('.')[1]] = updates[k]; });
+        updates.effects = e;
+
+        // Se God Casting, não pula turno? Normalmente ação gasta turno. Vamos gastar turno.
+        let currentDir = updates.dir !== undefined ? updates.dir : roomData.dir;
+        let steps = 1 + skip;
+        
+        // Se God usou poder, passa a vez normal (como se tivesse jogado carta)
+        let nextTurn = (roomData.turn + (steps * currentDir)) % players.length;
+        if(nextTurn < 0) nextTurn += players.length;
+        updates.turn = nextTurn;
+    }
+
+    // Limpar pendência
+    pendingCard = null;
+
+    await updateDoc(doc(db, "rooms", roomId), updates);
+}
+
+function applyChaosLogic(id, up, plist, myIdx) {
+    const nextPIdx = (roomData.turn + roomData.dir + plist.length) % plist.length;
+
+    if(id === 'draw50') {
+        // Limite técnico de 20 para não travar arrays, mas visualmente impactante
+        for(let k=0;k<20;k++) plist[nextPIdx].hand.push({c:'red',v:1,t:'n'}); 
+    }
+    if(id === 'communism') {
+        let total = plist.reduce((acc, p) => acc + p.hand.length, 0);
+        let avg = Math.ceil(total / plist.length);
+        plist.forEach(p => {
+            // Recria mão com cartas dummy para não precisar complexidade de redistribuição real
+            p.hand = Array(avg).fill({c:'red',v:'☭',t:'n'});
+        });
+        up.color = 'red';
+    }
+    if(id === 'pivot') {
+        up['effects.pivot'] = 4;
+    }
+    
+    // --- LÓGICA GOLPE (ATUALIZADA) ---
+    if(id === 'coup') {
+        // Usuário fica com 3 cartas brancas apenas
+        plist[myIdx].hand = [
+            {c:'white', v:'☠️', t:'wh'},
+            {c:'white', v:'☠️', t:'wh'},
+            {c:'white', v:'☠️', t:'wh'}
+        ];
+        // Adversários puxam 25
+        plist.forEach((p, idx) => {
+            if(idx !== myIdx) {
+                // Usando cartas dummy '😭'
+                for(let n=0; n<25; n++) p.hand.push({c:'yellow', v:'😭', t:'n'});
+            }
+        });
+    }
+
+    if(id === 'diamond') up['effects.diamond'] = 6;
+    if(id === 'hotpotato') {
+        // Próximo compra 25
+        for(let k=0;k<25;k++) plist[nextPIdx].hand.push({c:'yellow',v:'🥔',t:'n'});
+    }
+    if(id === 'illuminati') up['effects.illuminati'] = 5;
+    if(id === 'inevitable') {
+        let h = plist[myIdx].hand;
+        let removeCount = Math.floor(h.length * 0.7);
+        plist[myIdx].hand.splice(0, removeCount);
+    }
+    if(id === 'chaos') {
+        plist.forEach(p => p.hand = [p.hand[0] || {c:'black', v:'?', t:'w'}]);
+        up['effects.reaction'] = { startTime: Date.now(), type: 'chaos_win', clicks: [] };
+    }
+    
+    // --- LÓGICA MODO DEUS (ATUALIZADA) ---
+    if(id === 'god') {
+        // Define contador de deus para este jogador
+        let gData = up.godData || {};
+        gData[plist[myIdx].id] = 3; // 3 Rodadas de poder
+        up.godData = gData;
+    }
+}
+
+// --- REAÇÃO ---
+function checkReactionState() {
+    const r = roomData.effects.reaction;
+    const btn = document.getElementById('reaction-btn');
+    
+    if(r && !r.clicks.includes(me.id)) {
+        if(btn.style.display !== 'block') {
+            btn.style.display = 'block';
+            btn.style.top = (20 + Math.random() * 60) + '%';
+            btn.style.left = (20 + Math.random() * 60) + '%';
+        }
+    } else {
+        btn.style.display = 'none';
+    }
+
+    // Host check
+    if(me.id === roomData.host && r && r.clicks.length >= roomData.players.length) {
+        if(r.type === 'chaos_win') {
+            let winnerId = r.clicks[0];
+            updateDoc(doc(db, "rooms", roomId), { state: 'finished', winner: winnerId });
+        } else {
+            // Último compra 2
+            let loserId = r.clicks[r.clicks.length-1];
+            let pList = [...roomData.players];
+            let lIdx = pList.findIndex(p=>p.id===loserId);
+            if(lIdx >= 0) pList[lIdx].hand.push({c:'red',v:'🐢',t:'n'}, {c:'red',v:'🐢',t:'n'});
+            updateDoc(doc(db, "rooms", roomId), { "effects.reaction": null, players: pList });
+        }
+    }
+}
+
+window.clickReaction = async () => {
+    document.getElementById('reaction-btn').style.display = 'none';
+    await updateDoc(doc(db, "rooms", roomId), {
+        "effects.reaction.clicks": arrayUnion(me.id)
+    });
+};
+
+// --- HOST EFFECTS ---
+function handleHostEffects() {
+    if(roomData.effects.pivot > 0) {
+        if(!pivotTimer) {
+            pivotTimer = setInterval(async () => {
+                const freshSnap = await getDoc(doc(db, "rooms", roomId));
+                const d = freshSnap.data();
+                if(d.effects.pivot > 0) {
+                    let pList = [...d.players];
+                    let hands = pList.map(p=>p.hand);
+                    let last = hands.pop();
+                    hands.unshift(last);
+                    pList.forEach((p,i) => p.hand = hands[i]);
+                    await updateDoc(doc(db, "rooms", roomId), { players: pList });
+                } else {
+                    clearInterval(pivotTimer);
+                    pivotTimer = null;
+                }
+            }, 5000);
+        }
+    }
+}
+
+// --- COMPRA ---
+window.drawCardAction = async () => {
+    if(roomData.players[roomData.turn].id !== me.id) return;
+    if(roomData.effects.reaction) return;
+
+    let qtd = roomData.accum > 0 ? roomData.accum : 1;
+    let deck = [...roomData.deck];
+    let discard = [...roomData.discard];
+    let pList = [...roomData.players];
+    let pIdx = pList.findIndex(p=>p.id===me.id);
+    
+    for(let i=0; i<qtd; i++) {
+        if(deck.length === 0) {
+            if(discard.length <= 1) break; 
+            let top = discard.pop();
+            deck = discard.sort(()=>Math.random()-0.5);
+            discard = [top];
+        }
+        pList[pIdx].hand.push(deck.pop());
+    }
+
+    // Se Deus estiver ativo, decrementa turno ao comprar também? Vamos assumir que sim, passou a vez.
+    let godData = {...(roomData.godData || {})};
+    if (godData[me.id] > 0) {
+        godData[me.id]--;
+        if(godData[me.id] <= 0) delete godData[me.id];
+    }
+
+    await updateDoc(doc(db, "rooms", roomId), {
+        players: pList, deck, discard, accum: 0, godData,
+        turn: (roomData.turn + roomData.dir + pList.length) % pList.length
+    });
+};
+
+// --- FIM ---
+function renderScore() {
+    document.getElementById('screen-score').classList.add('active');
+    
+    let winner = roomData.players.find(p=>p.id === roomData.winner) || roomData.players.find(p=>p.hand.length===0);
+    if(!winner) winner = roomData.players.sort((a,b)=>a.hand.length - b.hand.length)[0];
+    
+    document.getElementById('winnerName').innerText = `VENCEDOR: ${winner.name}`;
+    
+     let list = [...roomData.players].sort((a,b)=> a.hand.length - b.hand.length);
+    document.getElementById('scoreList').innerHTML = list.map((p, i) => `
+        <div class="score-item" style="background:rgba(255,255,255,0.1); padding:10px; width:100%; max-width:400px; display:flex; justify-content:space-between; border-radius:8px;">
+            <span>#${i+1} ${p.name}</span>
+            <span style="color:var(--gold)">${p.hand.length} cartas</span>
+        </div>
+    `).join('');
+}
+
+function toast(msg) {
+    let t = document.createElement('div');
+    t.className = 'toast';
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 3000);
+}
+</script>
+</body>
+</html>                                         
