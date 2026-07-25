@@ -1,12 +1,13 @@
 // ==========================================================================
-// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA (V8 - COMPLETA & RIGIDA)
+// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA (V8 - COMPLETA & EXPANDIDA)
 // ==========================================================================
 import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
 
 /* ==========================================================================
-   1. BANCO DE DADOS: ITENS, MINIONS E CARTAS DE CAMPEÕES ESPECIFICADAS
+   1. BANCO DE DADOS: ITENS, MINIONS E CARTAS DE CAMPEÕES (GALO, CABRA, BORBOLETA)
    ========================================================================== */
 const ALL_ITEMS = {
+    // Globais
     'pocao': { name: 'Poção de Cura', cost: 50, type: 'all', stats: {}, desc: 'Restaura 250 de HP do Nexus.' },
 
     // Galo
@@ -43,66 +44,44 @@ const MINION_TYPES = {
 
 const CHAMPION_CARDS = {
     'galo': [
-        { name: 'Auto Ataque', type: 'galo', cost: 1, desc: 'Ataque básico direto no inimigo (Usa AD e Crítico determinístico).', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(calculateDeterministicCrit(s.stats.ad))) },
-        { name: 'Marola', type: 'galo', cost: 2, desc: 'Joga uma pena envenenada que dá dano contínuo. 3 pilhas = 10% da vida atual do inimigo em dano verdadeiro.', action: (s) => executeCardAttack('Marola', () => { 
-            s.marolaStacks = (s.marolaStacks || 0) + 1; 
-            if(s.marolaStacks >= 3) { 
-                dealDamage(s.enemyPlayerHp * 0.10, true); 
-                s.marolaStacks = 0; 
-                showFloatingText('ESTOURO DE MAROLA (10% HP Visto)!', innerWidth/2, 250, 'gold'); 
-            } else { 
-                dealDamage(s.stats.ad * 1.2); 
-                showFloatingText(`Pena Envenenada! Pilha ${s.marolaStacks}/3`, innerWidth/2, 220, 'danger');
-            } 
-        }) },
+        { name: 'Auto Ataque', type: 'galo', cost: 1, desc: 'Ataque básico (Usa AD e Crítico determinístico).', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(calculateDeterministicCrit(s.stats.ad))) },
+        { name: 'Marola', type: 'galo', cost: 2, desc: 'Joga uma pena envenenada que dá dano contínuo. 3 pilhas = 10% da vida atual em dano verdadeiro.', action: (s) => executeCardAttack('Marola', () => { s.marolaStacks = (s.marolaStacks || 0) + 1; if(s.marolaStacks >= 3) { dealDamage(s.enemyPlayerHp * 0.10, true); s.marolaStacks = 0; showFloatingText('ESTOURO DE MAROLA (Dano Verdadeiro)!', innerWidth/2, 250, 'gold'); } else { dealDamage(s.stats.ad * 1.4); showFloatingText(`Pena Envenenada (${s.marolaStacks}/3)`, innerWidth/2, 220, 'purple'); } }) },
         { name: 'Dessa cor eu não tenho', type: 'galo', cost: 2, desc: 'Copia a última habilidade gasta, menos a da borboleta, joaninha e gato preto.', action: (s) => executeCardAttack('Cópia', () => {
-            if (s.lastEnemyAbility && !['borboleta', 'joaninha', 'gato'].includes(s.lastEnemyAbility.type)) {
-                showFloatingText(`Copiada habilidade: ${s.lastEnemyAbility.name}`, innerWidth/2, 200, 'gold');
-                dealDamage(s.stats.ad * 1.8);
-            } else {
-                showFloatingText('Impossível copiar esta habilidade!', innerWidth/2, 200, 'danger');
-                dealDamage(s.stats.ad);
-            }
+            let copiedDmg = s.lastEnemySkillDmg || (s.stats.ad * 1.6);
+            dealDamage(copiedDmg);
+            showFloatingText('Habilidade Copiada com Sucesso!', innerWidth/2, 200, 'cyan');
         }) },
-        { name: 'Aiin', type: 'galo', cost: 2, desc: 'Concede um escudo protetor que absorve dano e decai gradativamente.', action: (s) => executeCardAttack('Aiin', () => {
-            s.galoShield = (s.galoShield || 0) + 400;
-            showFloatingText('Escudo Aiin Ativo!', innerWidth/2, 200, 'success');
+        { name: 'Aiin', type: 'galo', cost: 2, desc: 'Concede um escudo que cobre sua vida para não sofrer dano, decaindo gradualmente.', action: (s) => executeCardAttack('Aiin', () => {
+            s.stats.shield = (s.stats.shield || 0) + 350;
+            showFloatingText('Escudo Aiin Ativado!', innerWidth/2, 200, 'success');
         }) },
-        { name: 'Ultimate Galo', type: 'galo', cost: 3, desc: 'Aumenta critico e dano em relação ao crítico atual.', action: (s) => executeCardAttack('Ultimate Galo', () => {
-            s.stats.crit += 15;
-            s.stats.ad += s.stats.crit * 2;
-            showFloatingText('PODER TOTAL DO GALO!', innerWidth/2, 200, 'gold');
-            dealDamage(s.stats.ad * 2.2);
+        { name: 'UTI do Galo', type: 'galo', cost: 3, desc: 'Ganha mais crítico e mais dano em relação ao crítico atual.', action: (s) => executeCardAttack('UTI do Galo', () => {
+            let bonusCrit = Math.floor(s.stats.crit * 0.5);
+            s.stats.crit += bonusCrit;
+            s.stats.ad += bonusCrit * 3;
+            showFloatingText(`FRENESI UTI: +${bonusCrit}% Crit & AD Boost!`, innerWidth/2, 230, 'gold');
         }) }
     ],
     'cabra': [
-        { name: 'Carta em Branco', type: 'cabra', cost: 0, desc: 'Sem efeito base. Use a Oficina de Tintas e mescle para definir seu poder!', action: (s) => showFloatingText('Carta em branco! Desenhe ou mescle tintas.', innerWidth/2, 200, 'danger') }
+        { name: 'Carta em Branco', type: 'cabra', cost: 0, desc: 'Sem efeito. Use a Oficina de Tintas (Vermelho, Amarelo, Azul) para mesclar e desenhar cartas!', action: (s) => showFloatingText('Carta em branco! Desenhe usando tintas.', innerWidth/2, 200, 'danger') }
     ],
     'borboleta': [
-        { name: 'Auto Ataque', type: 'borboleta', cost: 1, desc: 'Ataque básico de energia escura no inimigo.', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(s.stats.ap)) },
-        { name: 'Akuma', type: 'borboleta', cost: 2, desc: 'Carrega borboleta com energia negativa no deck inimigo: cartas na mão ficam nerfadas e drenam efeitos para seu monte.', action: (s) => executeCardAttack('Akuma', () => spawnButterflyBot(s)) },
-        { name: 'Beijo Saliente', type: 'borboleta', cost: 3, desc: 'Infecta o inimigo e drena 5% da vida máxima por segundo durante 10 segundos, tomando para você.', action: (s) => executeCardAttack('Beijo Saliente', () => { 
-            let dCount = 0;
-            let drainInterval = setInterval(() => {
-                if (dCount >= 10 || state.isDead) { clearInterval(drainInterval); return; }
-                let drainAmount = state.enemyPlayerMaxHp * 0.05;
-                dealDamage(drainAmount, true);
-                healNexus(drainAmount);
-                showFloatingText(`💋 Drenado ${Math.floor(drainAmount)} HP!`, innerWidth/2, 200, 'purple');
-                dCount++;
-            }, 1000);
+        { name: 'Auto Ataque', type: 'borboleta', cost: 1, desc: 'Ataque básico simples (AD/AP).', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(s.stats.ap)) },
+        { name: 'Akuma', type: 'borboleta', cost: 2, desc: 'Carrega borboleta com energia negativa no deck inimigo: cartas na mão ficam nerfadas e drenam efeitos para o monte.', action: (s) => executeCardAttack('Akuma', () => spawnButterflyBot(s)) },
+        { name: 'Beijo Saliente', type: 'borboleta', cost: 3, desc: 'Infecta discretamente e por 10s drene 5% da vida máxima por segundo, tomando para si.', action: (s) => executeCardAttack('Beijo Saliente', () => {
+            let drainAmount = s.enemyPlayerMaxHp * 0.05;
+            dealDamage(drainAmount * 5);
+            healNexus(drainAmount * 5);
+            showFloatingText('Beijo Saliente: Vida Drenada com Sucesso!', innerWidth/2, 200, 'purple');
         }) },
-        { name: 'Desejo do Pecado', type: 'borboleta', cost: 2, desc: 'Manda borboleta para a mão do inimigo, dando os poderes do campeão inimigo para você até ser jogada.', action: (s) => executeCardAttack('Desejo do Pecado', () => { 
-            dealDamage(200); 
-            s.stats.ap += 20; 
-            showFloatingText('Poderes do inimigo usurpados!', innerWidth/2, 200, 'purple'); 
+        { name: 'Desejo do Pecado', type: 'borboleta', cost: 2, desc: 'Manda borboleta para a mão inimiga disfarçada, dando os poderes do campeão inimigo até ser jogada.', action: (s) => executeCardAttack('Desejo do Pecado', () => {
+            s.stats.ap += 25;
+            s.stats.ad += 20;
+            showFloatingText('Poderes do Inimigo Drenados!', innerWidth/2, 200, 'purple');
         }) },
-        { name: 'Ultimate Borboleta (Caos)', type: 'borboleta', cost: 4, desc: 'Explode energia negativa na mesa, drenando as cartas da mão de todos para seu monte e embaralhando.', action: (s) => executeCardAttack('Explosão Caos', () => {
-            showFloatingText('🌪️ CAOS NA MESA! Cartas drenadas!', innerWidth/2, 200, 'purple');
-            for(let i=0; i<3; i++) {
-                if(state.deck.length < state.maxDeckCards) state.deck.push({ name: 'Eco Sombrio', type: 'borboleta', cost: 1, desc: 'Eco drenado', action: (st) => dealDamage(st.stats.ap) });
-            }
-            dealDamage(350);
+        { name: 'UTI da Borboleta', type: 'borboleta', cost: 4, desc: 'Explode energia negativa na mesa, drenando cartas da mão de todos para seu monte e criando o caos.', action: (s) => executeCardAttack('UTI Borboleta', () => {
+            s.deck.push({ name: 'Carta Caos Drenada', type: 'borboleta', cost: 0, desc: 'Carta roubada do oponente', action: () => dealDamage(250) });
+            showFloatingText('🌪️ CAOS NA MESA! Cartas drenadas para o seu monte!', innerWidth/2, 230, 'purple');
         }) }
     ],
     'global': [
@@ -131,10 +110,26 @@ let state = {
     isMyTurn: true,
     turnNumber: 1,
 
-    // Sistema Littlegot (Cabra) - Rigoroso com tintas
-    inkPots: { red: 3, blue: 3, yellow: 3, max: 5 },
+    // Sistema Littlegot (Cabra) com Decks de Tintas Específicos
+    inkPots: { red: 3, blue: 3, yellow: 3, max: 6 },
     currentInkMix: [],
-    nextCardCustomEffect: null,
+    inkDecks: {
+        red: [
+            { name: 'Bola de Fogo', cost: 2, desc: 'Atira uma bola de fogo que dá dano contínuo no inimigo por 4s.', action: (s) => executeCardAttack('Bola de Fogo', () => dealDamage(s.stats.ap * 1.5)) },
+            { name: 'Laser', cost: 2, desc: 'Um tiro potente queimando alguma carta do oponente.', action: (s) => executeCardAttack('Laser', () => dealDamage(s.stats.ap * 1.8)) },
+            { name: 'Lança Chamas', cost: 3, desc: '5s de dano contínuo em todos os inimigos, crescente com AP.', action: (s) => executeCardAttack('Lança Chamas', () => dealDamage(s.stats.ap * 2.2)) }
+        ],
+        yellow: [
+            { name: 'Lanterna', cost: 1, desc: 'Cria um escudo protetor.', action: (s) => { s.stats.shield = (s.stats.shield || 0) + 150; showFloatingText('Lanterna: Escudo Criado!', innerWidth/2, 200, 'gold'); } },
+            { name: 'Lâmpada', cost: 2, desc: 'Dá um escudo poderoso para o seu Nexus.', action: (s) => { healNexus(300); showFloatingText('Lâmpada: Nexus Blindado!', innerWidth/2, 200, 'gold'); } },
+            { name: 'Sol', cost: 2, desc: 'Escudo absoluto nas cartas e imunidade temporária.', action: (s) => { s.stats.armor += 20; showFloatingText('Sol: Cartas Protegidas!', innerWidth/2, 200, 'gold'); } }
+        ],
+        blue: [
+            { name: 'Pedra', cost: 1, desc: 'Jogue uma pedra pesada no inimigo causando dano físico.', action: (s) => executeCardAttack('Pedra', () => dealDamage(s.stats.ad * 1.3)) },
+            { name: 'Chicote', cost: 2, desc: 'Chicoteia alguém, roubando uma carta do deck ou mão.', action: (s) => { s.hand.push({ name: 'Carta Roubada', type: 'cabra', cost: 1, desc: 'Espólio do Chicote', action: () => dealDamage(100) }); showFloatingText('Chicote: Carta Roubada!', innerWidth/2, 200, 'cyan'); } },
+            { name: 'Água', cost: 1, desc: 'Hidrate-se e recupere vida ou restaure um pote de tinta.', action: (s) => { healNexus(120); state.inkPots.blue = Math.min(state.inkPots.max, state.inkPots.blue + 1); showFloatingText('Água: Vida e Tinta Restauradas!', innerWidth/2, 200, 'success'); } }
+        ]
+    },
 
     // Sistema Borboleta
     butterflyBots: [],
@@ -150,15 +145,13 @@ let state = {
     nexusVulnerable: false,
     nexusVulnerabilityTimer: null,
 
-    stats: { ad: 15, ap: 15, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0 },
-    critCredit: 0,
-    lastEnemyAbility: null,
-    galoShield: 0
+    stats: { ad: 15, ap: 15, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0, shield: 0 },
+    critCredit: 0
 };
 
 /* ==========================================================================
-   3. INICIALIZAÇÃO & INTERFACE FLUTUANTE EXCLUSIVA (CABRA COM TINTAS E BOTÃO DE MESCLAR)
-   ========================================================================= */
+   3. INICIALIZAÇÃO & INTERFACE FLUTUANTE (EXCLUSIVA E SEM SOBREPOSIÇÃO)
+   ========================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
     setupLobby();
     setupDragAndDrop();
@@ -182,24 +175,25 @@ function injectDynamicUI() {
         flex-direction: column;
         gap: 12px;
         z-index: 1000;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-        backdrop-filter: blur(8px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+        backdrop-filter: blur(10px);
         box-sizing: border-box;
-        max-height: 90vh;
+        max-height: 92vh;
         overflow-y: auto;
     `;
 
     hud.innerHTML = `
         <div style="font-size:0.8rem; color:#38bdf8; font-weight:bold; border-bottom:1px solid #334155; padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-            <span>⚡ PAINEL DE COMBATE PVP</span>
-            <span style="font-size:0.6rem; background:#1e293b; padding:2px 6px; border-radius:4px; color:#fbbf24;">HUD Ativo</span>
+            <span>⚡ PAINEL DE CONTROLE NEXUS</span>
+            <span style="font-size:0.6rem; background:#1e293b; padding:2px 6px; border-radius:4px; color:#fbbf24;">HUD V8 Ativo</span>
         </div>
 
         <div id="cabra-hud-panel" class="${state.player.champ === 'cabra' ? '' : 'hidden'}" style="background:rgba(30,41,59,0.85); border:1px solid #f59e0b; padding:10px; border-radius:8px;">
             <div style="font-size:0.75rem; color:#fbbf24; font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span>🎨 OFICINA DE TINTAS & DECKS</span>
-                <span style="font-size:0.6rem; color:#38bdf8;">Littlegot</span>
+                <span>🎨 OFICINA DE TINTAS (LITTLEGOT)</span>
+                <span style="font-size:0.6rem; color:#38bdf8;">Cabra</span>
             </div>
+            <div style="font-size:0.68rem; color:#94a3b8; margin-bottom:6px;">Dependência Total de Tintas para Jogar!</div>
             <div style="display:flex; gap:6px; margin-bottom:8px;">
                 <button class="btn" style="background:#ef4444; padding:6px 2px; flex:1; font-size:0.68rem; color:#fff;" onclick="addInk('red')">Verm (<span id="ink-red-count">3</span>)</button>
                 <button class="btn" style="background:#3b82f6; padding:6px 2px; flex:1; font-size:0.68rem; color:#fff;" onclick="addInk('blue')">Azul (<span id="ink-blue-count">3</span>)</button>
@@ -207,19 +201,15 @@ function injectDynamicUI() {
             </div>
             <div style="font-size:0.7rem; color:#cbd5e1; margin-bottom:8px; background:#090d16; padding:6px; border-radius:4px; text-align:center;" id="ink-mix-display">Mistura Atual: Nenhuma</div>
             <div style="display:flex; gap:6px; margin-bottom:8px;">
-                <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.65rem;" onclick="selectInkDeck('red')">🔴 Deck Verm</button>
-                <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.65rem;" onclick="selectInkDeck('yellow')">🟡 Deck Amar</button>
-                <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.65rem;" onclick="selectInkDeck('blue')">🔵 Deck Azul</button>
+                <button class="btn btn-gold" style="padding:8px 4px; flex:1; font-size:0.7rem; font-weight:bold;" onclick="mergeInksButton()">✨ MESCLAR TINTAS</button>
             </div>
-            <div>
-                <button class="btn btn-gold" style="width:100%; padding:8px; font-size:0.75rem; font-weight:bold; background:#d97706; color:#fff;" onclick="mergeInks()">✨ MESCLAR TINTAS & CRIAR CARTA</button>
-            </div>
+            <div style="font-size:0.65rem; color:#38bdf8; text-align:center;">A próxima carta puxada receberá o efeito mesclado!</div>
         </div>
 
         <div style="background:rgba(30,41,59,0.75); border:1px solid #ef4444; padding:10px; border-radius:8px;">
-            <div style="font-size:0.75rem; color:#ef4444; font-weight:bold; margin-bottom:6px;">🎯 ALVO DO JOGADOR INIMIGO:</div>
+            <div style="font-size:0.75rem; color:#ef4444; font-weight:bold; margin-bottom:6px;">🎯 ALVO PRINCIPAL (ATACAR INIMIGO):</div>
             <select id="target-select" style="width:100%; background:#090d16; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-size:0.8rem;" onchange="changeTarget(this.value)">
-                <option value="">Aguardando oponentes na sala...</option>
+                <option value="">Aguardando oponentes...</option>
             </select>
         </div>
 
@@ -298,7 +288,7 @@ function setupLobby() {
                 populateShop();
 
                 if (selectEl) {
-                    selectEl.innerHTML = optionsHtml || '<option value="">Sozinho na sala (Modo Solo PvP)</option>';
+                    selectEl.innerHTML = optionsHtml || '<option value="">Sozinho na sala (Modo Solo vs Inimigos Bot)</option>';
                 }
 
                 const otherKeys = Object.keys(data).filter(k => k !== state.myKey);
@@ -330,19 +320,19 @@ window.changeTarget = function(targetKey) {
     if (state.roomPlayers && state.roomPlayers[targetKey]) {
         state.enemyPlayerHp = state.roomPlayers[targetKey].hp;
         state.enemyKey = targetKey;
-        showFloatingText(`Alvo PVP alterado para ${state.roomPlayers[targetKey].name}`, innerWidth/2, 160, 'cyan');
+        showFloatingText(`Alvo alterado para ${state.roomPlayers[targetKey].name}`, innerWidth/2, 160, 'cyan');
     }
     updateUI();
 }
 
 function applyChampBaseStats() {
-    if (state.player.champ === 'galo') { state.stats.ad = 55; state.stats.crit = 15; state.stats.vamp = 15; }
-    if (state.player.champ === 'cabra') { state.stats.ap = 50; state.stats.armor = 20; }
-    if (state.player.champ === 'borboleta') { state.stats.ap = 50; state.stats.ad = 30; state.stats.mr = 25; }
+    if (state.player.champ === 'galo') { state.stats.ad = 60; state.stats.crit = 20; state.stats.vamp = 20; }
+    if (state.player.champ === 'cabra') { state.stats.ap = 55; state.stats.armor = 20; }
+    if (state.player.champ === 'borboleta') { state.stats.ap = 60; state.stats.ad = 35; state.stats.mr = 30; }
 }
 
 /* ==========================================================================
-   4. SISTEMA DE EXPERIÊNCIA E NÍVEL
+   4. SISTEMA DE EXPERIÊNCIA E NÍVEL 18
    ========================================================================= */
 function addXp(amount) {
     if (state.player.level >= 18) return;
@@ -353,10 +343,12 @@ function addXp(amount) {
         state.player.xp = state.player.xp - state.player.maxXp;
         state.player.maxXp = Math.floor(state.player.maxXp * 1.3);
         
-        state.stats.ad += 5;
-        state.stats.ap += 5;
-        state.stats.bonusHp += 100;
-        healNexus(100);
+        state.stats.ad += 6;
+        state.stats.ap += 6;
+        state.stats.bonusHp += 120;
+        state.enemyPlayerMaxHp += 120;
+        state.enemyPlayerHp += 120;
+        healNexus(120);
 
         showFloatingText(`🌟 LEVEL UP! Nível ${state.player.level}!`, innerWidth/2, innerHeight/2 - 100, 'gold');
     }
@@ -364,7 +356,7 @@ function addXp(amount) {
 }
 
 /* ==========================================================================
-   5. SISTEMA DE TURNOS E BOTS DA BORBOLETA
+   5. SISTEMA DE TURNOS E PASSAGEM
    ========================================================================= */
 window.endTurn = function() {
     if (!state.isMyTurn) return;
@@ -407,14 +399,19 @@ window.endTurn = function() {
 }
 
 function spawnButterflyBot(s) {
-    showFloatingText(`🦋 Akuma lançado! Drenando atributos e criando Sombra!`, innerWidth/2, 220, 'purple');
-    s.ap += 15;
-    s.armor += 10;
+    const copyTarget = state.roomChampions.length > 0 ? state.roomChampions[Math.floor(Math.random() * state.roomChampions.length)] : 'Oponente';
+    showFloatingText(`🦋 Akuma invocado! Drenando estatísticas e replicando: ${copyTarget.toUpperCase()}`, innerWidth/2, 220, 'purple');
     
+    // Passiva da Borboleta: Drenar mana, AP, resistência mágica/física e vida do inimigo afetado permanentemente
+    s.stats.ap += 15;
+    s.stats.mr += 10;
+    s.stats.armor += 10;
+    healNexus(150);
+
     const newBot = {
         id: Math.random(),
-        name: `Sombra Borboleta`,
-        power: s.stats.ap * 1.5,
+        name: `Sombra Akuma de ${copyTarget}`,
+        power: s.stats.ap * 1.6,
         turnsLeft: 3
     };
 
@@ -424,8 +421,8 @@ function spawnButterflyBot(s) {
 
 function executeButterflyBots() {
     state.butterflyBots.forEach(bot => {
-        let replicatedDmg = bot.power * 0.8;
-        showFloatingText(`🦋 ${bot.name} ataca o inimigo! (-${Math.floor(replicatedDmg)})`, innerWidth/2, 280, 'purple');
+        let replicatedDmg = bot.power * 0.9;
+        showFloatingText(`🦋 ${bot.name} atacou diretamente o inimigo! (-${Math.floor(replicatedDmg)})`, innerWidth/2, 280, 'purple');
         dealDamage(replicatedDmg);
         bot.turnsLeft--;
     });
@@ -434,68 +431,82 @@ function executeButterflyBots() {
 }
 
 /* ==========================================================================
-   6. SISTEMA RIGOROSO DE TINTAS DO LITTLEGOT (CABRA) & BOTÃO MESCLAR
+   6. SISTEMA DE TINTAS DO LITTLEGOT (CABRA) & MECÂNICA DE CARTAS BRANCAS
    ========================================================================= */
 window.addInk = function(color) {
-    if (state.inkPots[color] <= 0) return showFloatingText('Pote de Tinta Vazio!', innerWidth/2, 200, 'danger');
-    if (state.currentInkMix.length >= 2) return showFloatingText('Máximo de 2 tintas na mistura!', innerWidth/2, 200, 'danger');
+    if (state.inkPots[color] <= 0) return showFloatingText('Pote de Tinta Vazio! Impossível agir!', innerWidth/2, 200, 'danger');
+    if (state.currentInkMix.length >= 2) return showFloatingText('Máximo de 2 tintas misturadas por carta!', innerWidth/2, 200, 'danger');
     
     state.inkPots[color]--;
     state.currentInkMix.push(color);
+    showFloatingText(`Tinta ${color.toUpperCase()} adicionada à mistura!`, innerWidth/2, 200, 'cyan');
     updateUI();
 }
 
-let selectedInkDeckType = 'red';
-window.selectInkDeck = function(deckType) {
-    selectedInkDeckType = deckType;
-    showFloatingText(`Deck de Tinta selecionado: ${deckType.toUpperCase()}`, innerWidth/2, 200, 'cyan');
-}
+window.mergeInksButton = function() {
+    if (state.currentInkMix.length === 0) return showFloatingText('Adicione tintas antes de mesclar!', innerWidth/2, 200, 'danger');
+    
+    let mixKey = state.currentInkMix.sort().join('+');
+    let cardName = `Magia Mesclada (${mixKey.toUpperCase()})`;
+    let desc = `Efeito gerado pela fusão das tintas: ${mixKey}.`;
+    let actionFn = (s) => executeCardAttack(cardName, () => {
+        let dmg = s.stats.ap * 2.5;
+        dealDamage(dmg);
+        healNexus(200);
+        s.gold += 50;
+        showFloatingText('✨ FUSÃO DE TINTAS EXPLOSIVA!', innerWidth/2, 240, 'gold');
+    });
 
-window.mergeInks = function() {
-    // Verifica rigorosamente se as tintas acabaram
-    let totalInks = state.inkPots.red + state.inkPots.blue + state.inkPots.yellow;
-    if (totalInks <= 0 && state.currentInkMix.length === 0) {
-        return showFloatingText('🚨 Tintas esgotadas! A Cabra está travada e não pode fazer nada!', innerWidth/2, 200, 'danger');
+    if (state.currentInkMix.includes('red') && state.currentInkMix.includes('blue')) {
+        cardName = 'Erupção Térmica Arcana';
+        actionFn = (s) => executeCardAttack(cardName, () => { dealDamage(s.stats.ap * 3.0, true); healNexus(100); });
+    } else if (state.currentInkMix.includes('red') && state.currentInkMix.includes('yellow')) {
+        cardName = 'Labareda Solar';
+        actionFn = (s) => executeCardAttack(cardName, () => { dealDamage(s.stats.ap * 2.8); s.stats.armor += 25; });
+    } else if (state.currentInkMix.includes('blue') && state.currentInkMix.includes('yellow')) {
+        cardName = 'Escudo Glacial Luminoso';
+        actionFn = (s) => { s.stats.shield = (s.stats.shield || 0) + 400; healNexus(250); showFloatingText('Escudo Absoluto!', innerWidth/2, 200, 'success'); };
     }
-    if (state.currentInkMix.length === 0) {
-        return showFloatingText('Adicione pelo menos 1 tinta para mesclar!', innerWidth/2, 200, 'danger');
-    }
-    if (!state.isMyTurn) return showFloatingText('Aguarde seu turno para mesclar tintas!', innerWidth/2, 200, 'danger');
 
-    let mixStr = state.currentInkMix.join(' + ');
-    let customName = `Tinta Mesclada (${mixStr.toUpperCase()})`;
-    let customDesc = `Poder especial criado com ${mixStr}. A próxima carta puxada herdará este efeito!`;
-
-    // Define o efeito customizado para a próxima carta puxada (Mecânica de Carta Branca / Tinta)
-    state.nextCardCustomEffect = {
-        name: customName,
-        desc: customDesc,
+    const mergedCard = {
+        name: cardName,
         type: 'cabra',
         cost: 0,
-        action: (s) => {
-            executeCardAttack(customName, () => {
-                let dmg = s.stats.ap * 2.5;
-                dealDamage(dmg);
-                healNexus(200);
-                s.gold += 50;
-                showFloatingText('✨ PODER DA TINTA MESCLADA DISPARADO!', innerWidth/2, 230, 'gold');
-            });
-        }
+        desc: desc,
+        action: actionFn,
+        instanceId: 'c_' + Math.random().toString(36).substring(2)
     };
 
+    // Mecânica de Cartas Brancas: a próxima carta puxada / substituída ganha o efeito mesclado
+    const blankIdx = state.hand.findIndex(c => c.name === 'Carta em Branco');
+    if (blankIdx !== -1) {
+        state.hand[blankIdx] = mergedCard;
+    } else {
+        if (state.hand.length < state.maxHandSize) {
+            state.hand.push(mergedCard);
+        } else {
+            state.hand[0] = mergedCard;
+        }
+    }
+
     state.currentInkMix = [];
-    showFloatingText('🎨 TINTAS MESCLADAS COM SUCESSO! Próxima carta puxada será customizada!', innerWidth/2, 200, 'gold');
+    showFloatingText('🎨 TINTAS MESCLADAS COM SUCESSO NA CARTA!', innerWidth/2, 210, 'gold');
     addXp(15);
     updateUI();
 }
 
 /* ==========================================================================
-   7. SISTEMA DE CARTAS E DECK PADRÃO
+   7. SISTEMA DE CARTAS E DECK PADRÃO COM RIGOR DE LIMITE
    ========================================================================= */
 function buildDeck() {
     state.deck = [];
     let pool = CHAMPION_CARDS[state.player.champ];
     if (!pool) pool = CHAMPION_CARDS['global'];
+
+    if (state.player.champ === 'cabra') {
+        // Inserir cartas dos decks específicos de tintas da cabra
+        pool = [...pool, ...state.inkDecks.red, ...state.inkDecks.yellow, ...state.inkDecks.blue];
+    }
 
     for (let i = 0; i < state.maxDeckCards; i++) {
         const randCard = pool[Math.floor(Math.random() * pool.length)];
@@ -506,32 +517,28 @@ function buildDeck() {
 window.drawCard = function(free = false) {
     if (state.isDead) return;
     if (!state.isMyTurn && !free) return showFloatingText('Aguarde o seu turno!', innerWidth/2, 220, 'danger');
-    if (state.hand.length >= state.maxHandSize) return;
-
-    // Verificação rigorosa para Cabra sem tintas
+    
+    // Rigor estrito com limite de cartas na mão (máximo 7)
+    if (state.hand.length >= state.maxHandSize) {
+        return showFloatingText('⚠️ Limite máximo de cartas na mão atingido (7/7)! Jogue ou descarte.', innerWidth/2, 220, 'danger');
+    }
+    
+    if (state.deck.length === 0) return showFloatingText('Monte Vazio! Recarregue na Loja.', innerWidth/2, 220, 'danger');
+    
+    // Verificação de dependência total de tintas para a Cabra
     if (state.player.champ === 'cabra') {
         let totalInks = state.inkPots.red + state.inkPots.blue + state.inkPots.yellow;
-        if (totalInks <= 0 && state.inkPots.max === 0) {
-            return showFloatingText('🚨 Sem tintas! Cabra travada!', innerWidth/2, 220, 'danger');
+        if (totalInks <= 0 && !free) {
+            return showFloatingText('❌ Sem tintas nos potes! A Cabra não consegue puxar nem agir!', innerWidth/2, 220, 'danger');
         }
     }
 
-    if (state.deck.length === 0) return showFloatingText('Monte Vazio! Compre reposição na Loja.', innerWidth/2, 220, 'danger');
-    
     if (!free && state.player.champ !== 'cabra') {
         if (state.energy < 1) return showFloatingText('Sem Energia!', innerWidth/2, 220, 'danger');
         state.energy--;
     }
 
-    let cardToDraw = state.deck.pop();
-
-    // Se a Cabra mesclou tintas, a carta puxada vira o efeito mesclado (Carta Branca/Tinta)
-    if (state.player.champ === 'cabra' && state.nextCardCustomEffect) {
-        cardToDraw = { ...state.nextCardCustomEffect, instanceId: 'c_' + Math.random().toString(36).substring(2) };
-        state.nextCardCustomEffect = null;
-    }
-
-    state.hand.push(cardToDraw);
+    state.hand.push(state.deck.pop());
     updateUI();
 }
 
@@ -544,7 +551,7 @@ window.buyDeckReload = function() {
 }
 
 /* ==========================================================================
-   8. DRAG & DROP E COMBATE PVP DIRETO
+   8. DRAG & DROP E COMBATE DIRETO AO INIMIGO
    ========================================================================= */
 function setupDragAndDrop() {
     const dropZone = document.getElementById('drop-zone');
@@ -560,22 +567,23 @@ function setupDragAndDrop() {
 
 function playCard(instanceId) {
     if (state.isDead) return;
-    if (!state.isMyTurn) return showFloatingText('Aguarde o seu turno!', innerWidth/2, 220, 'danger');
+    if (!state.isMyTurn) return showFloatingText('Aguarde o seu turno para jogar!', innerWidth/2, 220, 'danger');
+
+    if (state.player.champ === 'borboleta' && state.butterflyBots.length > 0) {
+        return showFloatingText('⚠️ Suas cartas estão nerfadas e controladas enquanto os Bots Akuma agem!', innerWidth/2, 220, 'danger');
+    }
 
     const idx = state.hand.findIndex(c => c.instanceId === instanceId);
     if (idx === -1) return;
     const card = state.hand[idx];
     
-    if (state.player.champ !== 'cabra' && state.energy < card.cost) {
+    if (state.energy < card.cost && state.player.champ !== 'cabra') {
         return showFloatingText('Sem Energia Suficiente!', innerWidth/2, innerHeight/2, 'danger');
     }
     
-    if (state.player.champ !== 'cabra') {
-        state.energy -= card.cost;
-    }
-
-    state.lastEnemyAbility = card;
+    state.energy -= card.cost;
     card.action(state);
+    state.lastEnemySkillDmg = card.cost * 45; // Registra última habilidade para o Galo copiar
     state.hand.splice(idx, 1);
     
     addXp(15);
@@ -626,8 +634,8 @@ function calculateDeterministicCrit(baseDmg) {
 
     let finalDmg = baseDmg;
     if (isCrit) {
-        finalDmg *= 1.75;
-        showFloatingText('CRÍTICO DO GALO!', innerWidth/2, innerHeight/2 - 50, 'gold');
+        finalDmg *= 1.85;
+        showFloatingText('💥 CRÍTICO FATAL DO GALO!', innerWidth/2, innerHeight/2 - 50, 'gold');
     }
 
     let mitigation = 100 / (100 + Math.max(0, 40 - state.stats.pen));
@@ -635,13 +643,13 @@ function calculateDeterministicCrit(baseDmg) {
 }
 
 function dealDamage(amount, isTrue = false) {
-    // Foco principal: atacar o jogador inimigo em PVP
+    // O foco principal é atacar diretamente os inimigos (HP do Jogador Inimigo)
     state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
 
     state.gold += 30;
     addXp(12);
 
-    showFloatingText(`-${Math.floor(amount)} (Dano no Inimigo)`, innerWidth / 2, 180, 'danger');
+    showFloatingText(`-${Math.floor(amount)} (Dano Direto ao Inimigo!)`, innerWidth / 2, 180, 'danger');
     
     const enemyCardEl = document.querySelector('.nexus-card.enemy');
     if (enemyCardEl) {
@@ -649,7 +657,7 @@ function dealDamage(amount, isTrue = false) {
         setTimeout(() => enemyCardEl.classList.remove('taking-damage'), 300);
     }
 
-    // Passiva do Galo: Vampirismo proporcional ao crítico
+    // Passiva do Galo: ganha vampirismo proporcional ao crítico
     if (state.player.champ === 'galo') {
         state.stats.vamp = state.stats.crit;
     }
@@ -660,8 +668,10 @@ function dealDamage(amount, isTrue = false) {
     triggerNexusVulnerabilityWindow();
 
     if (state.nexusVulnerable) {
-        state.enemyNexus.hp = Math.max(0, state.enemyNexus.hp - (amount * 0.6));
-        showFloatingText(`💥 NEXUS ATINGIDO NA BRECHA!`, innerWidth / 2, 230, 'gold');
+        state.enemyNexus.hp = Math.max(0, state.enemyNexus.hp - (amount * 0.7));
+        showFloatingText(`💥 NEXUS INIMIGO ATINGIDO NA BRECHA!`, innerWidth / 2, 230, 'gold');
+    } else {
+        showFloatingText(`🛡️ Defesas ativas do Inimigo!`, innerWidth / 2, 230, 'cyan');
     }
 
     if (state.selectedEnemyKey) {
@@ -672,26 +682,29 @@ function dealDamage(amount, isTrue = false) {
         });
     }
 
-    if (state.enemyPlayerHp <= 0) {
-        alert('VITÓRIA PVP! Jogador Inimigo Aniquilado!');
+    if (state.enemyPlayerHp <= 0 && state.enemyNexus.hp <= 0) {
+        alert('🏆 VITÓRIA ABSOLUTA! Inimigo e Nexus aniquilados pelo seu deck!');
         window.location.reload();
     }
 }
 
 function triggerNexusVulnerabilityWindow() {
     state.nexusVulnerable = true;
+    
     let banner = document.getElementById('event-banner');
     if (banner) {
-        banner.innerText = "⚡ BRECHA ABERTA! NEXUS VULNERÁVEL POR 20 SEGUNDOS!";
+        banner.innerText = "⚡ BRECHA DE ATAQUE ABERTA! NEXUS VULNERÁVEL POR 20 SEGUNDOS!";
         banner.classList.add('active');
     }
 
-    if (state.nexusVulnerabilityTimer) clearTimeout(state.nexusVulnerabilityTimer);
+    if (state.nexusVulnerabilityTimer) {
+        clearTimeout(state.nexusVulnerabilityTimer);
+    }
 
     state.nexusVulnerabilityTimer = setTimeout(() => {
         state.nexusVulnerable = false;
         if (banner) banner.classList.remove('active');
-        showFloatingText(`🛡️ O Nexus fechou as defesas!`, innerWidth / 2, 200, 'danger');
+        showFloatingText(`🛡️ O Nexus fechou as defesas novamente!`, innerWidth / 2, 200, 'danger');
         updateUI();
     }, 20000);
 }
@@ -704,7 +717,7 @@ function healNexus(amount) {
 }
 
 /* ==========================================================================
-   9. LOJA E INVENTÁRIO
+   9. LOJA E INVENTÁRIO COMPLETO
    ========================================================================== */
 window.toggleShop = function() {
     const modal = document.getElementById('shop-modal');
@@ -720,7 +733,7 @@ function populateShop() {
         if (item.type !== 'all' && !state.roomChampions.includes(item.type)) return;
 
         grid.innerHTML += `
-            <div style="background:rgba(0,0,0,0.6); border:1px solid #334155; padding:10px; border-radius:10px; display:flex; flex-direction:column; justify-content:space-between;">
+            <div style="background:rgba(0,0,0,0.7); border:1px solid #334155; padding:10px; border-radius:10px; display:flex; flex-direction:column; justify-content:space-between;">
                 <div>
                     <h4 style="color:var(--gold); font-size:0.9rem;">${item.name}</h4>
                     <p style="font-size:0.68rem; color:#cbd5e1; margin-top:4px;">${item.desc}</p>
@@ -791,7 +804,7 @@ function applyItemStats(stats, mult) {
 }
 
 /* ==========================================================================
-   10. MINIONS & FARM
+   10. MINIONS & FARM DE ATAQUE
    ========================================================================== */
 window.buyMinion = function(lvlKey) {
     const mType = MINION_TYPES[lvlKey];
@@ -803,7 +816,7 @@ window.buyMinion = function(lvlKey) {
 
 function spawnEnemyMinion() {
     if (state.enemyMinions.length >= 4) return;
-    state.enemyMinions.push({ id: Math.random(), hp: 80, goldReward: 45 });
+    state.enemyMinions.push({ id: Math.random(), hp: 80, goldReward: 50 });
     renderEnemyMinions();
 }
 
@@ -812,18 +825,18 @@ window.farmEnemyMinion = function(id, clientX, clientY, reward) {
     
     state.enemyMinions = state.enemyMinions.filter(m => m.id !== id);
     state.gold += reward;
-    addXp(10);
-    showFloatingText(`+${reward} G (Farm)`, clientX, clientY, 'gold');
+    addXp(12);
+    showFloatingText(`+${reward} G (Farm de Tropa)`, clientX, clientY, 'gold');
     renderEnemyMinions();
     updateUI();
 }
 
 /* ==========================================================================
-   11. EVENTOS ALEATÓRIOS
+   11. EVENTOS ALEATÓRIOS DO JOGO
    ========================================================================= */
 const EVENTS = [
     { title: 'SURTO DE OURO', desc: 'Ouro passivo e GPS duplicados por 15s.', apply: s => s.baseGps *= 2, remove: s => s.baseGps /= 2 },
-    { title: 'FRENESI NA Tropa', desc: 'Minions aliados com ataque dobrado.', apply: s => s.myMinions.forEach(m => m.atk *= 2), remove: s => s.myMinions.forEach(m => m.atk /= 2) }
+    { title: 'FRENESI NA TROPAS', desc: 'Minions aliados com ataque dobrado.', apply: s => s.myMinions.forEach(m => m.atk *= 2), remove: s => s.myMinions.forEach(m => m.atk /= 2) }
 ];
 
 function triggerRandomEvent() {
@@ -909,27 +922,32 @@ function renderHand() {
     if (!cont) return;
     cont.innerHTML = '';
 
+    let isHandBlank = (state.player.champ === 'borboleta' && state.butterflyBots.length > 0);
+
     state.hand.forEach(c => {
         let el = document.createElement('div');
         el.className = 'card';
-        el.draggable = true;
+        if (isHandBlank || c.name === 'Carta em Branco') el.classList.add('blank-card');
+        
+        el.draggable = !isHandBlank && c.name !== 'Carta em Branco';
         
         el.innerHTML = `
             <div>
-                <strong class="card-title">${c.name}</strong>
-                <p class="card-desc">${c.desc}</p>
+                <strong class="card-title">${isHandBlank ? '🌀 [EM BRANCO NERFADO]' : c.name}</strong>
+                <p class="card-desc">${isHandBlank ? 'Suas cartas estão drenadas pelos Bots Akuma.' : c.desc}</p>
             </div>
             <div class="card-footer">
-                <span class="energy-cost">${state.player.champ === 'cabra' ? '🎨' : c.cost + ' EN'}</span>
+                <span class="energy-cost">${isHandBlank || c.name === 'Carta em Branco' ? '0' : (state.player.champ === 'cabra' ? '🎨' : c.cost + ' EN')}</span>
             </div>
         `;
         
-        el.addEventListener('dragstart', e => {
-            el.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', c.instanceId);
-        });
-        el.addEventListener('dragend', () => el.classList.remove('dragging'));
-        
+        if (el.draggable) {
+            el.addEventListener('dragstart', e => {
+                el.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', c.instanceId);
+            });
+            el.addEventListener('dragend', () => el.classList.remove('dragging'));
+        }
         cont.appendChild(el);
     });
 }
