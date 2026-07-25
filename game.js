@@ -1,5 +1,5 @@
 // ==========================================================================
-// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA (V5 - COMPLETA & CORRIGIDA)
+// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA (V6 - LAYOUT CORRIGIDO & TURNO SOLO)
 // ==========================================================================
 import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
 
@@ -71,8 +71,8 @@ let state = {
     player: { name: '', room: '', champ: '', level: 1, xp: 0, maxXp: 100 },
     myKey: '', 
     enemyKey: '',
-    selectedEnemyKey: null, // Chave do jogador atualmente selecionado para ataque
-    roomPlayers: {},        // Lista completa de jogadores na sala
+    selectedEnemyKey: null, 
+    roomPlayers: {},        
     
     gold: 500, baseGps: 5,
     energy: 5, maxEnergy: 5,
@@ -81,7 +81,6 @@ let state = {
     inventory: [],
     myMinions: [], enemyMinions: [],
     
-    // Controle de Turnos
     isMyTurn: true,
     turnNumber: 1,
 
@@ -98,7 +97,6 @@ let state = {
     myNexus: { hp: 5000, maxHp: 5000 },
     enemyNexus: { hp: 5000, maxHp: 5000 },
     
-    // Mecânica de Ataque ao Player e Janela de 20s do Nexus
     enemyPlayerHp: 3000,
     enemyPlayerMaxHp: 3000,
     nexusVulnerable: false,
@@ -109,7 +107,7 @@ let state = {
 };
 
 /* ==========================================================================
-   3. INICIALIZAÇÃO & INTERFACE DINÂMICA (CORRIGIDA)
+   3. INICIALIZAÇÃO & INTERFACE DINÂMICA ORGANIZADA (SEM SOBREPOSIÇÃO)
    ========================================================================= */
 document.addEventListener('DOMContentLoaded', () => {
     setupLobby();
@@ -120,60 +118,73 @@ function injectDynamicUI() {
     const resourcePanel = document.querySelector('.resource-panel');
     if (!resourcePanel) return;
 
-    // Evita duplicar caso já tenha injetado
-    if (document.getElementById('btn-end-turn')) return;
+    if (document.getElementById('game-control-stack')) return;
 
-    // Seletor de Alvos na Sala
-    const targetSelectorContainer = document.createElement('div');
-    targetSelectorContainer.id = 'target-selector-container';
-    targetSelectorContainer.style.cssText = 'background:rgba(15,23,42,0.9); border:2px solid var(--danger); padding:8px; border-radius:8px; margin-top:10px;';
-    targetSelectorContainer.innerHTML = `
-        <div style="font-size:0.75rem; color:var(--danger); font-weight:bold; margin-bottom:4px;">🎯 SELECIONAR ALVO:</div>
-        <select id="target-select" style="width:100%; background:#0f172a; color:#fff; border:1px solid #334155; padding:4px; border-radius:4px; font-size:0.8rem;" onchange="changeTarget(this.value)">
-            <option value="">Nenhum alvo disponível</option>
-        </select>
-    `;
-    resourcePanel.appendChild(targetSelectorContainer);
+    // Criamos um container empilhado com Flexbox vertical para evitar qualquer sobreposição
+    const stackContainer = document.createElement('div');
+    stackContainer.id = 'game-control-stack';
+    stackContainer.style.cssText = 'display:flex; flex-direction:column; gap:12px; margin-top:12px; width:100%;';
 
-    // Botão de Passar o Turno
-    resourcePanel.innerHTML += `<button id="btn-end-turn" class="btn btn-danger" style="margin-top:10px; width:100%;" onclick="endTurn()">⏳ PASSAR TURNO</button>`;
-
-    // Painel do Nível e XP do Jogador
-    const myNexusCard = document.querySelector('.nexus-card');
-    if (myNexusCard && !document.getElementById('player-lvl-text')) {
-        myNexusCard.innerHTML += `
-            <div style="margin-top:10px; background:rgba(0,0,0,0.5); padding:8px; border-radius:6px; border:1px solid var(--cyan-glow);">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:bold; color:var(--cyan-glow);">
-                    <span id="player-lvl-text">NÍVEL 1</span>
-                    <span id="player-xp-text">0/100 XP</span>
-                </div>
-                <div style="width:100%; height:8px; background:#1e293b; border-radius:4px; margin-top:4px; overflow:hidden;">
-                    <div id="player-xp-bar" style="width:0%; height:100%; background:var(--cyan-glow); transition:width 0.3s;"></div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Painel de Tintas do Littlegot (Cabra)
+    // 1. Painel de Oficina de Tintas (Só aparece/destaca se for Cabra, mas injetamos estruturado)
     const cabraPanel = document.createElement('div');
     cabraPanel.id = 'cabra-panel';
-    cabraPanel.className = 'hidden';
-    cabraPanel.style.cssText = 'background:rgba(15,23,42,0.9); border:2px solid var(--theme-cabra); padding:10px; border-radius:8px; margin-top:10px;';
+    cabraPanel.className = state.player.champ === 'cabra' ? '' : 'hidden';
+    cabraPanel.style.cssText = 'background:rgba(15,23,42,0.95); border:2px solid var(--theme-cabra, #f59e0b); padding:10px; border-radius:8px; width:100%; box-sizing:border-box;';
     cabraPanel.innerHTML = `
-        <div style="font-size:0.75rem; color:var(--gold); font-weight:bold; margin-bottom:5px;">🎨 OFICINA DE TINTAS (Littlegot):</div>
-        <div style="display:flex; gap:4px; margin-bottom:8px;">
-            <button class="btn" style="background:#ef4444; padding:6px; flex:1; font-size:0.7rem;" onclick="addInk('red')">Verm (<span id="ink-red-count">2</span>)</button>
-            <button class="btn" style="background:#3b82f6; padding:6px; flex:1; font-size:0.7rem;" onclick="addInk('blue')">Azul (<span id="ink-blue-count">2</span>)</button>
-            <button class="btn" style="background:#fbbf24; color:#000; padding:6px; flex:1; font-size:0.7rem;" onclick="addInk('yellow')">Amar (<span id="ink-yellow-count">2</span>)</button>
+        <div style="font-size:0.75rem; color:var(--gold, #fbbf24); font-weight:bold; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>🎨 OFICINA DE TINTAS</span>
+            <span style="font-size:0.6rem; background:#1e293b; padding:2px 6px; border-radius:4px; color:#38bdf8;">Littlegot</span>
         </div>
-        <div style="font-size:0.65rem; color:#fff; margin-bottom:5px;" id="ink-mix-display">Mistura: Nenhuma</div>
+        <div style="display:flex; gap:4px; margin-bottom:8px;">
+            <button class="btn" style="background:#ef4444; padding:6px 2px; flex:1; font-size:0.65rem; color:#fff;" onclick="addInk('red')">Verm (<span id="ink-red-count">2</span>)</button>
+            <button class="btn" style="background:#3b82f6; padding:6px 2px; flex:1; font-size:0.65rem; color:#fff;" onclick="addInk('blue')">Azul (<span id="ink-blue-count">2</span>)</button>
+            <button class="btn" style="background:#fbbf24; padding:6px 2px; flex:1; font-size:0.65rem; color:#000; font-weight:bold;" onclick="addInk('yellow')">Amar (<span id="ink-yellow-count">2</span>)</button>
+        </div>
+        <div style="font-size:0.65rem; color:#cbd5e1; margin-bottom:6px; background:#090d16; padding:4px; border-radius:4px;" id="ink-mix-display">Mistura: Nenhuma</div>
         <div style="display:flex; gap:4px;">
-            <button class="btn btn-cyan" style="padding:6px; flex:1; font-size:0.6rem;" onclick="drawShape('bola')">⭕ Bola</button>
-            <button class="btn btn-cyan" style="padding:6px; flex:1; font-size:0.6rem;" onclick="drawShape('cima')">⬆️ Traço Cima</button>
-            <button class="btn btn-cyan" style="padding:6px; flex:1; font-size:0.6rem;" onclick="drawShape('deitado')">➡️ Traço Deitado</button>
+            <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.6rem;" onclick="drawShape('bola')">⭕ Bola</button>
+            <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.6rem;" onclick="drawShape('cima')">⬆️ Cima</button>
+            <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.6rem;" onclick="drawShape('deitado')">➡️ Deitado</button>
         </div>
     `;
-    resourcePanel.appendChild(cabraPanel);
+    stackContainer.appendChild(cabraPanel);
+
+    // 2. Seletor de Alvos na Sala
+    const targetSelectorContainer = document.createElement('div');
+    targetSelectorContainer.id = 'target-selector-container';
+    targetSelectorContainer.style.cssText = 'background:rgba(15,23,42,0.95); border:2px solid var(--danger, #ef4444); padding:10px; border-radius:8px; width:100%; box-sizing:border-box;';
+    targetSelectorContainer.innerHTML = `
+        <div style="font-size:0.75rem; color:var(--danger, #ef4444); font-weight:bold; margin-bottom:6px;">🎯 SELECIONAR ALVO:</div>
+        <select id="target-select" style="width:100%; background:#090d16; color:#fff; border:1px solid #334155; padding:6px; border-radius:4px; font-size:0.8rem;" onchange="changeTarget(this.value)">
+            <option value="">Nenhum oponente conectado</option>
+        </select>
+    `;
+    stackContainer.appendChild(targetSelectorContainer);
+
+    // 3. Botão de Passar Turno
+    const turnButtonContainer = document.createElement('div');
+    turnButtonContainer.style.cssText = 'width:100%;';
+    turnButtonContainer.innerHTML = `<button id="btn-end-turn" class="btn btn-danger" style="width:100%; padding:10px; font-size:0.85rem; font-weight:bold;" onclick="endTurn()">⏳ PASSAR TURNO</button>`;
+    stackContainer.appendChild(turnButtonContainer);
+
+    resourcePanel.appendChild(stackContainer);
+
+    // Painel do Nível e XP do Jogador (Integrado de forma limpa na carta do Nexus)
+    const myNexusCard = document.querySelector('.nexus-card');
+    if (myNexusCard && !document.getElementById('player-lvl-text')) {
+        const xpDiv = document.createElement('div');
+        xpDiv.style.cssText = 'margin-top:10px; background:rgba(0,0,0,0.5); padding:8px; border-radius:6px; border:1px solid var(--cyan-glow, #38bdf8);';
+        xpDiv.innerHTML = `
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:bold; color:var(--cyan-glow, #38bdf8);">
+                <span id="player-lvl-text">NÍVEL 1</span>
+                <span id="player-xp-text">0/100 XP</span>
+            </div>
+            <div style="width:100%; height:8px; background:#1e293b; border-radius:4px; margin-top:4px; overflow:hidden;">
+                <div id="player-xp-bar" style="width:0%; height:100%; background:var(--cyan-glow, #38bdf8); transition:width 0.3s;"></div>
+            </div>
+        `;
+        myNexusCard.appendChild(xpDiv);
+    }
 }
 
 function setupLobby() {
@@ -195,31 +206,12 @@ function setupLobby() {
 
         state.myKey = await joinRoomFirebase(state.player.room, state.player.name, state.player.champ, state.myNexus.maxHp);
         
-        // Transição de Tela
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('hidden');
 
-        // AGORA injetamos a interface dinâmica com o DOM totalmente renderizado
         injectDynamicUI();
 
-        if (state.player.champ === 'cabra') {
-            const cabraEl = document.getElementById('cabra-panel');
-            if (cabraEl) cabraEl.classList.remove('hidden');
-        }
-
-        // Listener do Firebase atualizado para gerenciar múltiplos alvos
-        listenToRoomState(state.player.room, state.myKey, 
-            (enemyHp, enemyName, remoteKey) => {
-                // Mantido para compatibilidade, mas o gerenciamento de alvos detalhado está abaixo
-            },
-            (champsInRoom) => {
-                state.roomChampions = champsInRoom;
-                updatePlayersBar();
-                populateShop();
-            }
-        );
-
-        // Escuta direta customizada para lista completa de players da sala
+        // Escuta direta customizada para lista completa de players da sala no Firebase
         import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js').then(({ getDatabase, ref, onValue }) => {
             const db = getDatabase();
             const roomRef = ref(db, `rooms/${state.player.room}/players`);
@@ -228,24 +220,28 @@ function setupLobby() {
                 if (!data) return;
                 state.roomPlayers = data;
 
+                let champsInRoom = [];
                 let selectEl = document.getElementById('target-select');
                 let optionsHtml = '';
-                let hasValidTarget = false;
 
                 Object.keys(data).forEach(key => {
+                    const p = data[key];
+                    champsInRoom.push(p.champ);
+
                     if (key !== state.myKey) {
-                        const p = data[key];
                         const isSelected = state.selectedEnemyKey === key ? 'selected' : '';
                         optionsHtml += `<option value="${key}" ${isSelected}>${p.name} (${p.champ.toUpperCase()} - ${Math.floor(p.hp)} HP)</option>`;
-                        if (state.selectedEnemyKey === key) hasValidTarget = true;
                     }
                 });
 
+                state.roomChampions = champsInRoom;
+                updatePlayersBar();
+                populateShop();
+
                 if (selectEl) {
-                    selectEl.innerHTML = optionsHtml || '<option value="">Nenhum oponente na sala</option>';
+                    selectEl.innerHTML = optionsHtml || '<option value="">Sozinho na sala (Modo Solo)</option>';
                 }
 
-                // Se não há alvo selecionado ou o anterior saiu, seleciona o primeiro disponível
                 const otherKeys = Object.keys(data).filter(k => k !== state.myKey);
                 if ((!state.selectedEnemyKey || !data[state.selectedEnemyKey]) && otherKeys.length > 0) {
                     state.selectedEnemyKey = otherKeys[0];
@@ -256,6 +252,8 @@ function setupLobby() {
                     state.enemyPlayerHp = data[state.selectedEnemyKey].hp;
                     state.enemyPlayerMaxHp = data[state.selectedEnemyKey].maxHp || 3000;
                     state.enemyKey = state.selectedEnemyKey;
+                } else {
+                    state.selectedEnemyKey = null;
                 }
 
                 updateUI();
@@ -309,7 +307,7 @@ function addXp(amount) {
 }
 
 /* ==========================================================================
-   5. SISTEMA DE TURNOS E BOTS DA BORBOLETA
+   5. SISTEMA DE TURNOS (CORRIGIDO PARA FUNCIONAR SOZINHO OU EM GRUPO)
    ========================================================================= */
 window.endTurn = function() {
     if (!state.isMyTurn) return;
@@ -318,13 +316,17 @@ window.endTurn = function() {
     const btnEnd = document.getElementById('btn-end-turn');
     if (btnEnd) {
         btnEnd.disabled = true;
-        btnEnd.innerText = 'TURNO INIMIGO...';
+        btnEnd.innerText = 'TURNO PROCESSANDO...';
     }
     showFloatingText('Fim do seu turno!', innerWidth/2, innerHeight/2, 'cyan');
 
     if (state.butterflyBots.length > 0) {
         executeButterflyBots();
     }
+
+    // Se estiver sozinho na sala, o turno passa imediatamente sem esperar 4 segundos travados
+    const otherPlayersCount = Object.keys(state.roomPlayers).filter(k => k !== state.myKey).length;
+    const waitTime = otherPlayersCount > 0 ? 4000 : 800;
 
     setTimeout(() => {
         state.turnNumber++;
@@ -345,7 +347,7 @@ window.endTurn = function() {
         
         drawCard(true);
         updateUI();
-    }, 4000);
+    }, waitTime);
 }
 
 function spawnButterflyBot(s) {
@@ -556,14 +558,16 @@ function calculateDeterministicCrit(baseDmg) {
 
 function dealDamage(amount, isTrue = false) {
     if (!state.selectedEnemyKey) {
-        return showFloatingText('Selecione um alvo válido para atacar!', innerWidth/2, 200, 'danger');
+        // Se estiver jogando sozinho, o dano vai direto para um boneco de treino interno
+        state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
+    } else {
+        state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
     }
 
-    state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
     state.gold += 25;
     addXp(10);
 
-    showFloatingText(`-${Math.floor(amount)} (Hit no Alvo)`, innerWidth / 2, 180, 'danger');
+    showFloatingText(`-${Math.floor(amount)} (Hit)`, innerWidth / 2, 180, 'danger');
     
     const enemyCardEl = document.querySelector('.nexus-card.enemy');
     if (enemyCardEl) {
@@ -582,12 +586,11 @@ function dealDamage(amount, isTrue = false) {
 
     if (state.nexusVulnerable) {
         state.enemyNexus.hp = Math.max(0, state.enemyNexus.hp - (amount * 0.6));
-        showFloatingText(`💥 NEXUS DO ALVO ATINGIDO NA BRECHA!`, innerWidth / 2, 230, 'gold');
+        showFloatingText(`💥 NEXUS ATINGIDO NA BRECHA!`, innerWidth / 2, 230, 'gold');
     } else {
-        showFloatingText(`🛡️ Defesas do Oponente ativas! Quebre para abrir o Nexus.`, innerWidth / 2, 230, 'cyan');
+        showFloatingText(`🛡️ Defesas ativas! Quebre para abrir o Nexus.`, innerWidth / 2, 230, 'cyan');
     }
 
-    // Sincroniza o HP do alvo selecionado no Firebase
     if (state.selectedEnemyKey) {
         import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js').then(({ getDatabase, ref, update }) => {
             const db = getDatabase();
@@ -597,7 +600,7 @@ function dealDamage(amount, isTrue = false) {
     }
 
     if (state.enemyPlayerHp <= 0 && state.enemyNexus.hp <= 0) {
-        alert('VITÓRIA! O Invocador e o Nexus alvo foram aniquilados!');
+        alert('VITÓRIA! Inimigo e Nexus aniquilados!');
         window.location.reload();
     }
 }
@@ -607,7 +610,7 @@ function triggerNexusVulnerabilityWindow() {
     
     let banner = document.getElementById('event-banner');
     if (banner) {
-        banner.innerText = "⚡ BRECHA ABERTA! NEXUS DO ALVO VULNERÁVEL POR 20 SEGUNDOS!";
+        banner.innerText = "⚡ BRECHA ABERTA! NEXUS VULNERÁVEL POR 20 SEGUNDOS!";
         banner.classList.add('active');
     }
 
@@ -618,7 +621,7 @@ function triggerNexusVulnerabilityWindow() {
     state.nexusVulnerabilityTimer = setTimeout(() => {
         state.nexusVulnerable = false;
         if (banner) banner.classList.remove('active');
-        showFloatingText(`🛡️ O Nexus inimigo fechou as defesas!`, innerWidth / 2, 200, 'danger');
+        showFloatingText(`🛡️ O Nexus fechou as defesas!`, innerWidth / 2, 200, 'danger');
         updateUI();
     }, 20000);
 }
@@ -632,7 +635,7 @@ function healNexus(amount) {
 
 /* ==========================================================================
    9. LOJA COMPLETA E INVENTÁRIO (COM VENDA)
-   ========================================================================= */
+   ========================================================================== */
 window.toggleShop = function() {
     const modal = document.getElementById('shop-modal');
     if (modal) modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
@@ -719,7 +722,7 @@ function applyItemStats(stats, mult) {
 
 /* ==========================================================================
    10. MINIONS & FARM NA TELA
-   ========================================================================= */
+   ========================================================================== */
 window.buyMinion = function(lvlKey) {
     const mType = MINION_TYPES[lvlKey];
     if (state.gold < mType.cost) return showFloatingText('Sem Ouro para Tropa!', innerWidth/2, 200, 'danger');
