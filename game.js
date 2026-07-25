@@ -1,343 +1,351 @@
 // ==========================================================================
-// UNO LEGENDS: MIRACULOUS BRAWL - GAME ENGINE DEFINITIVA (SEM NEXUS, KILLS & MULTIPLAYER FIREBASE)
+// UNO LEGENDS: MIRACULOUS PANCADARIA - ENGINE DEFINITIVA (SEM NEXUS - DUELO DIRETO)
 // ==========================================================================
-import { getDatabase, ref, set, update, onValue } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+// Configuração Firebase padrão (substitua com seu projeto se necessário)
+const firebaseConfig = {
+    databaseURL: "https://uno-legends-default-rtdb.firebaseio.com/"
+};
+let db = null;
+try {
+    const app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+} catch (e) {
+    console.warn("Firebase rodando em modo local/fallback:", e);
+}
 
 /* ==========================================================================
-   1. BANCO DE DADOS: ITENS, MINIONS E CARTAS DE CAMPEÕES (GALO, CABRA, BORBOLETA)
+   1. BANCO DE DADOS: ITENS, MINIONS E CARTAS DE CAMPEÕES
    ========================================================================== */
 const ALL_ITEMS = {
     // Globais
-    'pocao': { name: 'Poção de Combate', cost: 50, type: 'all', stats: {}, desc: 'Restaura 300 de HP imediato.' },
+    'pocao': { name: 'Poção de Cura', cost: 50, type: 'all', stats: { bonusHp: 250 }, desc: 'Restaura 250 de HP imediatamente.' },
+    'mana_pot': { name: 'Poção de Mana', cost: 40, type: 'all', stats: {}, desc: 'Restaura 3 de Energia.' },
 
     // Galo
-    'lacre3000': { name: 'Lacre 3000g', cost: 3000, type: 'galo', stats: { crit: 10, ad: 100 }, desc: 'Executa almas com menos de 90% da vida.' },
-    'skate2900': { name: 'Skate 2900g', cost: 2900, type: 'galo', stats: { crit: 5, ad: 60, armor: 40, mr: 30 }, desc: 'Paralisa inimigos por 3s ao causar dano.' },
-    'mandrakit': { name: 'Mandrakit 2400g', cost: 2400, type: 'galo', stats: { crit: 30, ad: 30, ap: 30, mr: 30, bonusHp: 30 }, desc: '+15% de vida ao levar dano fatal.' },
-    'alma_sebosa': { name: 'Alma Sebosa 3000g', cost: 3000, type: 'galo', stats: { crit: 15, ap: 20 }, desc: 'Bloqueie CC por 10s.' },
+    'lacre3000': { name: 'Lacre 3000g', cost: 3000, type: 'galo', stats: { crit: 10, ad: 100 }, desc: 'Colete almas com menos de 90% da vida atual.' },
+    'skate2900': { name: 'Skate 2900g', cost: 2900, type: 'galo', stats: { crit: 5, ad: 60, armor: 40, mr: 30 }, desc: 'Paralisa inimigos por 3s ao causar nojo.' },
+    'mandrakit': { name: 'Mandrakit 2400g', cost: 2400, type: 'galo', stats: { crit: 30, ad: 30, ap: 30, mr: 30, bonusHp: 30 }, desc: 'Ganhe +15% de vida ao levar dano letal.' },
+    'alma_sebosa': { name: 'Alma Sebosa 3000g', cost: 3000, type: 'galo', stats: { crit: 15, ap: 20 }, desc: 'Bloqueie CC por 10 segundos.' },
     'pate': { name: 'E o Patê? 2000g', cost: 2000, type: 'galo', stats: { crit: 5, armor: 40, mr: 30 }, desc: 'Atrasa dano inimigo por 5s.' },
     'bota_sapatona': { name: 'Bota (Sapatona) 1000g', cost: 1000, type: 'galo', stats: { crit: 2, pen: 3, ad: 5 }, desc: '+30 Vel. de Spawn e +5 AD.' },
 
     // Cabra (Littlegot)
-    'pyton': { name: 'Pyton 2000g', cost: 2000, type: 'cabra', stats: { ad: 20, ap: 100, crit: 3 }, desc: 'Veneno causa dano contínuo por 5s.' },
-    'javascript': { name: 'Java Script 2800g', cost: 2800, type: 'cabra', stats: { ap: 80, mr: 20 }, desc: 'Ganha escudo ao ser atingido (4s).' },
-    'java': { name: 'Java 1900g', cost: 1900, type: 'cabra', stats: { crit: 50, ap: 50, ad: 50 }, desc: 'Cura 5 de vida a cada 20s.' },
-    'bf2300': { name: 'BF 2300g', cost: 2300, type: 'cabra', stats: { bonusHp: 200, ad: 20, ap: 40, armor: 50 }, desc: '+1 AP para cada 1 de Armadura.' },
-    'cadelagem': { name: 'Cadelagem 2000g', cost: 2000, type: 'cabra', stats: { ad: 80, ap: 50 }, desc: '+4 de gold por segundo.' },
+    'pyton': { name: 'Pyton 2000g', cost: 2000, type: 'cabra', stats: { ad: 20, ap: 100, crit: 3 }, desc: 'Seu veneno dá dano contínuo por 5s.' },
+    'javascript': { name: 'Java Script 2800g', cost: 2800, type: 'cabra', stats: { ap: 80, mr: 20 }, desc: 'Escudo a cada 4s ao ser atingido.' },
+    'java': { name: 'Java 1900g', cost: 1900, type: 'cabra', stats: { crit: 50, ap: 50, ad: 50 }, desc: 'Cura 5 de vida a cada 20 segundos.' },
+    'bf2300': { name: 'BF 2300g', cost: 2300, type: 'cabra', stats: { bonusHp: 200, ad: 20, ap: 40, armor: 50 }, desc: '+1 AP para cada 1 de resistência atual.' },
+    'cadelagem': { name: 'Cadelagem 2000g', cost: 2000, type: 'cabra', stats: { ad: 80, ap: 50 }, desc: '+4 de gold a cada segundo.' },
     'bota_cadelagem': { name: 'Bota (Cadelagem) 1000g', cost: 1000, type: 'cabra', stats: { ap: 3, ad: 4, crit: 5 }, desc: '+20 Vel. de carta.' },
 
     // Borboleta
-    'incubus': { name: 'Incubus 3000g', cost: 3000, type: 'borboleta', stats: { ap: 80, ad: 50, armor: 30 }, desc: 'Recupere vida ao invocar bots.' },
-    'dono_inferno': { name: 'Dono do Inferno 4000g', cost: 4000, type: 'borboleta', stats: { ad: 20, ap: 80, bonusHp: 300, armor: 90 }, desc: 'Renasça após a morte.' },
-    'fome_luxuria': { name: 'Fome de Luxúria 3500g', cost: 3500, type: 'borboleta', stats: { ap: 110, crit: 40, mr: 40, bonusHp: 100 }, desc: 'Bloqueie uma ação inimiga.' },
-    'bibi_fogosa': { name: 'Bibi Fogosa 4000g', cost: 4000, type: 'borboleta', stats: { ap: 90, ad: 80 }, desc: 'Bots nocauteiam e dão dano contínuo.' },
-    'vem_com_tudo': { name: 'Vem com Tudo 3900g', cost: 3900, type: 'borboleta', stats: { armor: 100, mr: 100 }, desc: 'Reduz dano em 40% abaixo de 60% HP.' },
+    'incubus': { name: 'Incubus 3000g', cost: 3000, type: 'borboleta', stats: { ap: 80, ad: 50, armor: 30 }, desc: 'Recupere vida ao atacar com borboletas.' },
+    'dono_inferno': { name: 'Dono do Inferno 4000g', cost: 4000, type: 'borboleta', stats: { ad: 20, ap: 80, bonusHp: 300, armor: 90 }, desc: 'Renasça após a morte (CD 10 min).' },
+    'fome_luxuria': { name: 'Fome de Luxúria 3500g', cost: 3500, type: 'borboleta', stats: { ap: 110, crit: 40, mr: 40, bonusHp: 100 }, desc: 'Bloqueie uma ação a cada 5 min.' },
+    'bibi_fogosa': { name: 'Bibi Fogosa 4000g', cost: 4000, type: 'borboleta', stats: { ap: 90, ad: 80 }, desc: 'Nocauteie e dê dano contínuo por 6s.' },
+    'vem_com_tudo': { name: 'Vem com Tudo 3900g', cost: 3900, type: 'borboleta', stats: { armor: 100, mr: 100 }, desc: 'Abaixo de 60% HP, reduza dano em 40%.' },
     'bota_funk': { name: 'Bota (Funk) 1000g', cost: 1000, type: 'borboleta', stats: { ap: 3, bonusHp: 40 }, desc: '+30 Vel. de carta.' }
-};
-
-const MINION_TYPES = {
-    'lvl1': { name: 'Recruta Melee', cost: 40, hp: 150, atk: 15, goldReward: 50 },
-    'lvl2': { name: 'Mago Arcano', cost: 90, hp: 220, atk: 35, goldReward: 95 },
-    'lvl3': { name: 'Canhão Tático', cost: 160, hp: 400, atk: 70, goldReward: 160 },
-    'lvl4': { name: 'Guardião Titânico', cost: 300, hp: 850, atk: 120, goldReward: 300 }
 };
 
 const CHAMPION_CARDS = {
     'galo': [
-        { name: 'Auto Ataque', type: 'galo', cost: 1, desc: 'Ataque básico direto no oponente (Usa AD e Crítico).', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(calculateDeterministicCrit(s.stats.ad))) },
-        { name: 'Marola', type: 'galo', cost: 2, desc: 'Pena envenenada: dano contínuo. 3 pilhas = 10% da vida atual do alvo em dano verdadeiro.', action: (s) => executeCardAttack('Marola', () => { s.marolaStacks = (s.marolaStacks || 0) + 1; if(s.marolaStacks >= 3) { dealDamage(s.enemyPlayerHp * 0.10, true); s.marolaStacks = 0; showFloatingText('ESTOURO DE MAROLA (Dano Verdadeiro)!', innerWidth/2, 250, 'gold'); } else { dealDamage(s.stats.ad * 1.4); showFloatingText(`Pena Envenenada (${s.marolaStacks}/3)`, innerWidth/2, 220, 'purple'); } }) },
-        { name: 'Dessa cor eu não tenho', type: 'galo', cost: 2, desc: 'Copia a última habilidade gasta.', action: (s) => executeCardAttack('Cópia', () => {
-            let copiedDmg = s.lastEnemySkillDmg || (s.stats.ad * 1.6);
-            dealDamage(copiedDmg);
-            showFloatingText('Habilidade Copiada e Atacada!', innerWidth/2, 200, 'cyan');
-        }) },
-        { name: 'Aiin', type: 'galo', cost: 2, desc: 'Concede escudo protetor para ignorar dano.', action: (s) => executeCardAttack('Aiin', () => {
-            s.stats.shield = (s.stats.shield || 0) + 350;
-            showFloatingText('Escudo Aiin Ativado!', innerWidth/2, 200, 'success');
-        }) },
-        { name: 'UTI do Galo', type: 'galo', cost: 3, desc: 'Frenesi: ganha mais crítico e dano proporcional.', action: (s) => executeCardAttack('UTI do Galo', () => {
-            let bonusCrit = Math.floor(s.stats.crit * 0.5);
-            s.stats.crit += bonusCrit;
-            s.stats.ad += bonusCrit * 3;
-            showFloatingText(`FRENESI UTI: +${bonusCrit}% Crit & AD Boost!`, innerWidth/2, 230, 'gold');
-        }) }
+        { name: 'Auto Ataque', type: 'galo', cost: 1, desc: 'Ataque básico com AD e Crítico determinístico.', action: (s) => executeCardAttack('Auto Ataque', calculateDeterministicCrit(s.stats.ad)) },
+        { name: 'Marola', type: 'galo', cost: 2, desc: 'Pena envenenada. 3 pilhas = 10% da vida atual em dano verdadeiro.', action: (s) => triggerMarola() },
+        { name: 'Dessa cor eu não tenho', type: 'galo', cost: 2, desc: 'Copia o último ataque recebido.', action: (s) => executeCardAttack('Cópia', s.stats.ad * 1.5) },
+        { name: 'Aiin', type: 'galo', cost: 2, desc: 'Ganha um escudo protetor temporário.', action: (s) => addShield(250) }
     ],
     'cabra': [
-        { name: 'Carta em Branco', type: 'cabra', cost: 0, desc: 'Sem efeito. Use a Oficina de Tintas (Vermelho, Amarelo, Azul) para mesclar!', action: (s) => showFloatingText('Carta em branco! Desenhe usando tintas.', innerWidth/2, 200, 'danger') }
+        { name: 'Carta em Branco', type: 'cabra', cost: 0, desc: 'Misture tintas na Oficina para criar efeitos únicos!', action: (s) => showFloatingText('Use as Tintas para colorir esta carta!', innerWidth/2, 200, 'danger') }
     ],
     'borboleta': [
-        { name: 'Auto Ataque', type: 'borboleta', cost: 1, desc: 'Disparo mágico básico no oponente.', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(s.stats.ap)) },
-        { name: 'Akuma', type: 'borboleta', cost: 2, desc: 'Carrega borboleta com energia negativa: baralho inimigo nerfado e drenagem.', action: (s) => executeCardAttack('Akuma', () => spawnButterflyBot(s)) },
-        { name: 'Beijo Saliente', type: 'borboleta', cost: 3, desc: 'Infecta e por 10s drene 5% da vida máxima por segundo do alvo.', action: (s) => executeCardAttack('Beijo Saliente', () => {
-            let drainAmount = s.enemyPlayerMaxHp * 0.05;
-            dealDamage(drainAmount * 5);
-            healPlayer(drainAmount * 5);
-            showFloatingText('Beijo Saliente: Vida Drenada!', innerWidth/2, 200, 'purple');
-        }) },
-        { name: 'Desejo do Pecado', type: 'borboleta', cost: 2, desc: 'Manda borboleta disfarçada, roubando poderes do campeão alvo.', action: (s) => executeCardAttack('Desejo do Pecado', () => {
-            s.stats.ap += 25;
-            s.stats.ad += 20;
-            showFloatingText('Poderes Drenados com Sucesso!', innerWidth/2, 200, 'purple');
-        }) },
-        { name: 'UTI da Borboleta', type: 'borboleta', cost: 4, desc: 'Explode energia na mesa, drenando cartas dos adversários.', action: (s) => executeCardAttack('UTI Borboleta', () => {
-            s.deck.push({ name: 'Carta Caos Drenada', type: 'borboleta', cost: 0, desc: 'Roubada do oponente', action: () => dealDamage(250) });
-            showFloatingText('🌪️ CAOS NA MESA! Cartas drenadas!', innerWidth/2, 230, 'purple');
-        }) }
+        { name: 'Auto Ataque', type: 'borboleta', cost: 1, desc: 'Ataque básico de energia escura.', action: (s) => executeCardAttack('Auto Ataque', s.stats.ad + s.stats.ap * 0.3) },
+        { name: 'Akuma', type: 'borboleta', cost: 2, desc: 'Infesta o deck inimigo com energia negativa.', action: (s) => spawnButterflyBot() },
+        { name: 'Beijo Saliente', type: 'borboleta', cost: 3, desc: 'Drena 5% da vida máxima do inimigo por segundo.', action: (s) => drainEnemyHp(0.05) },
+        { name: 'Desejo do Pecado', type: 'borboleta', cost: 2, desc: 'Rouba temporariamente atributos do oponente.', action: (s) => stealEnemyAttributes() }
     ],
     'global': [
-        { name: 'Poção Rápida', type: 'global', cost: 1, desc: 'Cura 150 de HP.', action: (s) => executeCardAttack('Poção Rápida', () => healPlayer(150)) },
-        { name: 'Muralha', type: 'global', cost: 2, desc: 'Aumenta Armadura e Resistência Mágica.', action: (s) => executeCardAttack('Muralha', () => { s.stats.armor += 15; s.stats.mr += 15; }) }
+        { name: 'Poção Rápida', type: 'global', cost: 1, desc: 'Cura 150 de HP.', action: (s) => { s.hp = Math.min(s.maxHp, s.hp + 150); playSound('heal'); } },
+        { name: 'Muralha', type: 'global', cost: 2, desc: 'Aumenta Armadura e MR em +15.', action: (s) => { s.stats.armor += 15; s.stats.mr += 15; playSound('buff'); } }
     ]
 };
 
 /* ==========================================================================
-   2. ESTADO GLOBAL DO JOGO & TEMPORIZADOR DE 10 A 50 MINUTOS / KILLS
+   2. ESTADO GLOBAL DO JOGO
    ========================================================================= */
 let state = {
     player: { name: '', room: '', champ: '', level: 1, xp: 0, maxXp: 100, kills: 0, deaths: 0 },
-    myKey: '', 
-    enemyKey: '',
-    selectedEnemyKey: null, 
-    roomPlayers: {},        
+    myKey: '',
+    enemyKey: null,
+    roomPlayers: {},
     
     gold: 500, baseGps: 5,
     energy: 5, maxEnergy: 5,
+    hp: 3000, maxHp: 3000,
+    shield: 0,
     hand: [], maxHandSize: 7,
     deck: [], maxDeckCards: 20,
     inventory: [],
-    myMinions: [], enemyMinions: [],
     
     isMyTurn: true,
     turnNumber: 1,
+    matchTimeLeft: 1200, // 20 minutos
 
-    // Temporizador de Partida (Configurado para 15 minutos = 900 segundos, expansível até 50 min)
-    matchTimeRemaining: 900, 
-    matchActive: true,
-
-    // Sistema Littlegot (Cabra) com Decks de Tintas
-    inkPots: { red: 3, blue: 3, yellow: 3, max: 6 },
+    // Littlegot (Cabra)
+    inkPots: { red: 2, blue: 2, yellow: 2, max: 5 },
     currentInkMix: [],
-    inkDecks: {
-        red: [
-            { name: 'Bola de Fogo', cost: 2, desc: 'Atira bola de fogo com dano contínuo.', action: (s) => executeCardAttack('Bola de Fogo', () => dealDamage(s.stats.ap * 1.5)) },
-            { name: 'Laser', cost: 2, desc: 'Tiro potente queimando o oponente.', action: (s) => executeCardAttack('Laser', () => dealDamage(s.stats.ap * 1.8)) },
-            { name: 'Lança Chamas', cost: 3, desc: 'Dano crescente com AP.', action: (s) => executeCardAttack('Lança Chamas', () => dealDamage(s.stats.ap * 2.2)) }
-        ],
-        yellow: [
-            { name: 'Lanterna', cost: 1, desc: 'Cria escudo protetor.', action: (s) => { s.stats.shield = (s.stats.shield || 0) + 150; showFloatingText('Lanterna: Escudo Criado!', innerWidth/2, 200, 'gold'); } },
-            { name: 'Lâmpada', cost: 2, desc: 'Concede cura e escudo maciço.', action: (s) => { healPlayer(300); showFloatingText('Lâmpada: Blindagem Ativa!', innerWidth/2, 200, 'gold'); } },
-            { name: 'Sol', cost: 2, desc: 'Escudo absoluto nas cartas.', action: (s) => { s.stats.armor += 20; showFloatingText('Sol: Defesa Fortalecida!', innerWidth/2, 200, 'gold'); } }
-        ],
-        blue: [
-            { name: 'Pedra', cost: 1, desc: 'Joga pedra pesada causando dano físico.', action: (s) => executeCardAttack('Pedra', () => dealDamage(s.stats.ad * 1.3)) },
-            { name: 'Chicote', cost: 2, desc: 'Chicoteia o oponente, roubando uma carta.', action: (s) => { s.hand.push({ name: 'Carta Roubada', type: 'cabra', cost: 1, desc: 'Espólio', action: () => dealDamage(100) }); showFloatingText('Chicote: Carta Roubada!', innerWidth/2, 200, 'cyan'); } },
-            { name: 'Água', cost: 1, desc: 'Hidrata-se, recuperando vida e um pote de tinta.', action: (s) => { healPlayer(120); state.inkPots.blue = Math.min(state.inkPots.max, state.inkPots.blue + 1); showFloatingText('Água: Vida e Tinta Restauradas!', innerWidth/2, 200, 'success'); } }
-        ]
-    },
 
+    // Borboleta
     butterflyBots: [],
-    roomChampions: [], activeEvent: null,
     marolaStacks: 0,
-    isDead: false,
-    
-    myPlayerHp: 3000,
-    myPlayerMaxHp: 3000,
-    enemyPlayerHp: 3000,
-    enemyPlayerMaxHp: 3000,
-
-    stats: { ad: 15, ap: 15, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0, shield: 0 },
+    stats: { ad: 25, ap: 25, armor: 15, mr: 15, crit: 0, vamp: 0, pen: 0, bonusHp: 0 },
     critCredit: 0
 };
 
 /* ==========================================================================
-   3. FUNÇÃO DE CONEXÃO MULTIPLAYER FIREBASE (SALAS, KILLS E HP)
-   ========================================================================== */
-export async function joinRoomFirebase(roomId, playerName, champName, initialHp) {
-    const db = getDatabase();
-    const myRef = ref(db, `rooms/${roomId}/players`);
+   3. ÁUDIO SINTETIZADO (WEB AUDIO API)
+   ========================================================================= */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
     
-    // Gera chave única para este jogador na sala
-    const newPlayerKey = 'p_' + Math.random().toString(36).substring(2, 9);
-    state.myKey = newPlayerKey;
-
-    const playerObj = {
-        name: playerName,
-        champ: champName,
-        hp: initialHp,
-        maxHp: initialHp,
-        kills: 0,
-        deaths: 0,
-        lastActive: Date.now()
-    };
-
-    await set(ref(db, `rooms/${roomId}/players/${newPlayerKey}`), playerObj);
-
-    // Ouve alterações na sala inteira em tempo real (Outros jogadores, HP e Kills)
-    onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-        state.roomPlayers = data;
-
-        let champsInRoom = [];
-        let selectEl = document.getElementById('target-select');
-        let optionsHtml = '';
-
-        Object.keys(data).forEach(key => {
-            const p = data[key];
-            champsInRoom.push(p.champ);
-
-            if (key !== state.myKey) {
-                const isSelected = state.selectedEnemyKey === key ? 'selected' : '';
-                optionsHtml += `<option value="${key}" ${isSelected}>${p.name} (${p.champ.toUpperCase()} - ${Math.floor(p.hp || 3000)} HP | Kills: ${p.kills || 0})</option>`;
-            }
-        });
-
-        state.roomChampions = champsInRoom;
-        updatePlayersBar();
-        populateShop();
-
-        if (selectEl) {
-            selectEl.innerHTML = optionsHtml || '<option value="">Sozinho na arena (Aguardando oponentes...)</option>';
-        }
-
-        const otherKeys = Object.keys(data).filter(k => k !== state.myKey);
-        if ((!state.selectedEnemyKey || !data[state.selectedEnemyKey]) && otherKeys.length > 0) {
-            state.selectedEnemyKey = otherKeys[0];
-            if (selectEl) selectEl.value = state.selectedEnemyKey;
-        }
-
-        if (state.selectedEnemyKey && data[state.selectedEnemyKey]) {
-            state.enemyPlayerHp = data[state.selectedEnemyKey].hp || 3000;
-            state.enemyPlayerMaxHp = data[state.selectedEnemyKey].maxHp || 3000;
-            state.enemyKey = state.selectedEnemyKey;
-            
-            const enemyNameEl = document.getElementById('enemy-brawl-name');
-            if (enemyNameEl) {
-                enemyNameEl.innerText = `${data[state.selectedEnemyKey].name} (Kills: ${data[state.selectedEnemyKey].kills || 0})`;
-            }
-        } else {
-            state.selectedEnemyKey = null;
-        }
-
-        updateUI();
-    });
-
-    return newPlayerKey;
-}
-
-/* ==========================================================================
-   4. INICIALIZAÇÃO E HUD DE BRAWL E PANCADARIA
-   ========================================================================== */
-document.addEventListener('DOMContentLoaded', () => {
-    setupLobby();
-    setupDragAndDrop();
-});
-
-function injectDynamicUI() {
-    if (document.getElementById('floating-action-hud')) return;
-
-    const hud = document.createElement('div');
-    hud.id = 'floating-action-hud';
-    hud.style.cssText = `
-        position: fixed;
-        top: 15px;
-        right: 15px;
-        width: 330px;
-        background: rgba(15, 23, 42, 0.97);
-        border: 2px solid #ef4444;
-        border-radius: 12px;
-        padding: 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        z-index: 1000;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-        backdrop-filter: blur(12px);
-        box-sizing: border-box;
-        max-height: 94vh;
-        overflow-y: auto;
-    `;
-
-    hud.innerHTML = `
-        <div style="font-size:0.82rem; color:#ef4444; font-weight:bold; border-bottom:1px solid #334155; padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-            <span>⚔️ ARENA DE PANCADARIA (SEM NEXUS)</span>
-            <span id="match-timer-hud" style="font-size:0.75rem; background:#7f1d1d; padding:2px 8px; border-radius:4px; color:#f87171; font-weight:bold;">15:00</span>
-        </div>
-
-        <div style="background:rgba(30,41,59,0.9); border:1px solid #38bdf8; padding:8px; border-radius:8px; text-align:center;">
-            <div style="font-size:0.7rem; color:#38bdf8; font-weight:bold;">PLACA DE KILLS (QUEM TIVER MAIS VENCE)</div>
-            <div style="display:flex; justify-content:space-around; margin-top:6px; font-size:0.9rem; font-weight:bold;">
-                <span style="color:#22c55e;">Suas Kills: <span id="my-kills-count">0</span></span>
-                <span style="color:#ef4444;">Alvo Kills: <span id="enemy-kills-count">0</span></span>
-            </div>
-        </div>
-
-        <div id="cabra-hud-panel" class="${state.player.champ === 'cabra' ? '' : 'hidden'}" style="background:rgba(30,41,59,0.85); border:1px solid #f59e0b; padding:10px; border-radius:8px;">
-            <div style="font-size:0.75rem; color:#fbbf24; font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span>🎨 OFICINA DE TINTAS (LITTLEGOT)</span>
-                <span style="font-size:0.6rem; color:#38bdf8;">Cabra</span>
-            </div>
-            <div style="font-size:0.68rem; color:#94a3b8; margin-bottom:6px;">Dependência de Tintas para Agir!</div>
-            <div style="display:flex; gap:6px; margin-bottom:8px;">
-                <button class="btn" style="background:#ef4444; padding:6px 2px; flex:1; font-size:0.68rem; color:#fff;" onclick="addInk('red')">Verm (<span id="ink-red-count">3</span>)</button>
-                <button class="btn" style="background:#3b82f6; padding:6px 2px; flex:1; font-size:0.68rem; color:#fff;" onclick="addInk('blue')">Azul (<span id="ink-blue-count">3</span>)</button>
-                <button class="btn" style="background:#fbbf24; padding:6px 2px; flex:1; font-size:0.68rem; color:#000; font-weight:bold;" onclick="addInk('yellow')">Amar (<span id="ink-yellow-count">3</span>)</button>
-            </div>
-            <div style="font-size:0.7rem; color:#cbd5e1; margin-bottom:8px; background:#090d16; padding:6px; border-radius:4px; text-align:center;" id="ink-mix-display">Mistura Atual: Nenhuma</div>
-            <div style="display:flex; gap:6px; margin-bottom:8px;">
-                <button class="btn btn-gold" style="padding:8px 4px; flex:1; font-size:0.7rem; font-weight:bold;" onclick="mergeInksButton()">✨ MESCLAR TINTAS</button>
-            </div>
-        </div>
-
-        <div style="background:rgba(30,41,59,0.75); border:1px solid #ef4444; padding:10px; border-radius:8px;">
-            <div style="font-size:0.75rem; color:#ef4444; font-weight:bold; margin-bottom:6px;">🎯 ALVO PRINCIPAL (ATACAR JOGADOR INIMIGO):</div>
-            <select id="target-select" style="width:100%; background:#090d16; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-size:0.8rem;" onchange="changeTarget(this.value)">
-                <option value="">Aguardando oponentes na sala...</option>
-            </select>
-        </div>
-
-        <div>
-            <button id="btn-end-turn" class="btn btn-danger" style="width:100%; padding:12px; font-size:0.85rem; font-weight:bold; border-radius:8px;" onclick="endTurn()">⏳ PASSAR TURNO</button>
-        </div>
-    `;
-
-    document.body.appendChild(hud);
-
-    const gameArea = document.querySelector('.game-board') || document.body;
-    if (!document.getElementById('brawl-status-bar')) {
-        const statusBar = document.createElement('div');
-        statusBar.id = 'brawl-status-bar';
-        statusBar.style.cssText = `
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background: rgba(15, 23, 42, 0.9);
-            border-bottom: 2px solid #ef4444;
-            margin-bottom: 15px;
-        `;
-        statusBar.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div style="font-weight:bold; color:#22c55e;" id="my-brawl-name">Você</div>
-                <div style="width:150px; background:#1e293b; height:12px; border-radius:6px; overflow:hidden; border:1px solid #22c55e;">
-                    <div id="my-player-hp-bar" style="width:100%; height:100%; background:#22c55e; transition:width 0.3s;"></div>
-                </div>
-                <span id="my-player-hp-text" style="font-size:0.75rem; color:#22c55e;">3000 HP</span>
-            </div>
-            <div style="font-weight:bold; color:#f87171; font-size:1.1rem;">VS</div>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <span id="enemy-player-hp-text" style="font-size:0.75rem; color:#ef4444;">3000 HP</span>
-                <div style="width:150px; background:#1e293b; height:12px; border-radius:6px; overflow:hidden; border:1px solid #ef4444;">
-                    <div id="enemy-player-hp-bar" style="width:100%; height:100%; background:#ef4444; transition:width 0.3s;"></div>
-                </div>
-                <div style="font-weight:bold; color:#ef4444;" id="enemy-brawl-name">Inimigo</div>
-            </div>
-        `;
-        gameArea.prepend(statusBar);
+    const now = audioCtx.currentTime;
+    if (type === 'hit') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now); osc.stop(now + 0.15);
+    } else if (type === 'crit') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.25);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now); osc.stop(now + 0.25);
+    } else if (type === 'gold') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.setValueAtTime(900, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+    } else if (type === 'heal') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.linearRampToValueAtTime(600, now + 0.3);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now); osc.stop(now + 0.3);
+    } else if (type === 'buff') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(440, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
     }
 }
 
-function setupLobby() {
+/* ==========================================================================
+   4. INTERFACE GRÁFICA & HTML INJETADO (MOBILE & DESKTOP RESPONSIVO)
+   ========================================================================= */
+document.addEventListener('DOMContentLoaded', () => {
+    injectGameStyles();
+    buildLobbyHTML();
+});
+
+function injectGameStyles() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        :root {
+            --bg-dark: #090d16;
+            --panel-bg: rgba(15, 23, 42, 0.95);
+            --cyan-glow: #38bdf8;
+            --gold: #fbbf24;
+            --danger: #ef4444;
+            --purple: #a855f7;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        body { background: var(--bg-dark); color: #f8fafc; min-height: 100vh; overflow-x: hidden; }
+        .hidden { display: none !important; }
+        
+        /* LOBBY */
+        #lobby-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%); }
+        .lobby-card { background: var(--panel-bg); border: 2px solid var(--cyan-glow); border-radius: 16px; padding: 30px; width: 100%; max-width: 500px; box-shadow: 0 15px 35px rgba(0,0,0,0.7); display: flex; flex-direction: column; gap: 20px; }
+        .lobby-title { font-size: 1.6rem; font-weight: 900; color: var(--cyan-glow); text-align: center; letter-spacing: 1px; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-group label { font-size: 0.85rem; color: #94a3b8; font-weight: bold; }
+        .input-group input { background: #020617; border: 1px solid #334155; color: #fff; padding: 12px; border-radius: 8px; font-size: 1rem; outline: none; }
+        .champs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .champ-select-btn { background: #1e293b; border: 2px solid #334155; border-radius: 10px; padding: 12px 6px; text-align: center; cursor: pointer; transition: all 0.2s; color: #fff; font-weight: bold; font-size: 0.85rem; }
+        .champ-select-btn.active { border-color: var(--cyan-glow); background: rgba(56, 189, 248, 0.2); box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+        .btn-main { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; padding: 14px; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        .btn-main:active { transform: scale(0.98); }
+
+        /* GAME SCREEN */
+        #game-screen { display: flex; flex-direction: column; height: 100vh; padding: 10px; gap: 10px; max-width: 1400px; margin: 0 auto; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--panel-bg); border: 1px solid #334155; padding: 10px 16px; border-radius: 12px; font-size: 0.9rem; flex-wrap: wrap; gap: 10px; }
+        .timer-badge { background: #1e293b; border: 1px solid var(--danger); color: var(--danger); padding: 4px 10px; border-radius: 6px; font-weight: bold; font-family: monospace; }
+        
+        .battle-arena { display: grid; grid-template-columns: 1fr 320px; gap: 15px; flex: 1; min-height: 0; }
+        @media (max-width: 900px) { .battle-arena { grid-template-columns: 1fr; overflow-y: auto; } }
+
+        .play-area { display: flex; flex-direction: column; gap: 10px; background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 12px; padding: 15px; position: relative; }
+        .combatants-row { display: flex; justify-content: space-between; align-items: center; background: #020617; padding: 15px; border-radius: 10px; border: 1px solid #1e293b; }
+        .fighter-card { text-align: center; flex: 1; }
+        .fighter-name { font-size: 1rem; font-weight: bold; color: var(--cyan-glow); margin-bottom: 4px; }
+        .hp-bar-bg { width: 100%; max-width: 220px; height: 14px; background: #1e293b; border-radius: 7px; margin: 0 auto; overflow: hidden; border: 1px solid #475569; position: relative; }
+        .hp-bar-fill { height: 100%; background: #22c55e; width: 100%; transition: width 0.3s; }
+        .shield-bar-fill { height: 100%; background: #38bdf8; width: 0%; position: absolute; top: 0; left: 0; opacity: 0.7; }
+
+        /* HAND & CARDS */
+        .hand-container { display: flex; gap: 10px; overflow-x: auto; padding: 10px; min-height: 160px; align-items: center; justify-content: center; }
+        .card { background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #475569; border-radius: 12px; width: 130px; height: 170px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: transform 0.2s, border-color 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.5); flex-shrink: 0; }
+        .card:hover { transform: translateY(-8px); border-color: var(--cyan-glow); box-shadow: 0 8px 20px rgba(56,189,248,0.3); }
+        .card-header { display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: bold; color: #94a3b8; }
+        .card-title { font-size: 0.85rem; font-weight: bold; color: #fff; text-align: center; }
+        .card-desc { font-size: 0.65rem; color: #cbd5e1; text-align: center; line-height: 1.2; }
+        .card-cost { background: #3b82f6; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; align-self: center; font-weight: bold; }
+
+        /* SIDEBAR (SHOP & INVENTORY & HUD) */
+        .sidebar { display: flex; flex-direction: column; gap: 10px; background: var(--panel-bg); border: 1px solid #334155; border-radius: 12px; padding: 12px; max-height: 100%; overflow-y: auto; }
+        .section-title { font-size: 0.8rem; font-weight: bold; color: var(--cyan-glow); border-bottom: 1px solid #334155; padding-bottom: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .shop-grid, .inv-grid { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+        .shop-item, .inv-item { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75s; }
+        .btn-action { background: #0284c7; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; font-weight: bold; }
+        .btn-action:hover { background: #0369a1; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #dc2626; }
+
+        /* FLOATING TEXT */
+        .floating-text { position: fixed; font-weight: 900; font-size: 1.2rem; pointer-events: none; z-index: 9999; animation: floatUp 1s ease-out forwards; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
+    `;
+    document.head.appendChild(style);
+}
+
+function buildLobbyHTML() {
+    const root = document.createElement('div');
+    root.id = 'app-root';
+    root.innerHTML = `
+        <div id="lobby-screen">
+            <div class="lobby-card">
+                <div class="lobby-title">UNO LEGENDS: MIRACULOUS</div>
+                <div class="input-group">
+                    <label>NOME DO INVOCADOR</label>
+                    <input type="text" id="player-name" placeholder="Ex: Cataclismo99" value="Invocador_${Math.floor(Math.random()*900+100)}">
+                </div>
+                <div class="input-group">
+                    <label>CÓDIGO DA SALA (IP/SALA)</label>
+                    <input type="text" id="room-id" value="sala_principal">
+                </div>
+                <div class="input-group">
+                    <label>ESCOLHA SEU MIRACULOUS</label>
+                    <div class="champs-grid">
+                        <div class="champ-select-btn active" data-champ="galo">GALO<br><span style="font-size:0.6rem; color:#94a3b8;">Crítico & AD</span></div>
+                        <div class="champ-select-btn" data-champ="cabra">CABRA<br><span style="font-size:0.6rem; color:#94a3b8;">Tintas & AP</span></div>
+                        <div class="champ-select-btn" data-champ="borboleta">BORBOLETA<br><span style="font-size:0.6rem; color:#94a3b8;">Akuma & Drenagem</span></div>
+                    </div>
+                </div>
+                <button class="btn-main" id="btn-join-game">ENTRAR NA BATALHA</button>
+            </div>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <div class="top-bar">
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <span id="room-display" style="font-weight:bold; color:var(--cyan-glow);">SALA: SALA_1</span>
+                    <span class="timer-badge" id="match-timer">20:00</span>
+                </div>
+                <div style="display:flex; gap:15px; font-weight:bold; font-size:0.85rem;">
+                    <span>🪙 <span id="gold-display">500</span>g</span>
+                    <span>⚡ <span id="energy-display">5/5</span></span>
+                    <span>⭐ Nível <span id="lvl-display">1</span> (<span id="xp-display">0/100</span>)</span>
+                    <span>💀 Kills: <span id="kills-display">0</span></span>
+                </div>
+            </div>
+
+            <div class="battle-arena">
+                <div class="play-area">
+                    <div class="combatants-row">
+                        <div class="fighter-card">
+                            <div class="fighter-name" id="my-name-display">EU</div>
+                            <div class="hp-bar-bg">
+                                <div class="shield-bar-fill" id="my-shield-bar"></div>
+                                <div class="hp-bar-fill" id="my-hp-bar"></div>
+                            </div>
+                            <div style="font-size:0.75rem; margin-top:4px; font-weight:bold;"><span id="my-hp-text">3000</span>/<span id="my-maxhp-text">3000</span> HP</div>
+                        </div>
+                        <div style="font-size:1.2rem; font-weight:900; color:var(--danger);">VS</div>
+                        <div class="fighter-card">
+                            <div class="fighter-name" id="enemy-name-display">OPONENTE</div>
+                            <div class="hp-bar-bg">
+                                <div class="hp-bar-fill" id="enemy-hp-bar" style="background:#ef4444;"></div>
+                            </div>
+                            <div style="font-size:0.75rem; margin-top:4px; font-weight:bold;"><span id="enemy-hp-text">3000</span>/<span id="enemy-maxhp-text">3000</span> HP</div>
+                        </div>
+                    </div>
+
+                    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; background:rgba(2,6,23,0.5); border-radius:10px; padding:10px; border:1px solid #1e293b;" id="arena-center-info">
+                        <div style="font-size:0.9rem; color:#94a3b8; font-weight:bold; margin-bottom:10px;">ESCOLHA UMA CARTA PARA JOGAR NO SEU TURNO</div>
+                        <div id="cabra-workshop" class="hidden" style="background:rgba(30,41,59,0.9); border:1px solid #f59e0b; padding:10px; border-radius:8px; margin-bottom:10px; width:100%; max-width:400px; text-align:center;">
+                            <div style="font-size:0.8rem; color:#fbbf24; font-weight:bold; margin-bottom:6px;">🎨 OFICINA DE TINTAS (CABRA)</div>
+                            <div style="display:flex; justify-content:center; gap:8px; margin-bottom:8px;">
+                                <button class="btn-action" style="background:#ef4444;" onclick="addInk('red')">Vermelho (<span id="ink-red">2</span>)</button>
+                                <button class="btn-action" style="background:#3b82f6;" onclick="addInk('blue')">Azul (<span id="ink-blue">2</span>)</button>
+                                <button class="btn-action" style="background:#fbbf24; color:#000;" onclick="addInk('yellow')">Amarelo (<span id="ink-yellow">2</span>)</button>
+                            </div>
+                            <div style="font-size:0.75rem; color:#cbd5e1; margin-bottom:8px;" id="ink-mix-status">Mistura atual: Nenhuma</div>
+                            <button class="btn-action" style="background:#22c55e; width:100%;" onclick="craftInkCard()">Criar Carta com Tinta</button>
+                        </div>
+                        <select id="target-player-select" style="background:#020617; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-size:0.85rem; width:100%; max-width:300px; margin-bottom:10px;" onchange="changeTarget(this.value)">
+                            <option value="">Procurando oponentes na sala...</option>
+                        </select>
+                        <button class="btn-action btn-danger" style="padding:10px 20px; font-weight:bold;" onclick="endTurn()">⏳ PASSAR TURNO</button>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <div style="font-size:0.8rem; font-weight:bold; color:var(--cyan-glow); display:flex; justify-content:space-between;">
+                            <span>SUA MÃO DE CARTAS</span>
+                            <button class="btn-action" onclick="buyDeck()" style="font-size:0.65rem;">Comprar Deck (100g)</button>
+                        </div>
+                        <div class="hand-container" id="player-hand-container"></div>
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <div class="section-title"><span>🛒 LOJA DE ITENS</span></div>
+                    <div class="shop-grid" id="shop-items-container"></div>
+
+                    <div class="section-title" style="margin-top:10px;"><span>🎒 SEU INVENTÁRIO</span></div>
+                    <div class="inv-grid" id="inventory-container"></div>
+
+                    <div class="section-title" style="margin-top:10px;"><span>📊 STATUS DE COMBATE</span></div>
+                    <div style="font-size:0.75rem; display:flex; flex-direction:column; gap:4px; background:#020617; padding:8px; border-radius:8px; border:1px solid #1e293b;" id="stats-display-box">
+                        <div>AD: <span id="stat-ad">25</span> | AP: <span id="stat-ap">25</span></div>
+                        <div>Armadura: <span id="stat-armor">15</span> | MR: <span id="stat-mr">15</span></div>
+                        <div>Crítico: <span id="stat-crit">0</span>% | Vamp: <span id="stat-vamp">0</span>%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(root);
+    initLobbyEvents();
+}
+
+/* ==========================================================================
+   5. INICIALIZAÇÃO DE EVENTOS E LOBBY
+   ========================================================================= */
+function initLobbyEvents() {
     document.querySelectorAll('.champ-select-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.champ-select-btn').forEach(b => b.classList.remove('active'));
@@ -347,675 +355,463 @@ function setupLobby() {
     });
 
     document.getElementById('btn-join-game').addEventListener('click', async () => {
-        state.player.name = document.getElementById('player-name').value || 'Brawler';
-        state.player.room = document.getElementById('room-id').value || 'sala_brawl';
+        state.player.name = document.getElementById('player-name').value || 'Invocador';
+        state.player.room = document.getElementById('room-id').value || 'sala_1';
         if (!state.player.champ) return alert('Escolha um Miraculous!');
 
-        applyChampBaseStats();
-        buildDeck();
+        applyChampStats();
+        buildInitialDeck();
 
-        await joinRoomFirebase(state.player.room, state.player.name, state.player.champ, state.myPlayerMaxHp);
-        
+        if (db) {
+            try {
+                const playerRef = push(ref(db, `rooms/${state.player.room}/players`));
+                state.myKey = playerRef.key;
+                await set(playerRef, {
+                    name: state.player.name,
+                    champ: state.player.champ,
+                    hp: state.hp,
+                    maxHp: state.maxHp,
+                    kills: 0
+                });
+
+                // Sincronizar dados em tempo real da sala
+                onValue(ref(db, `rooms/${state.player.room}/players`), (snapshot) => {
+                    const data = snapshot.val();
+                    if (!data) return;
+                    state.roomPlayers = data;
+                    updateRoomPlayersUI(data);
+                });
+            } catch (err) {
+                console.warn("Erro ao conectar ao Firebase:", err);
+            }
+        }
+
         document.getElementById('lobby-screen').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('hidden');
 
-        injectDynamicUI();
-
-        for (let i = 0; i < 4; i++) drawCard(true);
-        startGameLoops();
-        updateUI();
-    });
-}
-
-window.changeTarget = function(targetKey) {
-    state.selectedEnemyKey = targetKey;
-    if (state.roomPlayers && state.roomPlayers[targetKey]) {
-        state.enemyPlayerHp = state.roomPlayers[targetKey].hp || 3000;
-        state.enemyPlayerMaxHp = state.roomPlayers[targetKey].maxHp || 3000;
-        state.enemyKey = targetKey;
-        const enemyNameEl = document.getElementById('enemy-brawl-name');
-        if (enemyNameEl) enemyNameEl.innerText = `${state.roomPlayers[targetKey].name} (Kills: ${state.roomPlayers[targetKey].kills || 0})`;
-        showFloatingText(`Alvo focado: ${state.roomPlayers[targetKey].name}`, innerWidth/2, 160, 'cyan');
-    }
-    updateUI();
-}
-
-function applyChampBaseStats() {
-    if (state.player.champ === 'galo') { state.stats.ad = 60; state.stats.crit = 20; state.stats.vamp = 20; }
-    if (state.player.champ === 'cabra') { state.stats.ap = 55; state.stats.armor = 20; }
-    if (state.player.champ === 'borboleta') { state.stats.ap = 60; state.stats.ad = 35; state.stats.mr = 30; }
-}
-
-/* ==========================================================================
-   5. SISTEMA DE EXPERIÊNCIA E NÍVEL 18
-   ========================================================================= */
-function addXp(amount) {
-    if (state.player.level >= 18) return;
-
-    state.player.xp += amount;
-    if (state.player.xp >= state.player.maxXp) {
-        state.player.level++;
-        state.player.xp = state.player.xp - state.player.maxXp;
-        state.player.maxXp = Math.floor(state.player.maxXp * 1.3);
-        
-        state.stats.ad += 6;
-        state.stats.ap += 6;
-        state.stats.bonusHp += 150;
-        state.myPlayerMaxHp += 150;
-        healPlayer(150);
-
-        showFloatingText(`🌟 LEVEL UP! Nível ${state.player.level}!`, innerWidth/2, innerHeight/2 - 100, 'gold');
-    }
-    updateUI();
-}
-
-/* ==========================================================================
-   6. SISTEMA DE TURNOS E PASSAGEM
-   ========================================================================= */
-window.endTurn = function() {
-    if (!state.isMyTurn) return;
-    
-    state.isMyTurn = false;
-    const btnEnd = document.getElementById('btn-end-turn');
-    if (btnEnd) {
-        btnEnd.disabled = true;
-        btnEnd.innerText = 'TURNO PROCESSANDO...';
-    }
-    showFloatingText('Fim do seu turno!', innerWidth/2, innerHeight/2, 'cyan');
-
-    if (state.butterflyBots.length > 0) {
-        executeButterflyBots();
-    }
-
-    setTimeout(() => {
-        state.turnNumber++;
-        state.isMyTurn = true;
-        
-        state.energy = state.maxEnergy;
         if (state.player.champ === 'cabra') {
-            state.inkPots.red = Math.min(state.inkPots.max, state.inkPots.red + 1);
-            state.inkPots.blue = Math.min(state.inkPots.max, state.inkPots.blue + 1);
-            state.inkPots.yellow = Math.min(state.inkPots.max, state.inkPots.yellow + 1);
+            document.getElementById('cabra-workshop').classList.remove('hidden');
         }
-        
-        if (btnEnd) {
-            btnEnd.disabled = false;
-            btnEnd.innerText = '⏳ PASSAR TURNO';
-        }
-        showFloatingText(`Seu Turno (Rodada ${state.turnNumber})`, innerWidth/2, innerHeight/2, 'gold');
-        
-        drawCard(true);
+
+        startGameLoops();
+        for (let i = 0; i < 4; i++) drawCard();
         updateUI();
-    }, 2000);
-}
-
-function spawnButterflyBot(s) {
-    const copyTarget = state.roomChampions.length > 0 ? state.roomChampions[Math.floor(Math.random() * state.roomChampions.length)] : 'Oponente';
-    showFloatingText(`🦋 Akuma invocado! Drenando estatísticas e replicando: ${copyTarget.toUpperCase()}`, innerWidth/2, 220, 'purple');
-    
-    s.stats.ap += 15;
-    s.stats.mr += 10;
-    s.stats.armor += 10;
-    healPlayer(150);
-
-    const newBot = {
-        id: Math.random(),
-        name: `Sombra Akuma de ${copyTarget}`,
-        power: s.stats.ap * 1.6,
-        turnsLeft: 3
-    };
-
-    state.butterflyBots.push(newBot);
-    updateUI();
-}
-
-function executeButterflyBots() {
-    state.butterflyBots.forEach(bot => {
-        let replicatedDmg = bot.power * 0.9;
-        showFloatingText(`🦋 ${bot.name} atacou o oponente diretamente! (-${Math.floor(replicatedDmg)})`, innerWidth/2, 280, 'purple');
-        dealDamage(replicatedDmg);
-        bot.turnsLeft--;
+        showFloatingText('Batalha iniciada!', innerWidth/2, 100, 'gold');
     });
-    
-    state.butterflyBots = state.butterflyBots.filter(b => b.turnsLeft > 0);
+}
+
+function applyChampStats() {
+    if (state.player.champ === 'galo') {
+        state.stats.ad = 60; state.stats.crit = 20; state.stats.vamp = 15;
+    } else if (state.player.champ === 'cabra') {
+        state.stats.ap = 70; state.stats.armor = 20;
+    } else if (state.player.champ === 'borboleta') {
+        state.stats.ap = 60; state.stats.ad = 30; state.stats.mr = 25;
+    }
 }
 
 /* ==========================================================================
-   7. TINTAS DO LITTLEGOT (CABRA) & CARTAS BRANCAS
+   6. SISTEMA DE CARTAS, BARALHO E LOJA
    ========================================================================= */
-window.addInk = function(color) {
-    if (state.inkPots[color] <= 0) return showFloatingText('Pote de Tinta Vazio! Impossível agir!', innerWidth/2, 200, 'danger');
-    if (state.currentInkMix.length >= 2) return showFloatingText('Máximo de 2 tintas misturadas!', innerWidth/2, 200, 'danger');
-    
-    state.inkPots[color]--;
-    state.currentInkMix.push(color);
-    showFloatingText(`Tinta ${color.toUpperCase()} adicionada à mistura!`, innerWidth/2, 200, 'cyan');
-    updateUI();
-}
-
-window.mergeInksButton = function() {
-    if (state.currentInkMix.length === 0) return showFloatingText('Adicione tintas antes de mesclar!', innerWidth/2, 200, 'danger');
-    
-    let mixKey = state.currentInkMix.sort().join('+');
-    let cardName = `Magia Mesclada (${mixKey.toUpperCase()})`;
-    let desc = `Efeito gerado pela fusão das tintas: ${mixKey}.`;
-    let actionFn = (s) => executeCardAttack(cardName, () => {
-        let dmg = s.stats.ap * 2.5;
-        dealDamage(dmg);
-        healPlayer(200);
-        s.gold += 50;
-        showFloatingText('✨ FUSÃO DE TINTAS EXPLOSIVA!', innerWidth/2, 240, 'gold');
-    });
-
-    if (state.currentInkMix.includes('red') && state.currentInkMix.includes('blue')) {
-        cardName = 'Erupção Térmica Arcana';
-        actionFn = (s) => executeCardAttack(cardName, () => { dealDamage(s.stats.ap * 3.0, true); healPlayer(100); });
-    } else if (state.currentInkMix.includes('red') && state.currentInkMix.includes('yellow')) {
-        cardName = 'Labareda Solar';
-        actionFn = (s) => executeCardAttack(cardName, () => { dealDamage(s.stats.ap * 2.8); s.stats.armor += 25; });
-    } else if (state.currentInkMix.includes('blue') && state.currentInkMix.includes('yellow')) {
-        cardName = 'Escudo Glacial Luminoso';
-        actionFn = (s) => { s.stats.shield = (s.stats.shield || 0) + 400; healPlayer(250); showFloatingText('Escudo Absoluto!', innerWidth/2, 200, 'success'); };
-    }
-
-    const mergedCard = {
-        name: cardName,
-        type: 'cabra',
-        cost: 0,
-        desc: desc,
-        action: actionFn,
-        instanceId: 'c_' + Math.random().toString(36).substring(2)
-    };
-
-    const blankIdx = state.hand.findIndex(c => c.name === 'Carta em Branco');
-    if (blankIdx !== -1) {
-        state.hand[blankIdx] = mergedCard;
-    } else {
-        if (state.hand.length < state.maxHandSize) {
-            state.hand.push(mergedCard);
-        } else {
-            state.hand[0] = mergedCard;
-        }
-    }
-
-    state.currentInkMix = [];
-    showFloatingText('🎨 TINTAS MESCLADAS COM SUCESSO NA CARTA!', innerWidth/2, 210, 'gold');
-    addXp(15);
-    updateUI();
-}
-
-/* ==========================================================================
-   8. SISTEMA DE CARTAS E DECK PADRÃO
-   ========================================================================= */
-function buildDeck() {
+function buildInitialDeck() {
+    const champCards = CHAMPION_CARDS[state.player.champ] || [];
+    const globalCards = CHAMPION_CARDS['global'];
     state.deck = [];
-    let pool = CHAMPION_CARDS[state.player.champ];
-    if (!pool) pool = CHAMPION_CARDS['global'];
-
-    if (state.player.champ === 'cabra') {
-        pool = [...pool, ...state.inkDecks.red, ...state.inkDecks.yellow, ...state.inkDecks.blue];
-    }
-
-    for (let i = 0; i < state.maxDeckCards; i++) {
-        const randCard = pool[Math.floor(Math.random() * pool.length)];
-        state.deck.push({ ...randCard, instanceId: 'c_' + Math.random().toString(36).substring(2) });
+    for (let i = 0; i < 10; i++) {
+        state.deck.push(champCards[Math.floor(Math.random() * champCards.length)]);
+        state.deck.push(globalCards[Math.floor(Math.random() * globalCards.length)]);
     }
 }
 
-window.drawCard = function(free = false) {
-    if (state.isDead) return;
-    if (!state.isMyTurn && !free) return showFloatingText('Aguarde o seu turno!', innerWidth/2, 220, 'danger');
-    
-    if (state.hand.length >= state.maxHandSize) {
-        return showFloatingText('⚠️ Limite máximo de cartas na mão atingido (7/7)!', innerWidth/2, 220, 'danger');
-    }
-    
-    if (state.deck.length === 0) return showFloatingText('Monte Vazio! Recarregue na Loja.', innerWidth/2, 220, 'danger');
-    
-    if (state.player.champ === 'cabra') {
-        let totalInks = state.inkPots.red + state.inkPots.blue + state.inkPots.yellow;
-        if (totalInks <= 0 && !free) {
-            return showFloatingText('❌ Sem tintas nos potes! A Cabra não consegue agir!', innerWidth/2, 220, 'danger');
-        }
-    }
-
-    if (!free && state.player.champ !== 'cabra') {
-        if (state.energy < 1) return showFloatingText('Sem Energia!', innerWidth/2, 220, 'danger');
-        state.energy--;
-    }
-
-    state.hand.push(state.deck.pop());
+function drawCard() {
+    if (state.deck.length === 0) buildInitialDeck();
+    if (state.hand.length >= state.maxHandSize) return;
+    const card = state.deck.pop();
+    state.hand.push(card);
     updateUI();
 }
 
-window.buyDeckReload = function() {
-    if (state.gold < 100) return showFloatingText('Ouro Insuficiente (100G)', innerWidth/2, 220, 'danger');
+window.buyDeck = function() {
+    if (state.gold < 100) return showFloatingText('Gold insuficiente!', innerWidth/2, 200, 'danger');
     state.gold -= 100;
-    buildDeck();
-    showFloatingText('Deck Reposto com Sucesso!', innerWidth/2, 220, 'gold');
+    buildInitialDeck();
+    for(let i=0; i<3; i++) drawCard();
+    playSound('gold');
+    showFloatingText('Deck comprado (+3 cartas)!', innerWidth/2, 200, 'gold');
     updateUI();
-}
+};
 
 /* ==========================================================================
-   9. DRAG & DROP E ATAQUE DIRETO AO OPONENTE NO FIREBASE
+   7. MECÂNICAS DE COMBATE DIRETO & LOLL CRIT SYSTEM
    ========================================================================= */
-function setupDragAndDrop() {
-    const dropZone = document.getElementById('drop-zone');
-    if (!dropZone) return;
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone.addEventListener('drop', e => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        playCard(e.dataTransfer.getData('text/plain'));
-    });
-}
-
-function playCard(instanceId) {
-    if (state.isDead) return;
-    if (!state.isMyTurn) return showFloatingText('Aguarde o seu turno para jogar!', innerWidth/2, 220, 'danger');
-
-    if (state.player.champ === 'borboleta' && state.butterflyBots.length > 0) {
-        return showFloatingText('⚠️ Cartas nerfadas pelos Bots Akuma!', innerWidth/2, 220, 'danger');
-    }
-
-    const idx = state.hand.findIndex(c => c.instanceId === instanceId);
-    if (idx === -1) return;
-    const card = state.hand[idx];
-    
-    if (state.energy < card.cost && state.player.champ !== 'cabra') {
-        return showFloatingText('Sem Energia Suficiente!', innerWidth/2, innerHeight/2, 'danger');
-    }
-    
-    state.energy -= card.cost;
-    card.action(state);
-    state.lastEnemySkillDmg = card.cost * 45;
-    state.hand.splice(idx, 1);
-    
-    addXp(15);
-    updateUI();
-}
-
-function executeCardAttack(cardName, damageCallback) {
-    damageCallback();
-}
-
-function calculateDeterministicCrit(baseDmg) {
-    let critChance = state.stats.crit / 100;
+function calculateDeterministicCrit(baseDamage) {
+    let critChance = state.stats.crit;
+    state.critCredit += critChance;
     let isCrit = false;
-
-    if (state.critCredit >= 1.0) {
+    if (state.critCredit >= 100) {
         isCrit = true;
-        state.critCredit -= 1.0;
-    } else if (Math.random() < critChance + state.critCredit) {
-        isCrit = true;
-        state.critCredit = 0;
-    } else {
-        state.critCredit += critChance * 0.5;
+        state.critCredit -= 100;
     }
-
-    let finalDmg = baseDmg;
-    if (isCrit) {
-        finalDmg *= 1.85;
-        showFloatingText('💥 CRÍTICO FATAL!', innerWidth/2, innerHeight/2 - 50, 'gold');
-    }
-
-    let mitigation = 100 / (100 + Math.max(0, 40 - state.stats.pen));
-    return Math.floor(finalDmg * mitigation);
+    let dmg = isCrit ? baseDamage * 2 : baseDamage;
+    if (isCrit) playSound('crit');
+    else playSound('hit');
+    return dmg;
 }
 
-function dealDamage(amount, isTrue = false) {
-    if (!state.selectedEnemyKey) {
-        showFloatingText('Nenhum alvo selecionado na sala!', innerWidth/2, 200, 'danger');
+window.executeCardAttack = function(cardName, damage) {
+    if (!state.isMyTurn) return showFloatingText('Não é seu turno!', innerWidth/2, 200, 'danger');
+    if (state.energy < 1) return showFloatingText('Sem energia!', innerWidth/2, 200, 'danger');
+    state.energy -= 1;
+
+    let finalDmg = damage * (1 + (state.stats.ad + state.stats.ap) * 0.01);
+    dealDamageToEnemy(finalDmg);
+    
+    // Vampirismo
+    if (state.stats.vamp > 0) {
+        let healed = finalDmg * (state.stats.vamp / 100);
+        state.hp = Math.min(state.maxHp, state.hp + healed);
+    }
+    
+    addXp(25);
+    updateUI();
+};
+
+function triggerMarola() {
+    if (!state.isMyTurn) return;
+    state.marolaStacks = (state.marolaStacks || 0) + 1;
+    if (state.marolaStacks >= 3) {
+        let trueDmg = 500;
+        dealDamageToEnemy(trueDmg, true);
+        state.marolaStacks = 0;
+        showFloatingText('ESTOURO DE MAROLA (10% Dano Verdadeiro)!', innerWidth/2, 200, 'gold');
+    } else {
+        executeCardAttack('Marola', state.stats.ad * 1.3);
+    }
+}
+
+window.addShield = function(amount) {
+    state.shield += amount;
+    playSound('buff');
+    showFloatingText(`+${amount} Escudo!`, innerWidth/2, 200, 'cyan');
+    updateUI();
+};
+
+function dealDamageToEnemy(dmg, isTrue = false) {
+    if (!state.enemyKey || !state.roomPlayers[state.enemyKey]) {
+        // Modo treino se não houver oponente conectado
+        showFloatingText(`-${Math.floor(dmg)} Dano no Alvo!`, innerWidth/2, 250, 'danger');
         return;
     }
-
-    state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
-    state.gold += 30;
-    addXp(12);
-
-    showFloatingText(`-${Math.floor(amount)} (Dano no Inimigo!)`, innerWidth / 2, 180, 'danger');
-
-    if (state.player.champ === 'galo') {
-        state.stats.vamp = state.stats.crit;
+    let enemy = state.roomPlayers[state.enemyKey];
+    let newEnemyHp = Math.max(0, enemy.hp - dmg);
+    
+    if (db) {
+        update(ref(db, `rooms/${state.player.room}/players/${state.enemyKey}`), { hp: newEnemyHp });
     }
-    if (state.stats.vamp > 0) {
-        healPlayer(amount * (state.stats.vamp / 100));
-    }
-
-    // Sincroniza HP do alvo diretamente no Firebase
-    const db = getDatabase();
-    const targetRef = ref(db, `rooms/${state.player.room}/players/${state.selectedEnemyKey}`);
-    update(targetRef, { hp: state.enemyPlayerHp });
-
-    // Se o HP do inimigo zerou, você ganha 1 Kill computada no Firebase!
-    if (state.enemyPlayerHp <= 0) {
+    showFloatingText(`-${Math.floor(dmg)} Dano!`, innerWidth/2, 250, 'danger');
+    
+    if (newEnemyHp <= 0) {
         state.player.kills++;
-        showFloatingText('💀 INIMIGO ABATIDO! +1 KILL!', innerWidth/2, 220, 'gold');
-        
-        // Atualiza suas Kills no Firebase
-        const myRef = ref(db, `rooms/${state.player.room}/players/${state.myKey}`);
-        update(myRef, { kills: state.player.kills });
-
-        // Reseta o HP do inimigo derrotado para continuar a pancadaria
-        state.enemyPlayerHp = state.enemyPlayerMaxHp;
-        update(targetRef, { hp: state.enemyPlayerHp });
+        state.gold += 300;
+        showFloatingText('INIMIGO DERROTADO! +300g', innerWidth/2, 180, 'gold');
+        playSound('gold');
     }
+}
 
+window.changeTarget = function(key) {
+    state.enemyKey = key;
+    showFloatingText('Alvo selecionado!', innerWidth/2, 180, 'cyan');
+};
+
+/* ==========================================================================
+   8. SISTEMA DE TINTAS (CABRA) & BORBOLETA
+   ========================================================================= */
+window.addInk = function(color) {
+    if (state.player.champ !== 'cabra') return;
+    if (state.inkPots[color] > 0) {
+        state.inkPots[color]--;
+        state.currentInkMix.push(color);
+        document.getElementById('ink-mix-status').innerText = `Mistura: ${state.currentInkMix.join(' + ').toUpperCase()}`;
+        updateUI();
+    }
+};
+
+window.craftInkCard = function() {
+    if (state.currentInkMix.length === 0) return showFloatingText('Selecione tintas primeiro!', innerWidth/2, 200, 'danger');
+    let craftedCard = { name: `Carta Tinta [${state.currentInkMix.join('/')}]`, type: 'cabra', cost: 2, desc: 'Carta mágica personalizada com tinta.', action: () => executeCardAttack('Magia de Tinta', state.stats.ap * 2.5) };
+    state.hand.push(craftedCard);
+    state.currentInkMix = [];
+    document.getElementById('ink-mix-status').innerText = 'Mistura: Nenhuma';
+    showFloatingText('Carta de Tinta criada!', innerWidth/2, 200, 'gold');
+    updateUI();
+};
+
+function spawnButterflyBot() {
+    showFloatingText('Borboleta Akuma disparada!', innerWidth/2, 200, 'purple');
+    dealDamageToEnemy(state.stats.ap * 1.8);
+}
+
+function drainEnemyHp(pct) {
+    let drain = 150;
+    state.hp = Math.min(state.maxHp, state.hp + drain);
+    dealDamageToEnemy(drain);
+    showFloatingText('Vida drenada com sucesso!', innerWidth/2, 200, 'purple');
+}
+
+function stealEnemyAttributes() {
+    state.stats.ap += 10;
+    state.stats.ad += 10;
+    showFloatingText('Atributos absorvidos!', innerWidth/2, 200, 'cyan');
     updateUI();
 }
 
-function healPlayer(amount) {
-    let maxLimit = state.myPlayerMaxHp + state.stats.bonusHp;
-    state.myPlayerHp = Math.min(maxLimit, state.myPlayerHp + amount);
-    
-    // Sincroniza seu próprio HP no Firebase
-    const db = getDatabase();
-    const myRef = ref(db, `rooms/${state.player.room}/players/${state.myKey}`);
-    update(myRef, { hp: state.myPlayerHp });
-
-    showFloatingText(`+${Math.floor(amount)} HP`, innerWidth/3, 200, 'success');
-}
-
 /* ==========================================================================
-   10. LOJA E INVENTÁRIO
+   9. LOJA E INVENTÁRIO (COM VENDA DE ITENS)
    ========================================================================= */
-window.toggleShop = function() {
-    const modal = document.getElementById('shop-modal');
-    if (modal) modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
-}
-
 function populateShop() {
-    const grid = document.getElementById('shop-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
+    const container = document.getElementById('shop-items-container');
+    if (!container) return;
+    container.innerHTML = '';
+
     Object.keys(ALL_ITEMS).forEach(key => {
         const item = ALL_ITEMS[key];
-        if (item.type !== 'all' && !state.roomChampions.includes(item.type)) return;
+        if (item.type !== 'all' && item.type !== state.player.champ) return;
 
-        grid.innerHTML += `
-            <div style="background:rgba(0,0,0,0.7); border:1px solid #334155; padding:10px; border-radius:10px; display:flex; flex-direction:column; justify-content:space-between;">
-                <div>
-                    <h4 style="color:var(--gold); font-size:0.9rem;">${item.name}</h4>
-                    <p style="font-size:0.68rem; color:#cbd5e1; margin-top:4px;">${item.desc}</p>
-                </div>
-                <button class="btn btn-gold" style="padding:6px; font-size:0.75rem; margin-top:8px;" onclick="buyItem('${key}')">${item.cost} G</button>
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+        div.innerHTML = `
+            <div>
+                <div style="font-weight:bold; font-size:0.8rem;">${item.name}</div>
+                <div style="font-size:0.65rem; color:#94a3b8;">${item.desc}</div>
             </div>
+            <button class="btn-action" onclick="buyItem('${key}')">${item.cost}g</button>
         `;
+        container.appendChild(div);
     });
 }
 
 window.buyItem = function(key) {
     const item = ALL_ITEMS[key];
-    if (state.gold >= item.cost) {
-        state.gold -= item.cost;
-        if (key === 'pocao') {
-            healPlayer(300);
-        } else {
-            state.inventory.push(key);
-            applyItemStats(item.stats, 1);
-            renderInventory();
-        }
-        updateUI();
-        showFloatingText(`Comprou ${item.name}!`, innerWidth/2, 200, 'gold');
-    } else {
-        showFloatingText('Ouro Insuficiente!', innerWidth/2, 200, 'danger');
+    if (state.gold < item.cost) return showFloatingText('Gold insuficiente!', innerWidth/2, 200, 'danger');
+    state.gold -= item.cost;
+    state.inventory.push({ id: key, ...item });
+
+    // Aplicar stats
+    if (item.stats) {
+        if (item.stats.ad) state.stats.ad += item.stats.ad;
+        if (item.stats.ap) state.stats.ap += item.stats.ap;
+        if (item.stats.armor) state.stats.armor += item.stats.armor;
+        if (item.stats.mr) state.stats.mr += item.stats.mr;
+        if (item.stats.crit) state.stats.crit += item.stats.crit;
+        if (item.stats.bonusHp) { state.maxHp += item.stats.bonusHp; state.hp += item.stats.bonusHp; }
     }
-}
+    playSound('gold');
+    showFloatingText(`Item comprado: ${item.name}`, innerWidth/2, 200, 'gold');
+    updateUI();
+};
 
 window.sellItem = function(index) {
-    const key = state.inventory[index];
-    const item = ALL_ITEMS[key];
-    let refund = Math.floor(item.cost * 0.7);
+    const item = state.inventory[index];
+    const refund = Math.floor(item.cost * 0.7);
     state.gold += refund;
-    applyItemStats(item.stats, -1);
+
+    // Remover stats
+    if (item.stats) {
+        if (item.stats.ad) state.stats.ad -= item.stats.ad;
+        if (item.stats.ap) state.stats.ap -= item.stats.ap;
+        if (item.stats.armor) state.stats.armor -= item.stats.armor;
+        if (item.stats.mr) state.stats.mr -= item.stats.mr;
+        if (item.stats.crit) state.stats.crit -= item.stats.crit;
+        if (item.stats.bonusHp) { state.maxHp -= item.stats.bonusHp; state.hp = Math.min(state.hp, state.maxHp); }
+    }
+
     state.inventory.splice(index, 1);
-    renderInventory();
+    playSound('gold');
+    showFloatingText(`Item vendido por ${refund}g`, innerWidth/2, 200, 'gold');
     updateUI();
-    showFloatingText(`Vendido por +${refund}G`, innerWidth/2, 200, 'gold');
-}
-
-function renderInventory() {
-    const list = document.getElementById('inventory-list');
-    if (!list) return;
-    list.innerHTML = '';
-    state.inventory.forEach((key, index) => {
-        const item = ALL_ITEMS[key];
-        list.innerHTML += `
-            <div style="background:rgba(255,255,255,0.08); padding:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.8rem; font-weight:bold; color:#fff;">${item.name}</span>
-                <button class="btn btn-danger" style="padding:4px 8px; font-size:0.65rem;" onclick="sellItem(${index})">Vender</button>
-            </div>
-        `;
-    });
-}
-
-function applyItemStats(stats, mult) {
-    if (!stats) return;
-    if (stats.ad) state.stats.ad += stats.ad * mult;
-    if (stats.ap) state.stats.ap += stats.ap * mult;
-    if (stats.armor) state.stats.armor += stats.armor * mult;
-    if (stats.mr) state.stats.mr += stats.mr * mult;
-    if (stats.crit) state.stats.crit += stats.crit * mult;
-    if (stats.pen) state.stats.pen += stats.pen * mult;
-    if (stats.bonusHp) {
-        state.stats.bonusHp += stats.bonusHp * mult;
-        if (mult > 0) healPlayer(stats.bonusHp);
-    }
-}
+};
 
 /* ==========================================================================
-   11. MINIONS & FARM DE TROPAS
+   10. SISTEMA DE XP, NÍVEL E LOOPS DE JOGO
    ========================================================================= */
-window.buyMinion = function(lvlKey) {
-    const mType = MINION_TYPES[lvlKey];
-    if (state.gold < mType.cost) return showFloatingText('Sem Ouro para Tropa!', innerWidth/2, 200, 'danger');
-    state.gold -= mType.cost;
-    state.myMinions.push({ ...mType, currentHp: mType.hp, id: Math.random() });
+function addXp(amount) {
+    if (state.player.level >= 18) return;
+    state.player.xp += amount;
+    if (state.player.xp >= state.player.maxXp) {
+        state.player.level++;
+        state.player.xp = 0;
+        state.player.maxXp = Math.floor(state.player.maxXp * 1.3);
+        state.maxHp += 200;
+        state.hp = state.maxHp;
+        state.stats.ad += 8;
+        state.stats.ap += 8;
+        showFloatingText(`🌟 LEVEL UP! Nível ${state.player.level}!`, innerWidth/2, 200, 'gold');
+        playSound('buff');
+    }
     updateUI();
 }
 
-function spawnEnemyMinion() {
-    if (state.enemyMinions.length >= 4) return;
-    state.enemyMinions.push({ id: Math.random(), hp: 80, goldReward: 50 });
-    renderEnemyMinions();
-}
+window.endTurn = function() {
+    if (!state.isMyTurn) return;
+    state.isMyTurn = false;
+    showFloatingText('Passando turno...', innerWidth/2, 200, 'cyan');
 
-window.farmEnemyMinion = function(id, clientX, clientY, reward) {
-    if (!state.isMyTurn) return showFloatingText('Aguarde o seu turno para farmar!', clientX, clientY, 'danger');
-    
-    state.enemyMinions = state.enemyMinions.filter(m => m.id !== id);
-    state.gold += reward;
-    addXp(12);
-    showFloatingText(`+${reward} G (Farm)`, clientX, clientY, 'gold');
-    renderEnemyMinions();
-    updateUI();
-}
-
-/* ==========================================================================
-   12. RENDERIZAÇÃO & LOOPS DE TEMPORIZADOR E BRAWL
-   ========================================================================= */
-function updateUI() {
-    if (state.player.champ === 'galo') state.stats.vamp = state.stats.crit;
-    let dynamicAp = state.stats.ap;
-    if (state.inventory.includes('bf2300')) dynamicAp += state.stats.armor;
-
-    const lvlText = document.getElementById('player-lvl-text');
-    if (lvlText) lvlText.innerText = `NÍVEL ${state.player.level}`;
-    const xpText = document.getElementById('player-xp-text');
-    if (xpText) xpText.innerText = `${state.player.xp}/${state.player.maxXp} XP`;
-    const xpBar = document.getElementById('player-xp-bar');
-    if (xpBar) xpBar.style.width = `${(state.player.xp / state.player.maxXp) * 100}%`;
-
-    if (state.player.champ === 'cabra') {
-        const mixDisplay = document.getElementById('ink-mix-display');
-        if (mixDisplay) mixDisplay.innerText = `Mistura: ${state.currentInkMix.join(' + ') || 'Nenhuma'}`;
-        if (document.getElementById('ink-red-count')) document.getElementById('ink-red-count').innerText = state.inkPots.red;
-        if (document.getElementById('ink-blue-count')) document.getElementById('ink-blue-count').innerText = state.inkPots.blue;
-        if (document.getElementById('ink-yellow-count')) document.getElementById('ink-yellow-count').innerText = state.inkPots.yellow;
-    }
-
-    const myHpText = document.getElementById('my-player-hp-text');
-    if (myHpText) myHpText.innerText = `${Math.floor(state.myPlayerHp)} HP`;
-    let maxMyHp = state.myPlayerMaxHp + state.stats.bonusHp;
-    const myHpBar = document.getElementById('my-player-hp-bar');
-    if (myHpBar) myHpBar.style.width = `${Math.max(0, Math.min(100, (state.myPlayerHp / maxMyHp) * 100))}%`;
-
-    const enemyPlayerHpText = document.getElementById('enemy-player-hp-text');
-    if (enemyPlayerHpText) enemyPlayerHpText.innerText = `${Math.floor(state.enemyPlayerHp)} HP`;
-    const enemyPlayerHpBar = document.getElementById('enemy-player-hp-bar');
-    if (enemyPlayerHpBar) enemyPlayerHpBar.style.width = `${Math.max(0, Math.min(100, (state.enemyPlayerHp / state.enemyPlayerMaxHp) * 100))}%`;
-
-    if (document.getElementById('my-kills-count')) document.getElementById('my-kills-count').innerText = state.player.kills;
-    
-    if (state.selectedEnemyKey && state.roomPlayers && state.roomPlayers[state.selectedEnemyKey]) {
-        if (document.getElementById('enemy-kills-count')) {
-            document.getElementById('enemy-kills-count').innerText = state.roomPlayers[state.selectedEnemyKey].kills || 0;
-        }
-    }
-
-    if (document.getElementById('stat-ad')) document.getElementById('stat-ad').innerText = Math.floor(state.stats.ad);
-    if (document.getElementById('stat-ap')) document.getElementById('stat-ap').innerText = Math.floor(dynamicAp);
-    if (document.getElementById('stat-armor')) document.getElementById('stat-armor').innerText = Math.floor(state.stats.armor);
-    if (document.getElementById('stat-mr')) document.getElementById('stat-mr').innerText = Math.floor(state.stats.mr);
-    if (document.getElementById('stat-crit')) document.getElementById('stat-crit').innerText = `${Math.floor(state.stats.crit)}%`;
-    if (document.getElementById('stat-vamp')) document.getElementById('stat-vamp').innerText = `${Math.floor(state.stats.vamp)}%`;
-
-    if (document.getElementById('gold-text')) document.getElementById('gold-text').innerText = `${Math.floor(state.gold)} G`;
-    let extraGps = state.inventory.includes('cadelagem') ? 4 : 0;
-    if (document.getElementById('gps-text')) document.getElementById('gps-text').innerText = `${state.baseGps + extraGps} G/s`;
-    if (document.getElementById('energy-text')) document.getElementById('energy-text').innerText = `${state.energy}/${state.maxEnergy}`;
-    if (document.getElementById('deck-count')) document.getElementById('deck-count').innerText = state.deck.length;
-    if (document.getElementById('hand-limit-text')) document.getElementById('hand-limit-text').innerText = `${state.hand.length}/${state.maxHandSize}`;
-
-    renderHand();
-    renderMinions();
-}
-
-function renderHand() {
-    const cont = document.getElementById('hand-container');
-    if (!cont) return;
-    cont.innerHTML = '';
-
-    let isHandBlank = (state.player.champ === 'borboleta' && state.butterflyBots.length > 0);
-
-    state.hand.forEach(c => {
-        let el = document.createElement('div');
-        el.className = 'card';
-        if (isHandBlank || c.name === 'Carta em Branco') el.classList.add('blank-card');
-        
-        el.draggable = !isHandBlank && c.name !== 'Carta em Branco';
-        
-        el.innerHTML = `
-            <div>
-                <strong class="card-title">${isHandBlank ? '🌀 [EM BRANCO NERFADO]' : c.name}</strong>
-                <p class="card-desc">${isHandBlank ? 'Suas cartas estão drenadas.' : c.desc}</p>
-            </div>
-            <div class="card-footer">
-                <span class="energy-cost">${isHandBlank || c.name === 'Carta em Branco' ? '0' : (state.player.champ === 'cabra' ? '🎨' : c.cost + ' EN')}</span>
-            </div>
-        `;
-        
-        if (el.draggable) {
-            el.addEventListener('dragstart', e => {
-                el.classList.add('dragging');
-                e.dataTransfer.setData('text/plain', c.instanceId);
-            });
-            el.addEventListener('dragend', () => el.classList.remove('dragging'));
-        }
-        cont.appendChild(el);
-    });
-}
-
-function renderMinions() {
-    const lane = document.getElementById('my-minions-lane');
-    if (!lane) return;
-    lane.innerHTML = '';
-    state.myMinions.forEach(m => {
-        lane.innerHTML += `<div class="minion-card" style="border-color:var(--cyan-glow)"><strong>${m.name}</strong><p>⚔️ ${m.atk} | ❤️ ${m.currentHp}</p></div>`;
-    });
-    state.butterflyBots.forEach(b => {
-        lane.innerHTML += `<div class="minion-card" style="border-color:#a855f7"><strong>🦋 ${b.name}</strong><p>⏳ Turnos: ${b.turnsLeft}</p></div>`;
-    });
-}
-
-function renderEnemyMinions() {
-    const lane = document.getElementById('enemy-minions-lane');
-    if (!lane) return;
-    lane.innerHTML = '';
-    state.enemyMinions.forEach(m => {
-        lane.innerHTML += `
-            <div class="minion-card" style="border-color:var(--danger); cursor:pointer;" onclick="farmEnemyMinion(${m.id}, event.clientX, event.clientY, ${m.goldReward})">
-                <strong style="color:var(--danger)">Tropa Inimiga</strong>
-                <p style="font-size:0.65rem">CLIQUE PARA FARM (+${m.goldReward}G)</p>
-            </div>`;
-    });
-}
-
-function updatePlayersBar() {
-    const b = document.getElementById('players-bar');
-    if (!b) return;
-    b.innerHTML = `<span style="color:#94a3b8; font-weight:bold;">SALA BRAWL: ${state.player.room.toUpperCase()}</span><div class="players-list" id="plist"></div>`;
-    state.roomChampions.forEach(c => {
-        const plist = document.getElementById('plist');
-        if (plist) plist.innerHTML += `<div class="player-chip"><span class="badge-champ badge-${c}">${c}</span></div>`;
-    });
-}
-
-function showFloatingText(txt, x, y, type) {
-    const el = document.createElement('div');
-    el.className = `floating-text ${type}`;
-    el.innerText = txt;
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1100);
-}
+    setTimeout(() => {
+        state.turnNumber++;
+        state.isMyTurn = true;
+        state.energy = state.maxEnergy;
+        drawCard();
+        showFloatingText(`Turno ${state.turnNumber} iniciado!`, innerWidth/2, 200, 'gold');
+        updateUI();
+    }, 1500);
+};
 
 function startGameLoops() {
-    // Loop do Temporizador de Partida (Regressivo de 15 minutos até 0)
+    // Loop de Gold Passivo (5g/s ou a cada 2s) + Recarga de Energia
     setInterval(() => {
-        if (!state.matchActive) return;
-        if (state.matchTimeRemaining > 0) {
-            state.matchTimeRemaining--;
-            let mins = Math.floor(state.matchTimeRemaining / 60);
-            let secs = state.matchTimeRemaining % 60;
-            let timerEl = document.getElementById('match-timer-hud');
-            if (timerEl) {
-                timerEl.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            }
-        } else {
-            state.matchActive = false;
-            alert(`⏱️ TEMPO ESGOTADO! Fim da partida. Quem tiver mais kills (${state.player.kills}) ganha!`);
-            window.location.reload();
-        }
-    }, 1000);
-
-    // Geração de Ouro por segundo
-    setInterval(() => {
-        if (state.isDead) return;
-        let gps = state.baseGps + (state.inventory.includes('cadelagem') ? 4 : 0);
+        let gps = state.baseGps + (state.inventory.some(i => i.id === 'cadelagem') ? 4 : 0);
         state.gold += gps;
+        state.energy = Math.min(state.maxEnergy, state.energy + 1);
+        
+        // Sincronizar com Firebase se ativo
+        if (db && state.myKey) {
+            update(ref(db, `rooms/${state.player.room}/players/${state.myKey}`), {
+                hp: state.hp,
+                maxHp: state.maxHp,
+                kills: state.player.kills
+            });
+        }
         updateUI();
     }, 2000);
 
-    // Dano automático das tropas
+    // Loop do Temporizador da Partida (20 minutos)
     setInterval(() => {
-        if (state.isDead) return;
-        let totalDmg = 0;
-        state.myMinions.forEach(m => totalDmg += m.atk);
-        if (totalDmg > 0 && state.selectedEnemyKey) dealDamage(totalDmg);
-    }, 4000);
-
-    // Spawn de tropas inimigas
-    setInterval(() => {
-        if (!state.isDead) spawnEnemyMinion();
-    }, 9000);
-
-    // Cura passiva item Java
-    setInterval(() => {
-        if (!state.isDead && state.inventory.includes('java')) {
-            healPlayer(5);
+        if (state.matchTimeLeft > 0) {
+            state.matchTimeLeft--;
+            const min = Math.floor(state.matchTimeLeft / 60);
+            const sec = state.matchTimeLeft % 60;
+            const timerEl = document.getElementById('match-timer');
+            if (timerEl) timerEl.innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
         }
-    }, 20000);
+    }, 1000);
+}
+
+function updateRoomPlayersUI(playersData) {
+    const select = document.getElementById('target-player-select');
+    if (!select) return;
+    let html = '';
+    let enemyCount = 0;
+
+    Object.keys(playersData).forEach(key => {
+        if (key === state.myKey) return;
+        enemyCount++;
+        const p = playersData[key];
+        const isSelected = state.enemyKey === key ? 'selected' : '';
+        html += `<option value="${key}" ${isSelected}>${p.name} (${p.champ.toUpperCase()} - ${Math.floor(p.hp)} HP)</option>`;
+    });
+
+    select.innerHTML = enemyCount > 0 ? html : '<option value="">Aguardando oponentes...</option>';
+    if (!state.enemyKey && enemyCount > 0) {
+        state.enemyKey = Object.keys(playersData).find(k => k !== state.myKey);
+    }
+}
+
+function updateUI() {
+    document.getElementById('gold-display').innerText = state.gold;
+    document.getElementById('energy-display').innerText = `${state.energy}/${state.maxEnergy}`;
+    document.getElementById('lvl-display').innerText = state.player.level;
+    document.getElementById('xp-display').innerText = `${state.player.xp}/${state.player.maxXp}`;
+    document.getElementById('kills-display').innerText = state.player.kills;
+    document.getElementById('my-name-display').innerText = state.player.name.toUpperCase();
+
+    // Barras de Vida e Escudo
+    const myHpPct = (state.hp / state.maxHp) * 100;
+    document.getElementById('my-hp-bar').style.width = `${myHpPct}%`;
+    document.getElementById('my-hp-text').innerText = Math.floor(state.hp);
+    document.getElementById('my-maxhp-text').innerText = state.maxHp;
+
+    const shieldPct = Math.min(100, (state.shield / state.maxHp) * 100);
+    document.getElementById('my-shield-bar').style.width = `${shieldPct}%`;
+
+    // Inimigo selecionado
+    if (state.enemyKey && state.roomPlayers[state.enemyKey]) {
+        const enemy = state.roomPlayers[state.enemyKey];
+        document.getElementById('enemy-name-display').innerText = enemy.name.toUpperCase();
+        const enHpPct = Math.max(0, (enemy.hp / enemy.maxHp) * 100);
+        document.getElementById('enemy-hp-bar').style.width = `${enHpPct}%`;
+        document.getElementById('enemy-hp-text').innerText = Math.floor(enemy.hp);
+        document.getElementById('enemy-maxhp-text').innerText = enemy.maxHp;
+    }
+
+    // Stats
+    document.getElementById('stat-ad').innerText = state.stats.ad;
+    document.getElementById('stat-ap').innerText = state.stats.ap;
+    document.getElementById('stat-armor').innerText = state.stats.armor;
+    document.getElementById('stat-mr').innerText = state.stats.mr;
+    document.getElementById('stat-crit').innerText = state.stats.crit;
+    document.getElementById('stat-vamp').innerText = state.stats.vamp;
+
+    // Tintas Cabra
+    if (state.player.champ === 'cabra') {
+        ['red', 'blue', 'yellow'].forEach(c => {
+            const el = document.getElementById(`ink-${c}`);
+            if (el) el.innerText = state.inkPots[c];
+        });
+    }
+
+    // Renderizar Mão
+    const handContainer = document.getElementById('player-hand-container');
+    if (handContainer) {
+        handContainer.innerHTML = '';
+        state.hand.forEach((card, idx) => {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'card';
+            cardEl.innerHTML = `
+                <div class="card-header">
+                    <span>${card.type.toUpperCase()}</span>
+                    <span class="card-cost">${card.cost}⚡</span>
+                </div>
+                <div class="card-title">${card.name}</div>
+                <div class="card-desc">${card.desc}</div>
+                <button class="btn-action" style="font-size:0.65rem; padding:4px;" onclick="playCard(${idx})">JOGAR</button>
+            `;
+            handContainer.appendChild(cardEl);
+        });
+    }
+
+    // Renderizar Inventário
+    const invContainer = document.getElementById('inventory-container');
+    if (invContainer) {
+        invContainer.innerHTML = '';
+        state.inventory.items = state.inventory.items || [];
+        state.inventory.forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = 'inv-item';
+            div.innerHTML = `
+                <span style="font-size:0.75rem; font-weight:bold;">${item.name}</span>
+                <button class="btn-action btn-danger" style="font-size:0.6rem;" onclick="sellItem(${idx})">Vender (${Math.floor(item.cost*0.7)}g)</button>
+            `;
+            invContainer.appendChild(div);
+        });
+    }
+}
+
+window.playCard = function(index) {
+    const card = state.hand[index];
+    if (state.energy < card.cost) return showFloatingText('Energia insuficiente!', innerWidth/2, 200, 'danger');
+    state.energy -= card.cost;
+    state.hand.splice(index, 1);
+    card.action(state);
+    updateUI();
+};
+
+function showFloatingText(txt, x, y, type) {
+    const el = document.createElement('div');
+    el.className = `floating-text`;
+    el.style.color = type === 'gold' ? '#fbbf24' : type === 'danger' ? '#ef4444' : type === 'cyan' ? '#38bdf8' : '#a855f7';
+    el.innerText = txt;
+    el.style.left = `${x - 40}px`;
+    el.style.top = `${y}px`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1100);
 }
