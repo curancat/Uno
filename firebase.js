@@ -2,22 +2,20 @@
 // FIREBASE MODULE: SINCRONIZAÇÃO EM TEMPO REAL (SALAS E NEXUS)
 // ==========================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // ==========================================================================
-// CONFIGURAÇÃO DO SEU BANCO DE DADOS FIREBASE
-// (Substitua abaixo com as credenciais do seu projeto criado no console do Firebase)
+// CONFIGURAÇÃO DO BANCO DE DADOS FIREBASE
 // ==========================================================================
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
-  authDomain: "uno3-17cc6.firebaseapp.com",
-  databaseURL: "https://uno3-17cc6-default-rtdb.firebaseio.com",
-  projectId: "uno3-17cc6",
-  storageBucket: "uno3-17cc6.firebasestorage.app",
-  messagingSenderId: "834810148105",
-  appId: "1:834810148105:web:e2824feabb794c39670fd8",
-  measurementId: "G-PTCZVR4Z77"
+    apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
+    authDomain: "uno3-17cc6.firebaseapp.com",
+    databaseURL: "https://uno3-17cc6-default-rtdb.firebaseio.com",
+    projectId: "uno3-17cc6",
+    storageBucket: "uno3-17cc6.firebasestorage.app",
+    messagingSenderId: "834810148105",
+    appId: "1:834810148105:web:e2824feabb794c39670fd8",
+    measurementId: "G-PTCZVR4Z77"
 };
 
 // Inicializa o Firebase
@@ -45,7 +43,10 @@ export async function joinRoomFirebase(roomName, playerName, champ, maxHp) {
         alive: true
     });
 
-    // Remove o jogador automaticamente da sala se fechar ou atualizar a aba (Bedwars style)
+    // SISTEMA BEDWARS: Remove o jogador da sala caso a internet caia ou ele feche o jogo
+    onDisconnect(newPlayerRef).remove();
+
+    // Backup para remoção imediata se ele atualizar a aba
     window.addEventListener('beforeunload', () => {
         remove(newPlayerRef);
     });
@@ -88,14 +89,14 @@ export function listenToRoomState(roomName, myKey, onEnemyHpUpdate, onChampsUpda
             const player = data[key];
             champsInRoom.push(player.champ);
 
-            // Se a chave não for a minha, é o oponente/inimigo na sala
+            // Se a chave não for a minha, é o oponente na sala
             if (key !== myKey) {
                 enemyHp = player.hp;
                 enemyKey = key;
             }
         });
 
-        // Atualiza a barra de campeões no topo e o HP do Nexus oponente
+        // Atualiza a interface gráfica com os campeões na sala e a vida do inimigo
         onChampsUpdate(champsInRoom);
         if (enemyKey) {
             onEnemyHpUpdate(enemyHp, 'Inimigo', enemyKey);
