@@ -135,6 +135,7 @@
         .floating-text.danger { color: var(--danger); }
         .floating-text.success { color: var(--success); }
         .floating-text.cyan { color: var(--cyan); }
+        .floating-text.purple { color: var(--purple); }
         @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(0.9); } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
     </style>
 </head>
@@ -143,7 +144,7 @@
     <div id="lobby-screen">
         <div class="lobby-card">
             <h1>UNO LEGENDS: MIRACULOUS BRAWL</h1>
-            <p style="font-size: 0.75rem; color: #94a3b8;">Estilo Uno + LoL + Bedwars. Batalhe diretamente contra oponentes em tempo real!</p>
+            <p style="font-size: 0.75rem; color: #94a3b8;">Batalhe diretamente contra oponentes em tempo real! Sem Nexus, apenas KILLS.</p>
             
             <div class="input-group">
                 <label>Nome do Herói / Jogador:</label>
@@ -292,11 +293,18 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, get, update, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, get, update, onValue, push, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Configuração Firebase Automática / Padrão
+        // Configuração Firebase utilizando as suas credenciais fornecidas
         const firebaseConfig = {
-            databaseURL: "https://uno-legends-miraculous-default-rtdb.firebaseio.com/"
+            apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
+            authDomain: "uno3-17cc6.firebaseapp.com",
+            databaseURL: "https://uno3-17cc6-default-rtdb.firebaseio.com",
+            projectId: "uno3-17cc6",
+            storageBucket: "uno3-17cc6.firebasestorage.app",
+            messagingSenderId: "834810148105",
+            appId: "1:834810148105:web:e2824feabb794c39670fd8",
+            measurementId: "G-PTCZVR4Z77"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -465,15 +473,21 @@
                 applyChampBaseStats();
                 buildDeck();
 
-                // Conectar ao Firebase
+                // Conectar ao Firebase e criar jogador na sala
                 const newPlayerRef = push(ref(db, `rooms/${state.player.room}/players`));
                 state.myKey = newPlayerRef.key;
+                
                 await set(newPlayerRef, {
                     name: state.player.name,
                     champ: state.player.champ,
                     hp: state.myPlayerMaxHp,
-                    maxHp: state.myPlayerMaxHp
+                    maxHp: state.myPlayerMaxHp,
+                    kills: state.player.kills
                 });
+
+                // Remove o jogador se ele fechar a aba
+                onDisconnect(newPlayerRef).remove();
+                window.addEventListener('beforeunload', () => remove(newPlayerRef));
 
                 document.getElementById('lobby-screen').classList.add('hidden');
                 document.getElementById('game-screen').classList.remove('hidden');
@@ -482,7 +496,7 @@
                     document.getElementById('cabra-hud-panel').classList.remove('hidden');
                 }
 
-                // Listener Firebase da Sala
+                // Listener Firebase da Sala para escutar os oponentes
                 onValue(ref(db, `rooms/${state.player.room}/players`), (snapshot) => {
                     const data = snapshot.val();
                     if (!data) return;
@@ -518,6 +532,10 @@
                         state.enemyKey = state.selectedEnemyKey;
                         const enemyNameEl = document.getElementById('enemy-brawl-name');
                         if (enemyNameEl) enemyNameEl.innerText = data[state.selectedEnemyKey].name || 'Inimigo';
+                        
+                        // Atualiza as Kills do Inimigo
+                        const enemyKills = data[state.selectedEnemyKey].kills || 0;
+                        if (document.getElementById('enemy-kills-count')) document.getElementById('enemy-kills-count').innerText = enemyKills;
                     }
 
                     updateUI();
@@ -701,7 +719,21 @@
             return Math.floor(finalDmg * mitigation);
         }
 
+        // ==========================================================================
+        // SISTEMA DE COMBATE E DANO DIRETO
+        // ==========================================================================
         function dealDamage(amount, isTrue = false) {
+            if (state.stats.shield > 0 && !isTrue) {
+                if (state.stats.shield >= amount) {
+                    state.stats.shield -= amount;
+                    showFloatingText(`🛡️ Escudo absorveu ${Math.floor(amount)}!`, innerWidth/2, 180, 'cyan');
+                    return;
+                } else {
+                    amount -= state.stats.shield;
+                    state.stats.shield = 0;
+                }
+            }
+
             state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
             state.gold += 30;
             addXp(12);
@@ -710,17 +742,24 @@
             if (state.player.champ === 'galo') state.stats.vamp = state.stats.crit;
             if (state.stats.vamp > 0) healPlayer(amount * (state.stats.vamp / 100));
 
+            // SINCRONIZA O DANO NO FIREBASE PARA O INIMIGO VER
             if (state.selectedEnemyKey) {
                 update(ref(db, `rooms/${state.player.room}/players/${state.selectedEnemyKey}`), { hp: state.enemyPlayerHp });
             }
 
+            // SISTEMA DE KILLS
             if (state.enemyPlayerHp <= 0) {
                 state.player.kills++;
                 showFloatingText('💀 INIMIGO ABATIDO! +1 KILL!', innerWidth/2, 220, 'gold');
+                
+                // Respawn do Inimigo para a luta continuar
                 state.enemyPlayerHp = state.enemyPlayerMaxHp;
+                
+                // Atualiza as estatísticas no Firebase
                 if (state.selectedEnemyKey) {
                     update(ref(db, `rooms/${state.player.room}/players/${state.selectedEnemyKey}`), { hp: state.enemyPlayerHp });
                 }
+                update(ref(db, `rooms/${state.player.room}/players/${state.myKey}`), { kills: state.player.kills });
             }
             updateUI();
         }
@@ -729,6 +768,8 @@
             let limit = state.myPlayerMaxHp + state.stats.bonusHp;
             state.myPlayerHp = Math.min(limit, state.myPlayerHp + amount);
             showFloatingText(`+${Math.floor(amount)} HP`, innerWidth/3, 200, 'success');
+            // Sincroniza sua própria vida no Firebase
+            update(ref(db, `rooms/${state.player.room}/players/${state.myKey}`), { hp: state.myPlayerHp });
         }
 
         // ==========================================================================
@@ -855,13 +896,33 @@
             playSound('buff');
         }
 
+        function spawnButterflyBot(s) {
+            const copyTarget = state.roomChampions.length > 0 ? state.roomChampions[Math.floor(Math.random() * state.roomChampions.length)] : 'Oponente';
+            showFloatingText(`🦋 Akuma invocado! Replicando: ${copyTarget.toUpperCase()}`, innerWidth/2, 220, 'purple');
+            s.stats.ap += 15; s.stats.mr += 10; s.stats.armor += 10; healPlayer(150);
+            state.butterflyBots.push({ id: Math.random(), name: `Sombra de ${copyTarget}`, power: s.stats.ap * 1.6, turnsLeft: 3 });
+            updateUI();
+        }
+
+        function executeButterflyBots() {
+            state.butterflyBots.forEach(bot => {
+                let replicatedDmg = bot.power * 0.9;
+                showFloatingText(`🦋 ${bot.name} atacou! (-${Math.floor(replicatedDmg)})`, innerWidth/2, 280, 'purple');
+                dealDamage(replicatedDmg);
+                bot.turnsLeft--;
+            });
+            state.butterflyBots = state.butterflyBots.filter(b => b.turnsLeft > 0);
+        }
+
         // ==========================================================================
-        // 10. RENDERIZAÇÃO & LOOPS DE TEMPO (10 A 50 MIN)
+        // 10. RENDERIZAÇÃO & LOOPS DE TEMPO (15 MIN)
         // ==========================================================================
         window.endTurn = function() {
             if (!state.isMyTurn) return;
             state.isMyTurn = false;
             showFloatingText('Fim do seu turno!', innerWidth/2, innerHeight/2, 'cyan');
+            
+            if (state.butterflyBots.length > 0) executeButterflyBots();
 
             setTimeout(() => {
                 state.turnNumber++;
@@ -952,18 +1013,8 @@
             });
         }
 
-        function showFloatingText(txt, x, y, type) {
-            const el = document.createElement('div');
-            el.className = `floating-text ${type}`;
-            el.innerText = txt;
-            el.style.left = `${x}px`;
-            el.style.top = `${y}px`;
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1100);
-        }
-
         function startGameLoops() {
-            // Temporizador de Partida (15 min padrão, configurável de 10 a 50 min)
+            // Temporizador de Partida (15 min)
             setInterval(() => {
                 if (!state.matchActive) return;
                 if (state.matchTimeRemaining > 0) {
