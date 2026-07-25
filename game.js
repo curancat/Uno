@@ -1,5 +1,5 @@
 // ==========================================================================
-// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA (V6 - LAYOUT CORRIGIDO & TURNO SOLO)
+// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA (V7 - HUD FLUTUANTE EXCLUSIVO)
 // ==========================================================================
 import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
 
@@ -107,7 +107,7 @@ let state = {
 };
 
 /* ==========================================================================
-   3. INICIALIZAÇÃO & INTERFACE DINÂMICA ORGANIZADA (SEM SOBREPOSIÇÃO)
+   3. INICIALIZAÇÃO & INTERFACE FLUTUANTE (SEM NENHUMA SOBREPOSIÇÃO)
    ========================================================================= */
 document.addEventListener('DOMContentLoaded', () => {
     setupLobby();
@@ -115,61 +115,70 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function injectDynamicUI() {
-    const resourcePanel = document.querySelector('.resource-panel');
-    if (!resourcePanel) return;
+    if (document.getElementById('floating-action-hud')) return;
 
-    if (document.getElementById('game-control-stack')) return;
+    // Criamos um HUD flutuante exclusivo no canto superior direito, espaçado e limpo
+    const hud = document.createElement('div');
+    hud.id = 'floating-action-hud';
+    hud.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 290px;
+        background: rgba(15, 23, 42, 0.95);
+        border: 2px solid #38bdf8;
+        border-radius: 12px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        z-index: 1000;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+        backdrop-filter: blur(8px);
+        box-sizing: border-box;
+        max-height: 90vh;
+        overflow-y: auto;
+    `;
 
-    // Criamos um container empilhado com Flexbox vertical para evitar qualquer sobreposição
-    const stackContainer = document.createElement('div');
-    stackContainer.id = 'game-control-stack';
-    stackContainer.style.cssText = 'display:flex; flex-direction:column; gap:12px; margin-top:12px; width:100%;';
-
-    // 1. Painel de Oficina de Tintas (Só aparece/destaca se for Cabra, mas injetamos estruturado)
-    const cabraPanel = document.createElement('div');
-    cabraPanel.id = 'cabra-panel';
-    cabraPanel.className = state.player.champ === 'cabra' ? '' : 'hidden';
-    cabraPanel.style.cssText = 'background:rgba(15,23,42,0.95); border:2px solid var(--theme-cabra, #f59e0b); padding:10px; border-radius:8px; width:100%; box-sizing:border-box;';
-    cabraPanel.innerHTML = `
-        <div style="font-size:0.75rem; color:var(--gold, #fbbf24); font-weight:bold; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-            <span>🎨 OFICINA DE TINTAS</span>
-            <span style="font-size:0.6rem; background:#1e293b; padding:2px 6px; border-radius:4px; color:#38bdf8;">Littlegot</span>
+    hud.innerHTML = `
+        <div style="font-size:0.8rem; color:#38bdf8; font-weight:bold; border-bottom:1px solid #334155; padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>⚡ PAINEL DE CONTROLE</span>
+            <span style="font-size:0.6rem; background:#1e293b; padding:2px 6px; border-radius:4px; color:#fbbf24;">HUD Ativo</span>
         </div>
-        <div style="display:flex; gap:4px; margin-bottom:8px;">
-            <button class="btn" style="background:#ef4444; padding:6px 2px; flex:1; font-size:0.65rem; color:#fff;" onclick="addInk('red')">Verm (<span id="ink-red-count">2</span>)</button>
-            <button class="btn" style="background:#3b82f6; padding:6px 2px; flex:1; font-size:0.65rem; color:#fff;" onclick="addInk('blue')">Azul (<span id="ink-blue-count">2</span>)</button>
-            <button class="btn" style="background:#fbbf24; padding:6px 2px; flex:1; font-size:0.65rem; color:#000; font-weight:bold;" onclick="addInk('yellow')">Amar (<span id="ink-yellow-count">2</span>)</button>
+
+        <div id="cabra-hud-panel" class="${state.player.champ === 'cabra' ? '' : 'hidden'}" style="background:rgba(30,41,59,0.75); border:1px solid #f59e0b; padding:10px; border-radius:8px;">
+            <div style="font-size:0.75rem; color:#fbbf24; font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span>🎨 OFICINA DE TINTAS</span>
+                <span style="font-size:0.6rem; color:#38bdf8;">Littlegot</span>
+            </div>
+            <div style="display:flex; gap:6px; margin-bottom:8px;">
+                <button class="btn" style="background:#ef4444; padding:6px 2px; flex:1; font-size:0.68rem; color:#fff;" onclick="addInk('red')">Verm (<span id="ink-red-count">2</span>)</button>
+                <button class="btn" style="background:#3b82f6; padding:6px 2px; flex:1; font-size:0.68rem; color:#fff;" onclick="addInk('blue')">Azul (<span id="ink-blue-count">2</span>)</button>
+                <button class="btn" style="background:#fbbf24; padding:6px 2px; flex:1; font-size:0.68rem; color:#000; font-weight:bold;" onclick="addInk('yellow')">Amar (<span id="ink-yellow-count">2</span>)</button>
+            </div>
+            <div style="font-size:0.7rem; color:#cbd5e1; margin-bottom:8px; background:#090d16; padding:6px; border-radius:4px; text-align:center;" id="ink-mix-display">Mistura: Nenhuma</div>
+            <div style="display:flex; gap:6px;">
+                <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.65rem;" onclick="drawShape('bola')">⭕ Bola</button>
+                <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.65rem;" onclick="drawShape('cima')">⬆️ Cima</button>
+                <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.65rem;" onclick="drawShape('deitado')">➡️ Deitado</button>
+            </div>
         </div>
-        <div style="font-size:0.65rem; color:#cbd5e1; margin-bottom:6px; background:#090d16; padding:4px; border-radius:4px;" id="ink-mix-display">Mistura: Nenhuma</div>
-        <div style="display:flex; gap:4px;">
-            <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.6rem;" onclick="drawShape('bola')">⭕ Bola</button>
-            <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.6rem;" onclick="drawShape('cima')">⬆️ Cima</button>
-            <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.6rem;" onclick="drawShape('deitado')">➡️ Deitado</button>
+
+        <div style="background:rgba(30,41,59,0.75); border:1px solid #ef4444; padding:10px; border-radius:8px;">
+            <div style="font-size:0.75rem; color:#ef4444; font-weight:bold; margin-bottom:6px;">🎯 SELECIONAR ALVO:</div>
+            <select id="target-select" style="width:100%; background:#090d16; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-size:0.8rem;" onchange="changeTarget(this.value)">
+                <option value="">Aguardando oponentes...</option>
+            </select>
+        </div>
+
+        <div>
+            <button id="btn-end-turn" class="btn btn-danger" style="width:100%; padding:12px; font-size:0.85rem; font-weight:bold; border-radius:8px;" onclick="endTurn()">⏳ PASSAR TURNO</button>
         </div>
     `;
-    stackContainer.appendChild(cabraPanel);
 
-    // 2. Seletor de Alvos na Sala
-    const targetSelectorContainer = document.createElement('div');
-    targetSelectorContainer.id = 'target-selector-container';
-    targetSelectorContainer.style.cssText = 'background:rgba(15,23,42,0.95); border:2px solid var(--danger, #ef4444); padding:10px; border-radius:8px; width:100%; box-sizing:border-box;';
-    targetSelectorContainer.innerHTML = `
-        <div style="font-size:0.75rem; color:var(--danger, #ef4444); font-weight:bold; margin-bottom:6px;">🎯 SELECIONAR ALVO:</div>
-        <select id="target-select" style="width:100%; background:#090d16; color:#fff; border:1px solid #334155; padding:6px; border-radius:4px; font-size:0.8rem;" onchange="changeTarget(this.value)">
-            <option value="">Nenhum oponente conectado</option>
-        </select>
-    `;
-    stackContainer.appendChild(targetSelectorContainer);
+    document.body.appendChild(hud);
 
-    // 3. Botão de Passar Turno
-    const turnButtonContainer = document.createElement('div');
-    turnButtonContainer.style.cssText = 'width:100%;';
-    turnButtonContainer.innerHTML = `<button id="btn-end-turn" class="btn btn-danger" style="width:100%; padding:10px; font-size:0.85rem; font-weight:bold;" onclick="endTurn()">⏳ PASSAR TURNO</button>`;
-    stackContainer.appendChild(turnButtonContainer);
-
-    resourcePanel.appendChild(stackContainer);
-
-    // Painel do Nível e XP do Jogador (Integrado de forma limpa na carta do Nexus)
+    // Integrando barra de Nível e XP na carta do Nexus de forma limpa
     const myNexusCard = document.querySelector('.nexus-card');
     if (myNexusCard && !document.getElementById('player-lvl-text')) {
         const xpDiv = document.createElement('div');
@@ -324,7 +333,6 @@ window.endTurn = function() {
         executeButterflyBots();
     }
 
-    // Se estiver sozinho na sala, o turno passa imediatamente sem esperar 4 segundos travados
     const otherPlayersCount = Object.keys(state.roomPlayers).filter(k => k !== state.myKey).length;
     const waitTime = otherPlayersCount > 0 ? 4000 : 800;
 
@@ -468,7 +476,7 @@ window.buyDeckReload = function() {
 }
 
 /* ==========================================================================
-   8. DRAG & DROP, ANIMAÇÕES E COMBATE AO ALVO SELECIONADO
+   8. DRAG & DROP E COMBATE
    ========================================================================= */
 function setupDragAndDrop() {
     const dropZone = document.getElementById('drop-zone');
@@ -557,12 +565,7 @@ function calculateDeterministicCrit(baseDmg) {
 }
 
 function dealDamage(amount, isTrue = false) {
-    if (!state.selectedEnemyKey) {
-        // Se estiver jogando sozinho, o dano vai direto para um boneco de treino interno
-        state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
-    } else {
-        state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
-    }
+    state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
 
     state.gold += 25;
     addXp(10);
@@ -634,7 +637,7 @@ function healNexus(amount) {
 }
 
 /* ==========================================================================
-   9. LOJA COMPLETA E INVENTÁRIO (COM VENDA)
+   9. LOJA E INVENTÁRIO
    ========================================================================== */
 window.toggleShop = function() {
     const modal = document.getElementById('shop-modal');
@@ -721,7 +724,7 @@ function applyItemStats(stats, mult) {
 }
 
 /* ==========================================================================
-   10. MINIONS & FARM NA TELA
+   10. MINIONS & FARM
    ========================================================================== */
 window.buyMinion = function(lvlKey) {
     const mType = MINION_TYPES[lvlKey];
@@ -749,8 +752,8 @@ window.farmEnemyMinion = function(id, clientX, clientY, reward) {
 }
 
 /* ==========================================================================
-   11. EVENTOS ALEATÓRIOS GLOBAIS
-   ========================================================================= */
+   11. EVENTOS ALEATÓRIOS
+   ========================================================================== */
 const EVENTS = [
     { title: 'SURTO DE OURO', desc: 'Ouro passivo e GPS duplicados por 15s.', apply: s => s.baseGps *= 2, remove: s => s.baseGps /= 2 },
     { title: 'FRENESI NA Tropa', desc: 'Minions aliados com ataque dobrado.', apply: s => s.myMinions.forEach(m => m.atk *= 2), remove: s => s.myMinions.forEach(m => m.atk /= 2) }
@@ -776,7 +779,7 @@ function triggerRandomEvent() {
 }
 
 /* ==========================================================================
-   12. RENDERIZAÇÃO & LOOPS DE TEMPO DO JOGO
+   12. RENDERIZAÇÃO & LOOPS DO JOGO
    ========================================================================= */
 function updateUI() {
     if (state.player.champ === 'galo') state.stats.vamp = state.stats.crit;
