@@ -1,5 +1,5 @@
 // ==========================================================================
-// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA
+// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA (BORBOLETA MALZAHAR STYLE)
 // ==========================================================================
 import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
 
@@ -27,10 +27,10 @@ const ALL_ITEMS = {
     'bota_cadelagem': { name: 'Bota (Cadelagem) 1000g', cost: 1000, type: 'cabra', stats: { ap: 3, ad: 4, crit: 5 }, desc: '+20 Vel. de carta.' },
 
     // Borboleta
-    'incubus': { name: 'Incubus 3000g', cost: 3000, type: 'borboleta', stats: { ap: 80, ad: 50, armor: 30 }, desc: 'Recupere vida ao atacar com borboletas.' },
+    'incubus': { name: 'Incubus 3000g', cost: 3000, type: 'borboleta', stats: { ap: 80, ad: 50, armor: 30 }, desc: 'Recupere vida ao invocar bots.' },
     'dono_inferno': { name: 'Dono do Inferno 4000g', cost: 4000, type: 'borboleta', stats: { ad: 20, ap: 80, bonusHp: 300, armor: 90 }, desc: 'Renasça após a morte (10 min CD).' },
     'fome_luxuria': { name: 'Fome de Luxúria 3500g', cost: 3500, type: 'borboleta', stats: { ap: 110, crit: 40, mr: 40, bonusHp: 100 }, desc: 'Bloqueie uma ação inimiga a cada 5 min.' },
-    'bibi_fogosa': { name: 'Bibi Fogosa 4000g', cost: 4000, type: 'borboleta', stats: { ap: 90, ad: 80 }, desc: 'Nocauteie e dê dano contínuo por 6s.' },
+    'bibi_fogosa': { name: 'Bibi Fogosa 4000g', cost: 4000, type: 'borboleta', stats: { ap: 90, ad: 80 }, desc: 'Bots nocauteiam e dão dano contínuo.' },
     'vem_com_tudo': { name: 'Vem com Tudo 3900g', cost: 3900, type: 'borboleta', stats: { armor: 100, mr: 100 }, desc: 'Abaixo de 60% HP, reduz dano em 40%.' },
     'bota_funk': { name: 'Bota (Funk) 1000g', cost: 1000, type: 'borboleta', stats: { ap: 3, bonusHp: 40 }, desc: '+30 Vel. de carta.' }
 };
@@ -64,9 +64,27 @@ const CHAMPION_CARDS = {
         { name: 'Água', type: 'cabra', cost: 1, desc: 'Hidrata-se e recupera vida/energia.', action: (s) => executeCardAttack('Água', () => { healNexus(200); s.energy = Math.min(s.maxEnergy, s.energy + 1); }) }
     ],
     'borboleta': [
-        { name: 'Akuma', type: 'borboleta', cost: 2, desc: 'Borboleta com energia negativa que nerfa o deck inimigo.', action: (s) => executeCardAttack('Akuma', () => { dealDamage(90); s.stats.ad += 8; }) },
-        { name: 'Beijo Saliente', type: 'borboleta', cost: 3, desc: 'Infecta e drena 5% da vida máxima por segundo.', action: (s) => executeCardAttack('Beijo Saliente', () => { dealDamage(s.enemyNexus.hp * 0.05 + 150); healNexus(150); }) },
-        { name: 'Desejo do Pecado', type: 'borboleta', cost: 2, desc: 'Confere poderes temporários da borboleta.', action: (s) => executeCardAttack('Desejo do Pecado', () => { dealDamage(180); s.stats.ap += 10; }) }
+        { 
+            name: 'Akuma (Invocar Bot)', 
+            type: 'borboleta', 
+            cost: 2, 
+            desc: 'Dispara um Akuma para infiltrar o deck adversário e invocar um Bot Sombra que copia o oponente por 8s. Suas cartas ficam em branco enquanto o bot age!', 
+            action: (s) => executeCardAttack('Akuma', () => spawnButterflyBot(s)) 
+        },
+        { 
+            name: 'Beijo Saliente', 
+            type: 'borboleta', 
+            cost: 3, 
+            desc: 'Infecta e drena status vitais para fortalecer seus bots ativos.', 
+            action: (s) => executeCardAttack('Beijo Saliente', () => { dealDamage(s.stats.ap * 1.8); healNexus(120); }) 
+        },
+        { 
+            name: 'Desejo do Pecado', 
+            type: 'borboleta', 
+            cost: 2, 
+            desc: 'Amplifica o poder oculto das borboletas negras.', 
+            action: (s) => executeCardAttack('Desejo do Pecado', () => { s.stats.ap += 15; showFloatingText('AP Aumentado!', innerWidth/2, 200, 'gold'); }) 
+        }
     ],
     'global': [
         { name: 'Poção Rápida', type: 'global', cost: 1, desc: 'Cura 150 HP do Nexus.', action: (s) => executeCardAttack('Poção Rápida', () => healNexus(150)) },
@@ -75,7 +93,7 @@ const CHAMPION_CARDS = {
 };
 
 /* ==========================================================================
-   2. ESTADO GLOBAL DO JOGO & SISTEMA DE CRÍTICO DETERMINÍSTICO (LoL Style)
+   2. ESTADO GLOBAL DO JOGO & SISTEMA DE CRÍTICO DETERMINÍSTICO
    ========================================================================= */
 let state = {
     player: { name: '', room: '', champ: '' },
@@ -86,6 +104,7 @@ let state = {
     deck: [], maxDeckCards: 20,
     inventory: [],
     myMinions: [], enemyMinions: [],
+    butterflyBots: [], // Bots estilo Malzahar ativos
     roomChampions: [], activeEvent: null,
     cabraInk: 'vermelho',
     marolaStacks: 0,
@@ -93,7 +112,7 @@ let state = {
     myNexus: { hp: 5000, maxHp: 5000 },
     enemyNexus: { hp: 5000, maxHp: 5000 },
     stats: { ad: 15, ap: 15, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0 },
-    critCredit: 0 // Sistema LoL de Crítico Determinístico
+    critCredit: 0
 };
 
 /* ==========================================================================
@@ -107,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function injectShopAndCabraUI() {
     const resourcePanel = document.querySelector('.resource-panel');
-    if (resourcePanel && !document.getElementById('cabra-panel').innerHTML) {
+    if (resourcePanel && document.getElementById('cabra-panel') && !document.getElementById('cabra-panel').innerHTML) {
         document.getElementById('cabra-panel').innerHTML = `
             <div style="font-size:0.75rem; color:var(--gold); margin-bottom:2px;">TINTAS DA CABRA:</div>
             <div style="display:flex; gap:4px;">
@@ -167,7 +186,7 @@ function setupLobby() {
 function applyChampBaseStats() {
     if (state.player.champ === 'galo') { state.stats.ad = 55; state.stats.crit = 15; state.stats.vamp = 15; }
     if (state.player.champ === 'cabra') { state.stats.ap = 50; state.stats.armor = 20; }
-    if (state.player.champ === 'borboleta') { state.stats.ap = 40; state.stats.ad = 30; state.stats.mr = 25; }
+    if (state.player.champ === 'borboleta') { state.stats.ap = 50; state.stats.ad = 30; state.stats.mr = 25; }
 }
 
 /* ==========================================================================
@@ -210,15 +229,46 @@ window.buyDeckReload = function() {
 window.changeInk = function(color) {
     if (state.cabraInk === color) return;
     state.cabraInk = color;
-    state.hand = []; // Punição: Limpa a mão ao trocar de tinta
-    state.energy = 0; // Punição: Perde a energia do turno
+    state.hand = []; 
+    state.energy = 0; 
     buildDeck();
     showFloatingText(`Tinta alterada para ${color.toUpperCase()}! Turno reiniciado.`, innerWidth/2, 300, 'cyan');
     updateUI();
 }
 
 /* ==========================================================================
-   5. DRAG & DROP, ANIMAÇÕES DE ATAQUE E COMBATE
+   5. MECÂNICA DE BOTS DA BORBOLETA (MALZAHAR STYLE)
+   ========================================================================= */
+function spawnButterflyBot(s) {
+    showFloatingText('🦋 Akuma enviado! Bot Sombra Invocado!', innerWidth/2, 220, 'gold');
+    
+    // Cria um bot que replica ações e escala com o AP do usuário
+    const newBot = {
+        id: Math.random(),
+        name: 'Bot Sombra (Cópia Inimiga)',
+        power: s.stats.ap * 1.5,
+        duration: 8 // segundos ativo
+    };
+
+    state.butterflyBots.push(newBot);
+    updateUI();
+
+    // Drena passivamente atributos do inimigo simulado enquanto o bot age
+    let botInterval = setInterval(() => {
+        dealDamage(newBot.power * 0.4);
+    }, 1500);
+
+    // Remove o bot após 8 segundos e devolve o controle total das cartas
+    setTimeout(() => {
+        clearInterval(botInterval);
+        state.butterflyBots = state.butterflyBots.filter(b => b.id !== newBot.id);
+        showFloatingText('🦋 Bot Sombra desvanecido.', innerWidth/2, 220, 'cyan');
+        updateUI();
+    }, 8000);
+}
+
+/* ==========================================================================
+   6. DRAG & DROP, ANIMAÇÕES DE ATAQUE E COMBATE
    ========================================================================= */
 function setupDragAndDrop() {
     const dropZone = document.getElementById('drop-zone');
@@ -233,6 +283,12 @@ function setupDragAndDrop() {
 
 function playCard(instanceId) {
     if (state.isDead) return;
+
+    // Se o Miraculous da Borboleta estiver com Bots ativos, as cartas ficam em branco e sem efeito
+    if (state.player.champ === 'borboleta' && state.butterflyBots.length > 0) {
+        return showFloatingText('⚠️ Cartas em branco! Seus Bots estão em campo replicando o inimigo!', innerWidth/2, 220, 'danger');
+    }
+
     const idx = state.hand.findIndex(c => c.instanceId === instanceId);
     if (idx === -1) return;
     const card = state.hand[idx];
@@ -245,7 +301,6 @@ function playCard(instanceId) {
     updateUI();
 }
 
-// Animação de Voo da Carta até o Alvo (Inimigo/Nexus)
 function executeCardAttack(cardName, damageCallback) {
     const enemyCardEl = document.querySelector('.nexus-card.enemy');
     if (!enemyCardEl) {
@@ -274,7 +329,6 @@ function executeCardAttack(cardName, damageCallback) {
     }, 550);
 }
 
-// Sistema de Crítico Determinístico estilo League of Legends (Evita azar/sorte pura)
 function calculateDeterministicCrit(baseDmg) {
     let critChance = state.stats.crit / 100;
     let isCrit = false;
@@ -286,7 +340,7 @@ function calculateDeterministicCrit(baseDmg) {
         isCrit = true;
         state.critCredit = 0;
     } else {
-        state.critCredit += critChance * 0.5; // Acumula crédito para o próximo ataque
+        state.critCredit += critChance * 0.5;
     }
 
     let finalDmg = baseDmg;
@@ -301,7 +355,7 @@ function calculateDeterministicCrit(baseDmg) {
 
 function dealDamage(amount, isTrue = false) {
     state.enemyNexus.hp = Math.max(0, state.enemyNexus.hp - amount);
-    state.gold += 20; // Recompensa por dano/ataque
+    state.gold += 20;
 
     showFloatingText(`-${Math.floor(amount)}`, innerWidth/1.5, 200, 'danger');
     
@@ -311,7 +365,6 @@ function dealDamage(amount, isTrue = false) {
         setTimeout(() => enemyNexusEl.classList.remove('taking-damage'), 300);
     }
 
-    // Passiva de Vampirismo do Galo proporcional ao crítico
     if (state.player.champ === 'galo') {
         state.stats.vamp = state.stats.crit;
     }
@@ -337,7 +390,7 @@ function healNexus(amount) {
 }
 
 /* ==========================================================================
-   6. LOJA COMPLETA E INVENTÁRIO COM OPÇÃO DE VENDA
+   7. LOJA COMPLETA E INVENTÁRIO COM OPÇÃO DE VENDA
    ========================================================================= */
 window.toggleShop = function() {
     const modal = document.getElementById('shop-modal');
@@ -346,6 +399,7 @@ window.toggleShop = function() {
 
 function populateShop() {
     const grid = document.getElementById('shop-grid');
+    if (!grid) return;
     grid.innerHTML = '';
     Object.keys(ALL_ITEMS).forEach(key => {
         const item = ALL_ITEMS[key];
@@ -395,6 +449,7 @@ window.sellItem = function(index) {
 
 function renderInventory() {
     const list = document.getElementById('inventory-list');
+    if (!list) return;
     list.innerHTML = '';
     state.inventory.forEach((key, index) => {
         const item = ALL_ITEMS[key];
@@ -422,7 +477,7 @@ function applyItemStats(stats, mult) {
 }
 
 /* ==========================================================================
-   7. MINIONS & FARM NA TELA (Bedwars Style)
+   8. MINIONS & FARM NA TELA (Bedwars Style)
    ========================================================================= */
 window.buyMinion = function(lvlKey) {
     const mType = MINION_TYPES[lvlKey];
@@ -447,7 +502,7 @@ window.farmEnemyMinion = function(id, clientX, clientY, reward) {
 }
 
 /* ==========================================================================
-   8. EVENTOS ALEATÓRIOS GLOBAIS
+   9. EVENTOS ALEATÓRIOS GLOBAIS
    ========================================================================= */
 const EVENTS = [
     { title: 'SURTO DE OURO', desc: 'Ouro passivo e GPS duplicados por 15s.', apply: s => s.baseGps *= 2, remove: s => s.baseGps /= 2 },
@@ -474,33 +529,37 @@ function triggerRandomEvent() {
 }
 
 /* ==========================================================================
-   9. RENDERIZAÇÃO & LOOPS DE TEMPO DO JOGO
+   10. RENDERIZAÇÃO & LOOPS DE TEMPO DO JOGO
    ========================================================================= */
 function updateUI() {
     if (state.player.champ === 'galo') state.stats.vamp = state.stats.crit;
     let dynamicAp = state.stats.ap;
     if (state.inventory.includes('bf2300')) dynamicAp += state.stats.armor;
 
-    document.getElementById('my-hp-text').innerText = `${Math.floor(state.myNexus.hp)} HP`;
+    const myHpText = document.getElementById('my-hp-text');
+    if (myHpText) myHpText.innerText = `${Math.floor(state.myNexus.hp)} HP`;
     let maxMyHp = state.myNexus.maxHp + state.stats.bonusHp;
-    document.getElementById('my-hp-bar').style.width = `${Math.max(0, Math.min(100, (state.myNexus.hp / maxMyHp) * 100))}%`;
+    const myHpBar = document.getElementById('my-hp-bar');
+    if (myHpBar) myHpBar.style.width = `${Math.max(0, Math.min(100, (state.myNexus.hp / maxMyHp) * 100))}%`;
 
-    document.getElementById('enemy-hp-text').innerText = `${Math.floor(state.enemyNexus.hp)} HP`;
-    document.getElementById('enemy-hp-bar').style.width = `${Math.max(0, Math.min(100, (state.enemyNexus.hp / state.enemyNexus.maxHp) * 100))}%`;
+    const enemyHpText = document.getElementById('enemy-hp-text');
+    if (enemyHpText) enemyHpText.innerText = `${Math.floor(state.enemyNexus.hp)} HP`;
+    const enemyHpBar = document.getElementById('enemy-hp-bar');
+    if (enemyHpBar) enemyHpBar.style.width = `${Math.max(0, Math.min(100, (state.enemyNexus.hp / state.enemyNexus.maxHp) * 100))}%`;
     
-    document.getElementById('stat-ad').innerText = Math.floor(state.stats.ad);
-    document.getElementById('stat-ap').innerText = Math.floor(dynamicAp);
-    document.getElementById('stat-armor').innerText = Math.floor(state.stats.armor);
-    document.getElementById('stat-mr').innerText = Math.floor(state.stats.mr);
-    document.getElementById('stat-crit').innerText = `${Math.floor(state.stats.crit)}%`;
-    document.getElementById('stat-vamp').innerText = `${Math.floor(state.stats.vamp)}%`;
+    if (document.getElementById('stat-ad')) document.getElementById('stat-ad').innerText = Math.floor(state.stats.ad);
+    if (document.getElementById('stat-ap')) document.getElementById('stat-ap').innerText = Math.floor(dynamicAp);
+    if (document.getElementById('stat-armor')) document.getElementById('stat-armor').innerText = Math.floor(state.stats.armor);
+    if (document.getElementById('stat-mr')) document.getElementById('stat-mr').innerText = Math.floor(state.stats.mr);
+    if (document.getElementById('stat-crit')) document.getElementById('stat-crit').innerText = `${Math.floor(state.stats.crit)}%`;
+    if (document.getElementById('stat-vamp')) document.getElementById('stat-vamp').innerText = `${Math.floor(state.stats.vamp)}%`;
 
-    document.getElementById('gold-text').innerText = `${Math.floor(state.gold)} G`;
+    if (document.getElementById('gold-text')) document.getElementById('gold-text').innerText = `${Math.floor(state.gold)} G`;
     let extraGps = state.inventory.includes('cadelagem') ? 4 : 0;
-    document.getElementById('gps-text').innerText = `${state.baseGps + extraGps} G/s`;
-    document.getElementById('energy-text').innerText = `${state.energy}/${state.maxEnergy}`;
-    document.getElementById('deck-count').innerText = state.deck.length;
-    document.getElementById('hand-limit-text').innerText = `${state.hand.length}/${state.maxHandSize}`;
+    if (document.getElementById('gps-text')) document.getElementById('gps-text').innerText = `${state.baseGps + extraGps} G/s`;
+    if (document.getElementById('energy-text')) document.getElementById('energy-text').innerText = `${state.energy}/${state.maxEnergy}`;
+    if (document.getElementById('deck-count')) document.getElementById('deck-count').innerText = state.deck.length;
+    if (document.getElementById('hand-limit-text')) document.getElementById('hand-limit-text').innerText = `${state.hand.length}/${state.maxHandSize}`;
 
     renderHand();
     renderMinions();
@@ -508,39 +567,54 @@ function updateUI() {
 
 function renderHand() {
     const cont = document.getElementById('hand-container');
+    if (!cont) return;
     cont.innerHTML = '';
+
+    let isHandBlank = (state.player.champ === 'borboleta' && state.butterflyBots.length > 0);
+
     state.hand.forEach(c => {
         let el = document.createElement('div');
         el.className = 'card';
-        el.draggable = true;
+        if (isHandBlank) el.classList.add('blank-card'); // Estilo visual opcional para cartas em branco
+        
+        el.draggable = !isHandBlank;
         el.innerHTML = `
             <div>
-                <strong class="card-title">${c.name}</strong>
-                <p class="card-desc">${c.desc}</p>
+                <strong class="card-title">${isHandBlank ? '🌀 [EM BRANCO]' : c.name}</strong>
+                <p class="card-desc">${isHandBlank ? 'Seus bots estão agindo por você. Sem efeito.' : c.desc}</p>
             </div>
             <div class="card-footer">
-                <span class="energy-cost">${c.cost} EN</span>
+                <span class="energy-cost">${isHandBlank ? '0' : c.cost} EN</span>
             </div>
         `;
-        el.addEventListener('dragstart', e => {
-            el.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', c.instanceId);
-        });
-        el.addEventListener('dragend', () => el.classList.remove('dragging'));
+        
+        if (!isHandBlank) {
+            el.addEventListener('dragstart', e => {
+                el.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', c.instanceId);
+            });
+            el.addEventListener('dragend', () => el.classList.remove('dragging'));
+        }
         cont.appendChild(el);
     });
 }
 
 function renderMinions() {
     const lane = document.getElementById('my-minions-lane');
+    if (!lane) return;
     lane.innerHTML = '';
     state.myMinions.forEach(m => {
         lane.innerHTML += `<div class="minion-card" style="border-color:var(--cyan-glow)"><strong>${m.name}</strong><p>⚔️ ${m.atk} | ❤️ ${m.currentHp}</p></div>`;
+    });
+    // Renderiza também os bots da borboleta na lane
+    state.butterflyBots.forEach(b => {
+        lane.innerHTML += `<div class="minion-card" style="border-color:#a855f7"><strong>🦋 ${b.name}</strong><p>⚡ Poder: ${Math.floor(b.power)}</p></div>`;
     });
 }
 
 function renderEnemyMinions() {
     const lane = document.getElementById('enemy-minions-lane');
+    if (!lane) return;
     lane.innerHTML = '';
     state.enemyMinions.forEach(m => {
         lane.innerHTML += `
@@ -553,9 +627,11 @@ function renderEnemyMinions() {
 
 function updatePlayersBar() {
     const b = document.getElementById('players-bar');
+    if (!b) return;
     b.innerHTML = `<span style="color:#94a3b8; font-weight:bold;">SALA: ${state.player.room.toUpperCase()}</span><div class="players-list" id="plist"></div>`;
     state.roomChampions.forEach(c => {
-        document.getElementById('plist').innerHTML += `<div class="player-chip"><span class="badge-champ badge-${c}">${c}</span></div>`;
+        const plist = document.getElementById('plist');
+        if (plist) plist.innerHTML += `<div class="player-chip"><span class="badge-champ badge-${c}">${c}</span></div>`;
     });
 }
 
@@ -570,7 +646,6 @@ function showFloatingText(txt, x, y, type) {
 }
 
 function startGameLoops() {
-    // Loop de ouro passivo e regeneração de energia
     setInterval(() => {
         if (state.isDead) return;
         let gps = state.baseGps + (state.inventory.includes('cadelagem') ? 4 : 0);
@@ -579,7 +654,6 @@ function startGameLoops() {
         updateUI();
     }, 2000);
 
-    // Loop de ataque dos minions aliados no Nexus inimigo
     setInterval(() => {
         if (state.isDead) return;
         let totalDmg = 0;
@@ -587,17 +661,14 @@ function startGameLoops() {
         if (totalDmg > 0) dealDamage(totalDmg);
     }, 4000);
 
-    // Loop de spawn de tropas inimigas para farm
     setInterval(() => {
         if (!state.isDead) spawnEnemyMinion();
     }, 9000);
 
-    // Loop de eventos globais aleatórios
     setInterval(() => {
         if (!state.isDead && Math.random() > 0.45) triggerRandomEvent();
     }, 35000);
 
-    // Passiva do Item Java da Cabra (Cura 5 HP a cada 20s)
     setInterval(() => {
         if (!state.isDead && state.inventory.includes('java')) {
             healNexus(5);
