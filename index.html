@@ -4,126 +4,151 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UNO Legends: Miraculous Nexus</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="lobby-screen" class="screen active">
-        <div class="lobby-container">
-            <h1 style="text-align: center; color: var(--gold); margin-bottom: 2rem;">UNO Legends: Batalha de Nexus</h1>
+    <div id="event-banner">
+        TITAN FALL - DANO DE MINIONS DOBRADO!
+    </div>
+
+    <div id="lobby-screen" class="screen-container">
+        <div class="lobby-box">
+            <h1>Miraculous Nexus</h1>
             
-            <div class="connection-panel">
-                <input type="text" id="player-name" class="styled-input" placeholder="Seu Nickname" autocomplete="off">
-                <input type="text" id="room-id" class="styled-input" placeholder="ID da Sala (Ex: Sala123)" autocomplete="off">
-                <button class="btn btn-primary" id="btn-join-game">Entrar na Partida</button>
+            <div class="input-group">
+                <label for="player-name">Nome do Invocador</label>
+                <input type="text" id="player-name" placeholder="Digite seu nome..." autocomplete="off">
+            </div>
+            
+            <div class="input-group">
+                <label for="room-id">ID da Sala de Combate</label>
+                <input type="text" id="room-id" placeholder="Ex: sala_777" autocomplete="off">
             </div>
 
-            <h2 style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">Escolha seu Miraculous</h2>
             <div class="champ-grid">
-                <div class="champ-card" data-champ="galo" id="champ-galo">
-                    <h3 style="color: var(--theme-galo);">Galo</h3>
-                    <i style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 10px;">"Queridinha!, vá para o quinto dos infernos"</i>
-                    <p style="font-size: 0.85rem;">Focado em Itens de Crítico e Ataque Básico.</p>
-                    <strong style="font-size: 0.8rem; color: var(--gold); display: block; margin-top: 10px;">Passiva: Vampirismo = % de Crítico</strong>
+                <div class="champ-select-btn" data-champ="galo">
+                    <h3 style="color: var(--theme-galo);">GALO</h3>
+                    <p style="font-size: 0.8rem; color: #cbd5e1;">Dano Crítico & Vampirismo</p>
                 </div>
-                <div class="champ-card" data-champ="cabra" id="champ-cabra">
-                    <h3 style="color: var(--theme-cabra);">Cabra</h3>
-                    <i style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 10px;">"Em terra de orelhudo, qualquer sussurro é fofoca"</i>
-                    <p style="font-size: 0.85rem;">Mago AP. Depende de tintas para definir seu deck mágico.</p>
-                    <strong style="font-size: 0.8rem; color: var(--gold); display: block; margin-top: 10px;">Passiva: potes de tinta</strong>
+                <div class="champ-select-btn" data-champ="cabra">
+                    <h3 style="color: var(--theme-cabra);">CABRA</h3>
+                    <p style="font-size: 0.8rem; color: #cbd5e1;">Magia Arcana & Defesa</p>
                 </div>
-                <div class="champ-card" data-champ="borboleta" id="champ-borboleta">
-                    <h3 style="color: var(--theme-borboleta);">Borboleta</h3>
-                    <i style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 10px;">"Me xinga!!"</i>
-                    <p style="font-size: 0.85rem;">Satanás que tem dano e lhe chupa.</p>
-                    <strong style="font-size: 0.8rem; color: var(--gold); display: block; margin-top: 10px;">Passiva: Drenagem</strong>
+                <div class="champ-select-btn" data-champ="borboleta">
+                    <h3 style="color: var(--theme-borboleta);">BORBOLETA</h3>
+                    <p style="font-size: 0.8rem; color: #cbd5e1;">Suporte & Controle</p>
                 </div>
             </div>
+
+            <button id="btn-join-game" class="btn btn-cyan" style="width: 100%; font-size: 1.3rem; padding: 15px;">
+                ENTRAR NA ARENA
+            </button>
         </div>
     </div>
 
-    <div id="game-screen" class="screen">
+    <div id="game-screen" class="hidden">
         
-        <div class="hud-top">
-            <div class="nexus-container">
-                <div class="nexus-header">
-                    <span style="color: #3b82f6;">SEU NEXUS</span>
-                </div>
-                <div class="hp-bar-wrapper">
-                    <div id="my-nexus-fill" class="hp-bar-fill my-nexus" style="width: 100%;"></div>
-                    <div id="my-nexus-hp-text" class="hp-value">5000 / 5000</div>
-                </div>
+        <div class="players-bar" id="players-bar">
             </div>
 
-            <div class="game-economy">
-                <div id="gold-display" class="gold-display">0 G</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">+<span id="gold-per-sec">5</span> G/s</div>
-            </div>
-
-            <div class="nexus-container">
-                <div class="nexus-header">
-                    <span style="color: var(--danger);">NEXUS INIMIGO</span>
-                </div>
-                <div class="hp-bar-wrapper">
-                    <div id="enemy-nexus-fill" class="hp-bar-fill enemy-nexus" style="width: 100%;"></div>
-                    <div id="enemy-nexus-hp-text" class="hp-value">5000 / 5000</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="game-board-center">
-            <h2 id="action-log" style="color: var(--gold); text-shadow: 0 0 10px rgba(251,191,36,0.3); text-align: center; height: 30px;">Aguardando início da partida...</h2>
+        <div class="game-layout">
             
-            <div id="cabra-ink-panel" style="display: none; margin-top: 20px; gap: 15px; align-items: center;">
-                <span style="font-weight: bold;">Misturar Tintas:</span>
-                <button class="btn" style="background: #dc2626; color: white;" id="ink-red">Vermelho (Dano)</button>
-                <button class="btn" style="background: #eab308; color: black;" id="ink-yellow">Amarelo (Defesa)</button>
-                <button class="btn" style="background: #3b82f6; color: white;" id="ink-blue">Azul (Utilidade)</button>
-                <span style="margin-left: 10px; color: var(--text-muted);">Tinta Atual: <strong id="current-ink-display" style="color: #dc2626;">Vermelho</strong></span>
-            </div>
-        </div>
-
-        <div class="hud-bottom">
-            <div class="stats-container">
-                <div class="stat-box">AD <span id="stat-ad">0</span></div>
-                <div class="stat-box">AP <span id="stat-ap">0</span></div>
-                <div class="stat-box">Armadura <span id="stat-armor">0</span></div>
-                <div class="stat-box">Res. Mag <span id="stat-mr">0</span></div>
-                <div class="stat-box">Crítico <span id="stat-crit">0%</span></div>
-                <div class="stat-box">Vampirismo <span id="stat-vamp">0%</span></div>
-            </div>
-
-            <div class="hand-container" id="player-hand">
+            <div class="nexus-hud">
+                
+                <div class="nexus-card">
+                    <div class="nexus-header">
+                        <span class="nexus-title" style="color: var(--cyan-glow);">Seu Nexus</span>
+                        <span class="nexus-hp-value" id="my-hp-text">5000 HP</span>
+                    </div>
+                    <div class="hp-bar-outer">
+                        <div class="hp-bar-inner" id="my-hp-bar" style="width: 100%;"></div>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 12px; font-size: 0.85rem; color: #94a3b8; justify-content: space-between;">
+                        <span>AD: <b id="stat-ad" style="color:#fff;">15</b></span>
+                        <span>AP: <b id="stat-ap" style="color:#fff;">15</b></span>
+                        <span>DEF: <b id="stat-armor" style="color:#fff;">10</b></span>
+                        <span>MR: <b id="stat-mr" style="color:#fff;">10</b></span>
+                        <span>Crit: <b id="stat-crit" style="color:var(--gold);">0%</b></span>
+                        <span>Vamp: <b id="stat-vamp" style="color:var(--danger);">0%</b></span>
+                    </div>
                 </div>
 
-            <div style="display: flex; flex-direction: column; gap: 10px; justify-content: center; min-width: 150px;">
-                <button class="btn btn-primary btn-full" id="btn-draw-deck">Novo Deck (100G)</button>
-                <button class="btn btn-gold btn-full" id="btn-open-shop">🛒 Abrir Loja</button>
-            </div>
-        </div>
-    </div>
+                <div class="nexus-card enemy">
+                    <div class="nexus-header">
+                        <span class="nexus-title" style="color: var(--danger);">Nexus Inimigo</span>
+                        <span class="nexus-hp-value" id="enemy-hp-text">5000 HP</span>
+                    </div>
+                    <div class="hp-bar-outer">
+                        <div class="hp-bar-inner" id="enemy-hp-bar" style="width: 100%;"></div>
+                    </div>
+                </div>
 
-    <div id="shop-modal" class="shop-modal">
-        <div class="shop-content">
-            <div class="shop-header">
-                <h2 style="color: var(--gold);">🛒 Loja de Itens</h2>
-                <button class="btn btn-danger" id="btn-close-shop">FECHAR [X]</button>
             </div>
-            
-            <div class="shop-layout">
-                <div class="shop-items" id="shop-grid">
+
+            <div class="battlefield">
+                <span class="lane-title" style="top: 10px;">Tropa Inimiga</span>
+                <div class="lane" id="enemy-minions-lane">
                     </div>
                 
-                <div class="shop-inventory">
-                    <h3 style="color: var(--info); margin-bottom: 1rem; text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">Seu Inventário</h3>
-                    <div id="inventory-list" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="drop-zone" id="drop-zone">
+                    ARRASTE SUAS CARTAS AQUI PARA INVOCAR
+                </div>
+                
+                <span class="lane-title" style="bottom: 10px;">Sua Tropa</span>
+                <div class="lane" id="my-minions-lane">
+                    </div>
+            </div>
+
+            <div class="bottom-controls">
+                
+                <div class="resource-panel">
+                    <div class="resource-item">
+                        <span>Ouro:</span>
+                        <span class="gold-val" id="gold-text">200 G</span>
+                    </div>
+                    <div class="resource-item" style="font-size: 0.8rem; color: #94a3b8;">
+                        <span>Farm Passivo:</span>
+                        <span id="gps-text">10 G/s</span>
+                    </div>
+                    <div class="resource-item">
+                        <span>Energia:</span>
+                        <span class="energy-val" id="energy-text">3/3</span>
+                    </div>
+                    <button class="btn btn-cyan" style="margin-top: 8px; font-size: 0.75rem;" onclick="buyMinion('m_lvl1')">
+                        Comprar Minion (40G)
+                    </button>
+                </div>
+
+                <div class="hand-wrapper">
+                    <div class="hand-limit-bar">
+                        <span>Cartas na Mão</span>
+                        <span id="hand-limit-text">0/7</span>
+                    </div>
+                    <div class="hand-container" id="hand-container">
                         </div>
                 </div>
+
+                <div class="deck-container">
+                    <div class="deck-pile" id="deck-pile" onclick="drawCard()">
+                        <span class="deck-pile-count" id="deck-count">15</span>
+                        <span style="font-size: 0.75rem; color: var(--gold); font-weight: 700; letter-spacing: 1px;">MONTE</span>
+                    </div>
+                    <button class="btn btn-gold" style="font-size: 0.7rem; width: 100%;" onclick="buyDeckReload()">
+                        Recarregar (100G)
+                    </button>
+                </div>
+
             </div>
         </div>
     </div>
 
+    <script type="module" src="firebase.js"></script>
     <script type="module" src="game.js"></script>
-
 </body>
 </html>
