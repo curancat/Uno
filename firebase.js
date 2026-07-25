@@ -8,14 +8,16 @@ import { getDatabase, ref, set, push, onValue, update, remove } from "https://ww
 // CONFIGURAÇÃO DO SEU BANCO DE DADOS FIREBASE
 // (Substitua abaixo com as credenciais do seu projeto criado no console do Firebase)
 // ==========================================================================
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "SUA_API_KEY_AQUI",
-    authDomain: "seu-projeto.firebaseapp.com",
-    databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com/",
-    projectId: "seu-projeto",
-    storageBucket: "seu-projeto.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcde"
+  apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
+  authDomain: "uno3-17cc6.firebaseapp.com",
+  databaseURL: "https://uno3-17cc6-default-rtdb.firebaseio.com",
+  projectId: "uno3-17cc6",
+  storageBucket: "uno3-17cc6.firebasestorage.app",
+  messagingSenderId: "834810148105",
+  appId: "1:834810148105:web:e2824feabb794c39670fd8",
+  measurementId: "G-PTCZVR4Z77"
 };
 
 // Inicializa o Firebase
