@@ -4,7 +4,7 @@
 import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
 
 /* ==========================================================================
-   1. BANCO DE DADOS: ITENS, MINIONS E CARTAS DE CAMPEÕES (ATUALIZADO)
+   1. BANCO DE DADOS: ITENS, MINIONS E CARTAS DE CAMPEÕES
    ========================================================================== */
 const ALL_ITEMS = {
     // Globais
@@ -44,34 +44,64 @@ const MINION_TYPES = {
 
 const CHAMPION_CARDS = {
     'galo': [
-        { name: 'Auto Ataque', type: 'galo', cost: 1, desc: 'Ataque básico (Usa AD e Crítico determinístico com Vampirismo passivo).', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(calculateDeterministicCrit(s.stats.ad))) },
-        { name: 'Marola', type: 'galo', cost: 2, desc: 'Pena envenenada que dá dano contínuo. 3 pilhas = 10% da vida atual em dano verdadeiro.', action: (s) => executeCardAttack('Marola', () => { s.marolaStacks = (s.marolaStacks || 0) + 1; if(s.marolaStacks >= 3) { dealDamage(s.enemyPlayerHp * 0.10, true); s.marolaStacks = 0; showFloatingText('ESTOURO DE MAROLA (Dano Verdadeiro 10%)!', innerWidth/2, 250, 'gold'); } else { dealDamage(s.stats.ad * 1.3); showFloatingText('Pena Envenenada Aplicada!', innerWidth/2, 230, 'danger'); } }) },
-        { name: 'Dessa cor eu não tenho', type: 'galo', cost: 2, desc: 'Copia a última habilidade gasta, exceto Borboleta, Joaninha e Gato Preto.', action: (s) => executeCardAttack('Cópia', () => { dealDamage(s.stats.ad * 1.6); showFloatingText('Habilidade Copiada com Sucesso!', innerWidth/2, 230, 'cyan'); }) },
-        { name: 'Aiin', type: 'galo', cost: 2, desc: 'Concede um escudo protetor que absorve dano e vai decaindo gradualmente.', action: (s) => executeCardAttack('Aiin', () => { healNexus(350); showFloatingText('Escudo Aiin Ativo!', innerWidth/2, 230, 'success'); }) },
-        { name: 'ULTI: Fúria do Galo', type: 'galo', cost: 4, desc: 'Amplifica crítico e dano proporcionalmente ao crítico atual.', action: (s) => executeCardAttack('ULTI GALO', () => { s.stats.crit += 15; s.stats.ad += s.stats.crit * 1.5; showFloatingText('⚡ ULTIMATE GALO ATIVADA!', innerWidth/2, 230, 'gold'); }) }
+        { name: 'Auto Ataque', type: 'galo', cost: 1, desc: 'Ataque básico (Usa AD e Crítico determinístico).', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(calculateDeterministicCrit(s.stats.ad))) },
+        { name: 'Marola', type: 'galo', cost: 2, desc: 'Pena envenenada. Dano contínuo. 3 pilhas = 10% da vida atual em dano verdadeiro.', action: (s) => executeCardAttack('Marola', () => { 
+            s.marolaStacks = (s.marolaStacks || 0) + 1; 
+            if(s.marolaStacks >= 3) { 
+                dealDamage(s.enemyPlayerHp * 0.10, true); 
+                s.marolaStacks = 0; 
+                showFloatingText('ESTOURO DE MAROLA (Dano Verdadeiro 10%)!', innerWidth/2, 250, 'gold'); 
+            } else { 
+                dealDamage(s.stats.ad * 1.2); 
+                showFloatingText(`Pena Envenenada! Pilhas: ${s.marolaStacks}/3`, innerWidth/2, 220, 'purple');
+            } 
+        }) },
+        { name: 'Dessa cor eu não tenho', type: 'galo', cost: 2, desc: 'Copia a última habilidade gasta pelo inimigo (Exceto Borboleta, Joaninha e Gato Preto).', action: (s) => executeCardAttack('Cópia de Habilidade', () => {
+            if (s.lastEnemySkill && !['borboleta', 'joaninha', 'gatopreto'].includes(s.lastEnemySkillType)) {
+                showFloatingText(`Copiado: ${s.lastEnemySkill}!`, innerWidth/2, 200, 'gold');
+                dealDamage(s.stats.ad * 1.8);
+            } else {
+                showFloatingText('Nenhuma habilidade válida para copiar!', innerWidth/2, 200, 'danger');
+                dealDamage(s.stats.ad);
+            }
+        }) },
+        { name: 'Aiin', type: 'galo', cost: 2, desc: 'Escudo protetor que absorve dano e decai gradualmente.', action: (s) => executeCardAttack('Aiin', () => {
+            s.stats.shield = (s.stats.shield || 0) + 400;
+            showFloatingText('Escudo Aiin Ativo (-Dano Absorvido)!', innerWidth/2, 200, 'cyan');
+        }) },
+        { name: 'Frenesi Crítico (Ult)', type: 'galo', cost: 3, desc: 'Ganha bônus de AD e crítico proporcional ao crítico atual.', action: (s) => executeCardAttack('Frenesi Crítico', () => {
+            let bonus = s.stats.crit * 1.5;
+            s.stats.ad += bonus;
+            showFloatingText(`ULT GALO: +${Math.floor(bonus)} AD Baseado em Crit!`, innerWidth/2, 200, 'gold');
+        }) }
     ],
     'cabra': [
-        // Deck Vermelho
-        { name: 'Bola de Fogo', type: 'cabra', cost: 1, desc: '[Vermelho] Atire uma bola de fogo que dá dano contínuo no inimigo por 4s.', action: (s) => executeCardAttack('Bola de Fogo', () => { dealDamage(s.stats.ap * 1.8); showFloatingText('🔥 Queimando por 4s!', innerWidth/2, 230, 'danger'); }) },
-        { name: 'Laser', type: 'cabra', cost: 2, desc: '[Vermelho] Um tiro potente queimando uma carta do oponente.', action: (s) => executeCardAttack('Laser', () => { dealDamage(s.stats.ap * 2.2); showFloatingText('⚡ Carta oponente queimada!', innerWidth/2, 230, 'danger'); }) },
-        { name: 'Lança Chamas', type: 'cabra', cost: 3, desc: '[Vermelho] 5 de dano contínuo em todos os inimigos por 4s, crescente com AP.', action: (s) => executeCardAttack('Lança Chamas', () => { dealDamage(s.stats.ap * 2.5); showFloatingText('🔥 Lança Chamas em Área!', innerWidth/2, 230, 'danger'); }) },
-        
-        // Deck Amarelo
-        { name: 'Lanterna', type: 'cabra', cost: 1, desc: '[Amarelo] Cria um escudo protetor.', action: (s) => executeCardAttack('Lanterna', () => { healNexus(200); showFloatingText('💡 Escudo de Lanterna!', innerWidth/2, 230, 'gold'); }) },
-        { name: 'Lâmpada', type: 'cabra', cost: 2, desc: '[Amarelo] Dá um escudo massivo para o seu Nexus.', action: (s) => executeCardAttack('Lâmpada', () => { healNexus(400); showFloatingText('💡 Escudo do Nexus Ativo!', innerWidth/2, 230, 'gold'); }) },
-        { name: 'Sol', type: 'cabra', cost: 2, desc: '[Amarelo] Protege as cartas na mão com radiação solar.', action: (s) => executeCardAttack('Sol', () => { s.energy = Math.min(s.maxEnergy, s.energy + 2); showFloatingText('☀️ Cartas Protegidas pelo Sol!', innerWidth/2, 230, 'gold'); }) },
-
-        // Deck Azul
-        { name: 'Pedra', type: 'cabra', cost: 1, desc: '[Azul] Jogue uma pedra no inimigo causando impacto e dano.', action: (s) => executeCardAttack('Pedra', () => { dealDamage(s.stats.ap * 1.4); showFloatingText('🪨 Impacto de Pedra!', innerWidth/2, 230, 'cyan'); }) },
-        { name: 'Chicote', type: 'cabra', cost: 2, desc: '[Azul] Chicoteie alguém, roubando uma carta do deck oponente.', action: (s) => executeCardAttack('Chicote', () => { dealDamage(s.stats.ap * 1.5); s.gold += 30; showFloatingText('⚡ Carta roubada com Chicote!', innerWidth/2, 230, 'cyan'); }) },
-        { name: 'Água', type: 'cabra', cost: 1, desc: '[Azul] Hidrate-se e recupere vida ou tinta.', action: (s) => executeCardAttack('Água', () => { healNexus(250); s.inkPots.blue = Math.min(s.inkPots.max, s.inkPots.blue + 2); showFloatingText('💧 Hidratado! Vida e Tintas restauradas.', innerWidth/2, 230, 'cyan'); }) }
+        { name: 'Carta em Branco', type: 'cabra', cost: 0, desc: 'Sem efeito. Use a Oficina de Tintas para desenhar e criar cartas!', action: (s) => showFloatingText('Carta em branco! Desenhe usando tintas.', innerWidth/2, 200, 'danger') }
     ],
     'borboleta': [
         { name: 'Auto Ataque', type: 'borboleta', cost: 1, desc: 'Ataque básico simples (AD/AP).', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(s.stats.ap)) },
-        { name: 'Akuma', type: 'borboleta', cost: 2, desc: 'Carrega borboleta com energia negativa. Alvos ficam com cartas nerfadas e drenam efeitos para a próxima carta no monte.', action: (s) => executeCardAttack('Akuma', () => spawnButterflyBot(s)) },
-        { name: 'Beijo Saliente', type: 'borboleta', cost: 3, desc: 'Infecta discretamente e por 10s drena 5% da vida máxima por segundo, repassando para você.', action: (s) => executeCardAttack('Beijo Saliente', () => { let drained = s.enemyPlayerMaxHp * 0.05 + 120; dealDamage(drained); healNexus(drained); showFloatingText('💋 Vida drenada e absorvida!', innerWidth/2, 200, 'purple'); }) },
-        { name: 'Desejo do Pecado', type: 'borboleta', cost: 2, desc: 'Manda borboleta disfarçada para a mão de alguém, dando os poderes do campeão inimigo até ser jogada.', action: (s) => executeCardAttack('Desejo do Pecado', () => { dealDamage(190); s.stats.ap += 20; showFloatingText('🎭 Poderes do Campeão Inimigo Drenados!', innerWidth/2, 200, 'purple'); }) },
-        { name: 'ULTI: Caos Negativo', type: 'borboleta', cost: 5, desc: 'Explode energia negativa na mesa, drenando as cartas na mão de todos para seu monte e criando o caos.', action: (s) => executeCardAttack('ULTI BORBOLETA', () => { dealDamage(s.enemyPlayerHp * 0.2, true); s.gold += 100; showFloatingText('🌀 ULTIMATE BORBOLETA: CAOS TOTAL!', innerWidth/2, 200, 'purple'); }) }
+        { name: 'Akuma', type: 'borboleta', cost: 2, desc: 'Infiltra o deck adversário, nerfa cartas na mão e drena efeitos para o seu monte.', action: (s) => executeCardAttack('Akuma', () => spawnButterflyBot(s)) },
+        { name: 'Beijo Saliente', type: 'borboleta', cost: 3, desc: 'Infecta e drena 5% da vida máxima por segundo durante 10s.', action: (s) => executeCardAttack('Beijo Saliente', () => {
+            let drainTotal = 0;
+            let ticks = 0;
+            let drainInterval = setInterval(() => {
+                let currentDrain = s.enemyPlayerMaxHp * 0.05;
+                drainTotal += currentDrain;
+                dealDamage(currentDrain, true);
+                healNexus(currentDrain);
+                ticks++;
+                if (ticks >= 10) clearInterval(drainInterval);
+            }, 1000);
+            showFloatingText('BEIJO SALIENTE: Drenando 5% HP/s por 10s!', innerWidth/2, 200, 'purple');
+        }) },
+        { name: 'Desejo do Pecado', type: 'borboleta', cost: 2, desc: 'Manda borboleta disfarçada para a mão alheia, copiando poderes do campeão inimigo.', action: (s) => executeCardAttack('Desejo do Pecado', () => {
+            s.stats.ap += 30;
+            showFloatingText('DESEJO DO PECADO: Poderes Drenados do Inimigo!', innerWidth/2, 200, 'purple');
+        }) },
+        { name: 'Caos na Mesa (Ult)', type: 'borboleta', cost: 4, desc: 'Explode energia negativa, drena cartas da mão de todos para seu monte e embaralha.', action: (s) => executeCardAttack('Caos na Mesa', () => {
+            showFloatingText('🌪️ CAOS NA MESA: Cartas Drenadas e Embaralhadas!', innerWidth/2, 200, 'purple');
+            buildDeck();
+        }) }
     ],
     'global': [
         { name: 'Poção Rápida', type: 'global', cost: 1, desc: 'Cura 150 HP do Nexus.', action: (s) => executeCardAttack('Poção Rápida', () => healNexus(150)) },
@@ -99,13 +129,14 @@ let state = {
     isMyTurn: true,
     turnNumber: 1,
 
-    // Sistema Littlegot (Cabra)
+    // Sistema Littlegot (Cabra) - Tintas
     inkPots: { red: 3, blue: 3, yellow: 3, max: 5 },
     currentInkMix: [],
 
-    // Sistema Borboleta (Passiva de Drenagem Ativa)
+    // Sistema Borboleta
     butterflyBots: [],
-    drainedStatsPool: { mana: 0, ap: 0, armor: 0, mr: 0, hp: 0 },
+    lastEnemySkill: null,
+    lastEnemySkillType: null,
     
     roomChampions: [], activeEvent: null,
     marolaStacks: 0,
@@ -118,12 +149,12 @@ let state = {
     nexusVulnerable: false,
     nexusVulnerabilityTimer: null,
 
-    stats: { ad: 15, ap: 15, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0 },
+    stats: { ad: 15, ap: 15, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0, shield: 0 },
     critCredit: 0
 };
 
 /* ==========================================================================
-   3. INICIALIZAÇÃO & INTERFACE FLUTUANTE
+   3. INICIALIZAÇÃO & INTERFACE FLUTUANTE (COM BOTÃO DE MISTURA DE TINTAS)
    ========================================================================= */
 document.addEventListener('DOMContentLoaded', () => {
     setupLobby();
@@ -139,7 +170,7 @@ function injectDynamicUI() {
         position: fixed;
         top: 20px;
         right: 20px;
-        width: 300px;
+        width: 310px;
         background: rgba(15, 23, 42, 0.95);
         border: 2px solid #38bdf8;
         border-radius: 12px;
@@ -157,13 +188,13 @@ function injectDynamicUI() {
 
     hud.innerHTML = `
         <div style="font-size:0.8rem; color:#38bdf8; font-weight:bold; border-bottom:1px solid #334155; padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-            <span>⚡ PAINEL NEXUS V8</span>
+            <span>⚡ PAINEL DE CONTROLE (HUD)</span>
             <span style="font-size:0.6rem; background:#1e293b; padding:2px 6px; border-radius:4px; color:#fbbf24;">Ativo</span>
         </div>
 
         <div id="cabra-hud-panel" class="${state.player.champ === 'cabra' ? '' : 'hidden'}" style="background:rgba(30,41,59,0.75); border:1px solid #f59e0b; padding:10px; border-radius:8px;">
             <div style="font-size:0.75rem; color:#fbbf24; font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span>🎨 OFICINA DE TINTAS & DECKS</span>
+                <span>🎨 OFICINA DE TINTAS (CABRA)</span>
                 <span style="font-size:0.6rem; color:#38bdf8;">Littlegot</span>
             </div>
             <div style="display:flex; gap:6px; margin-bottom:8px;">
@@ -172,10 +203,20 @@ function injectDynamicUI() {
                 <button class="btn" style="background:#fbbf24; padding:6px 2px; flex:1; font-size:0.68rem; color:#000; font-weight:bold;" onclick="addInk('yellow')">Amar (<span id="ink-yellow-count">3</span>)</button>
             </div>
             <div style="font-size:0.7rem; color:#cbd5e1; margin-bottom:8px; background:#090d16; padding:6px; border-radius:4px; text-align:center;" id="ink-mix-display">Mistura: Nenhuma</div>
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn btn-cyan" style="padding:6px 4px; font-size:0.6rem; flex:1;" onclick="craftInkCard('Vermelho')">🔥 Vermelho</button>
-                <button class="btn btn-cyan" style="padding:6px 4px; font-size:0.6rem; flex:1;" onclick="craftInkCard('Amarelo')">💡 Amarelo</button>
-                <button class="btn btn-cyan" style="padding:6px 4px; font-size:0.6rem; flex:1;" onclick="craftInkCard('Azul')">💧 Azul</button>
+            <div style="display:flex; gap:6px; margin-bottom:8px;">
+                <button class="btn btn-cyan" style="padding:6px 2px; flex:1; font-size:0.65rem;" onclick="mixInksAction()">🧪 Mesclar Tintas</button>
+            </div>
+            <div style="font-size:0.68rem; color:#38bdf8; margin-bottom:4px; font-weight:bold;">Selecione Deck/Efeito:</div>
+            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                <button class="btn" style="background:#ef4444; font-size:0.6rem; padding:4px;" onclick="drawInkCard('red', 'bola')">🔴 Fogo</button>
+                <button class="btn" style="background:#ef4444; font-size:0.6rem; padding:4px;" onclick="drawInkCard('red', 'laser')">🔴 Laser</button>
+                <button class="btn" style="background:#ef4444; font-size:0.6rem; padding:4px;" onclick="drawInkCard('red', 'chamas')">🔴 Chamas</button>
+                <button class="btn" style="background:#fbbf24; color:#000; font-size:0.6rem; padding:4px;" onclick="drawInkCard('yellow', 'lanterna')">🟡 Lanterna</button>
+                <button class="btn" style="background:#fbbf24; color:#000; font-size:0.6rem; padding:4px;" onclick="drawInkCard('yellow', 'lampada')">🟡 Lâmpada</button>
+                <button class="btn" style="background:#fbbf24; color:#000; font-size:0.6rem; padding:4px;" onclick="drawInkCard('yellow', 'sol')">🟡 Sol</button>
+                <button class="btn" style="background:#3b82f6; font-size:0.6rem; padding:4px;" onclick="drawInkCard('blue', 'pedra')">🔵 Pedra</button>
+                <button class="btn" style="background:#3b82f6; font-size:0.6rem; padding:4px;" onclick="drawInkCard('blue', 'chicote')">🔵 Chicote</button>
+                <button class="btn" style="background:#3b82f6; font-size:0.6rem; padding:4px;" onclick="drawInkCard('blue', 'agua')">🔵 Água</button>
             </div>
         </div>
 
@@ -299,9 +340,9 @@ window.changeTarget = function(targetKey) {
 }
 
 function applyChampBaseStats() {
-    if (state.player.champ === 'galo') { state.stats.ad = 55; state.stats.crit = 20; state.stats.vamp = 20; }
-    if (state.player.champ === 'cabra') { state.stats.ap = 60; state.stats.armor = 25; }
-    if (state.player.champ === 'borboleta') { state.stats.ap = 55; state.stats.ad = 35; state.stats.mr = 30; }
+    if (state.player.champ === 'galo') { state.stats.ad = 55; state.stats.crit = 15; state.stats.vamp = 15; }
+    if (state.player.champ === 'cabra') { state.stats.ap = 50; state.stats.armor = 20; }
+    if (state.player.champ === 'borboleta') { state.stats.ap = 50; state.stats.ad = 30; state.stats.mr = 25; }
 }
 
 /* ==========================================================================
@@ -316,12 +357,12 @@ function addXp(amount) {
         state.player.xp = state.player.xp - state.player.maxXp;
         state.player.maxXp = Math.floor(state.player.maxXp * 1.3);
         
-        state.stats.ad += 6;
-        state.stats.ap += 6;
-        state.stats.bonusHp += 120;
+        state.stats.ad += 5;
+        state.stats.ap += 5;
+        state.stats.bonusHp += 100;
         state.enemyPlayerMaxHp += 100;
         state.enemyPlayerHp += 100;
-        healNexus(120);
+        healNexus(100);
 
         showFloatingText(`🌟 LEVEL UP! Nível ${state.player.level}!`, innerWidth/2, innerHeight/2 - 100, 'gold');
     }
@@ -329,7 +370,7 @@ function addXp(amount) {
 }
 
 /* ==========================================================================
-   5. SISTEMA DE TURNOS E PASSIVAS (BORBOLETA E GALO)
+   5. SISTEMA DE TURNOS E BORBOLETA
    ========================================================================= */
 window.endTurn = function() {
     if (!state.isMyTurn) return;
@@ -341,11 +382,6 @@ window.endTurn = function() {
         btnEnd.innerText = 'TURNO PROCESSANDO...';
     }
     showFloatingText('Fim do seu turno!', innerWidth/2, innerHeight/2, 'cyan');
-
-    // Executa passiva de drenagem e bots da Borboleta
-    if (state.player.champ === 'borboleta') {
-        executeButterflyDrainPassive();
-    }
 
     if (state.butterflyBots.length > 0) {
         executeButterflyBots();
@@ -376,24 +412,14 @@ window.endTurn = function() {
     }, waitTime);
 }
 
-function executeButterflyDrainPassive() {
-    // Borboleta drena mana, AP, resistências e vida permanentemente dos afetados por 5s
-    let drainedVal = 10;
-    state.stats.ap += drainedVal;
-    state.stats.mr += 5;
-    state.stats.armor += 5;
-    healNexus(50);
-    showFloatingText('🦋 Passiva Borboleta: Atributos drenados permanentemente!', innerWidth/2, 220, 'purple');
-}
-
 function spawnButterflyBot(s) {
     const copyTarget = state.roomChampions.length > 0 ? state.roomChampions[Math.floor(Math.random() * state.roomChampions.length)] : 'Oponente';
-    showFloatingText(`🦋 Akuma lançado! Cartas nerfadas e drenando efeitos para o monte.`, innerWidth/2, 220, 'purple');
+    showFloatingText(`🦋 Akuma invocado! Drenando e replicando: ${copyTarget.toUpperCase()}`, innerWidth/2, 220, 'purple');
     
     const newBot = {
         id: Math.random(),
-        name: `Sombra de ${copyTarget.toUpperCase()}`,
-        power: s.stats.ap * 1.6,
+        name: `Sombra de ${copyTarget}`,
+        power: s.stats.ap * 1.5,
         turnsLeft: 3
     };
 
@@ -403,8 +429,8 @@ function spawnButterflyBot(s) {
 
 function executeButterflyBots() {
     state.butterflyBots.forEach(bot => {
-        let replicatedDmg = bot.power * 0.9;
-        showFloatingText(`🦋 ${bot.name} executou ação drenada! (-${Math.floor(replicatedDmg)})`, innerWidth/2, 280, 'purple');
+        let replicatedDmg = bot.power * 0.8;
+        showFloatingText(`🦋 ${bot.name} atacou! (-${Math.floor(replicatedDmg)})`, innerWidth/2, 280, 'purple');
         dealDamage(replicatedDmg);
         bot.turnsLeft--;
     });
@@ -413,51 +439,114 @@ function executeButterflyBots() {
 }
 
 /* ==========================================================================
-   6. SISTEMA DE TINTAS DO LITTLEGOT (CABRA)
+   6. SISTEMA DE TINTAS E CARTAS EM BRANCO DO LITTLEGOT (CABRA)
    ========================================================================= */
 window.addInk = function(color) {
     if (state.inkPots[color] <= 0) return showFloatingText('Pote Vazio!', innerWidth/2, 200, 'danger');
-    if (state.currentInkMix.length >= 2) return showFloatingText('Máximo de 2 tintas por carta!', innerWidth/2, 200, 'danger');
+    if (state.currentInkMix.length >= 2) return showFloatingText('Máximo de 2 tintas na mistura!', innerWidth/2, 200, 'danger');
     
     state.inkPots[color]--;
     state.currentInkMix.push(color);
     updateUI();
 }
 
-window.craftInkCard = function(deckColor) {
-    if (!state.isMyTurn) return showFloatingText('Aguarde seu turno!', innerWidth/2, 200, 'danger');
+window.mixInksAction = function() {
+    if (state.currentInkMix.length === 0) return showFloatingText('Adicione tintas para mesclar!', innerWidth/2, 200, 'danger');
+    showFloatingText(`🧪 Tintas Mescladas: ${state.currentInkMix.join(' + ')}! Bônus de AP aplicado.`, innerWidth/2, 200, 'gold');
+    state.stats.ap += 15 * state.currentInkMix.length;
+    updateUI();
+}
 
-    let pool = [];
-    if (deckColor === 'Vermelho') {
-        pool = [
-            { name: 'Bola de Fogo', cost: 1, desc: 'Atire uma bola de fogo que dá dano contínuo por 4s [Vermelho].', action: (s) => executeCardAttack('Bola de Fogo', () => dealDamage(s.stats.ap * 1.8)) },
-            { name: 'Laser', cost: 2, desc: 'Tiro potente queimando carta oponente [Vermelho].', action: (s) => executeCardAttack('Laser', () => dealDamage(s.stats.ap * 2.2)) },
-            { name: 'Lança Chamas', cost: 3, desc: '5 de dano contínuo em todos por 4s, crescente com AP [Vermelho].', action: (s) => executeCardAttack('Lança Chamas', () => dealDamage(s.stats.ap * 2.5)) }
-        ];
-    } else if (deckColor === 'Amarelo') {
-        pool = [
-            { name: 'Lanterna', cost: 1, desc: 'Cria um escudo protetor [Amarelo].', action: (s) => executeCardAttack('Lanterna', () => healNexus(200)) },
-            { name: 'Lâmpada', cost: 2, desc: 'Dá um escudo para seu Nexus [Amarelo].', action: (s) => executeCardAttack('Lâmpada', () => healNexus(400)) },
-            { name: 'Sol', cost: 2, desc: 'Escudo nas cartas e energia [Amarelo].', action: (s) => executeCardAttack('Sol', () => { s.energy = Math.min(s.maxEnergy, s.energy + 2); }) }
-        ];
-    } else {
-        pool = [
-            { name: 'Pedra', cost: 1, desc: 'Jogue pedra no inimigo causando dano [Azul].', action: (s) => executeCardAttack('Pedra', () => dealDamage(s.stats.ap * 1.4)) },
-            { name: 'Chicote', cost: 2, desc: 'Chicoteie alguém, roubando uma carta [Azul].', action: (s) => executeCardAttack('Chicote', () => { dealDamage(s.stats.ap * 1.5); s.gold += 35; }) },
-            { name: 'Água', cost: 1, desc: 'Hidrate-se e recupere vida/tinta [Azul].', action: (s) => executeCardAttack('Água', () => { healNexus(250); state.inkPots.blue = Math.min(state.inkPots.max, state.inkPots.blue + 2); }) }
-        ];
+window.drawInkCard = function(deckColor, effectType) {
+    if (!state.isMyTurn) return showFloatingText('Aguarde seu turno!', innerWidth/2, 200, 'danger');
+    if (state.hand.length >= state.maxHandSize) return showFloatingText('Mão Cheia! (Limite de 7)', innerWidth/2, 200, 'danger');
+
+    let cardName = '';
+    let cardDesc = '';
+    let actionFn = null;
+
+    if (deckColor === 'red') {
+        if (effectType === 'bola') {
+            cardName = '🔴 Bola de Fogo';
+            cardDesc = 'Atira bola de fogo com dano contínuo por 4s.';
+            actionFn = (s) => executeCardAttack(cardName, () => {
+                let ticks = 0;
+                let t = setInterval(() => {
+                    dealDamage(s.stats.ap * 0.6);
+                    ticks++;
+                    if (ticks >= 4) clearInterval(t);
+                }, 1000);
+            });
+        } else if (effectType === 'laser') {
+            cardName = '🔴 Laser Cortante';
+            cardDesc = 'Tiro potente queimando a carta alvo.';
+            actionFn = (s) => executeCardAttack(cardName, () => dealDamage(s.stats.ap * 2.2));
+        } else if (effectType === 'chamas') {
+            cardName = '🔴 Lança Chamas';
+            cardDesc = '5 de dano contínuo crescente com AP por 4s.';
+            actionFn = (s) => executeCardAttack(cardName, () => dealDamage(s.stats.ap * 1.5 + 25));
+        }
+    } else if (deckColor === 'yellow') {
+        if (effectType === 'lanterna') {
+            cardName = '🟡 Lanterna Protetora';
+            cardDesc = 'Cria escudo absorvente.';
+            actionFn = (s) => executeCardAttack(cardName, () => { s.stats.shield += 200; showFloatingText('Escudo Lanterna Ativo!', innerWidth/2, 200, 'gold'); });
+        } else if (effectType === 'lampada') {
+            cardName = '🟡 Lâmpada do Nexus';
+            cardDesc = 'Dá escudo robusto para o seu Nexus.';
+            actionFn = (s) => executeCardAttack(cardName, () => healNexus(300));
+        } else if (effectType === 'sol') {
+            cardName = '🟡 Brilho do Sol';
+            cardDesc = 'Protege suas cartas na mão.';
+            actionFn = (s) => executeCardAttack(cardName, () => { s.energy = Math.min(s.maxEnergy, s.energy + 2); showFloatingText('+2 Energia pelo Sol!', innerWidth/2, 200, 'gold'); });
+        }
+    } else if (deckColor === 'blue') {
+        if (effectType === 'pedra') {
+            cardName = '🔵 Pedra Pesada';
+            cardDesc = 'Joga pedra no inimigo causando dano físico/ap.';
+            actionFn = (s) => executeCardAttack(cardName, () => dealDamage(s.stats.ap * 1.6));
+        } else if (effectType === 'chicote') {
+            cardName = '🔵 Chicote Elemental';
+            cardDesc = 'Chicoteia e rouba recursos do oponente.';
+            actionFn = (s) => executeCardAttack(cardName, () => { s.gold += 50; dealDamage(s.stats.ap * 1.2); });
+        } else if (effectType === 'agua') {
+            cardName = '🔵 Água Hidratante';
+            cardDesc = 'Recupera vida e restaura tintas.';
+            actionFn = (s) => executeCardAttack(cardName, () => {
+                healNexus(200);
+                state.inkPots.red = Math.min(state.inkPots.max, state.inkPots.red + 1);
+                state.inkPots.blue = Math.min(state.inkPots.max, state.inkPots.blue + 1);
+            });
+        }
     }
 
-    const selectedCard = pool[Math.floor(Math.random() * pool.length)];
-    state.hand.push({ ...selectedCard, type: 'cabra', instanceId: 'c_' + Math.random().toString(36).substring(2) });
-    
-    showFloatingText(`🎨 Carta do Deck ${deckColor} criada!`, innerWidth/2, 200, 'cyan');
+    const newCard = {
+        name: cardName,
+        type: 'cabra',
+        cost: 1,
+        desc: cardDesc,
+        action: actionFn,
+        instanceId: 'c_' + Math.random().toString(36).substring(2)
+    };
+
+    const blankIdx = state.hand.findIndex(c => c.name === 'Carta em Branco');
+    if (blankIdx !== -1) {
+        state.hand[blankIdx] = newCard;
+    } else {
+        if (state.hand.length < state.maxHandSize) {
+            state.hand.push(newCard);
+        } else {
+            return showFloatingText('Mão cheia! Descarte ou jogue uma carta antes.', innerWidth/2, 200, 'danger');
+        }
+    }
+
+    showFloatingText('🎨 Carta desenhada com sucesso!', innerWidth/2, 200, 'cyan');
     addXp(10);
     updateUI();
 }
 
 /* ==========================================================================
-   7. SISTEMA DE CARTAS E DECK PADRÃO
+   7. SISTEMA DE CARTAS E DECK PADRÃO (COM LIMITE RIGIDO)
    ========================================================================= */
 function buildDeck() {
     state.deck = [];
@@ -473,7 +562,7 @@ function buildDeck() {
 window.drawCard = function(free = false) {
     if (state.isDead) return;
     if (!state.isMyTurn && !free) return showFloatingText('Aguarde o seu turno!', innerWidth/2, 220, 'danger');
-    if (state.hand.length >= state.maxHandSize) return;
+    if (state.hand.length >= state.maxHandSize) return showFloatingText('Limite de 7 cartas atingido na mão!', innerWidth/2, 220, 'danger');
     if (state.deck.length === 0) return showFloatingText('Monte Vazio!', innerWidth/2, 220, 'danger');
     
     if (!free && state.player.champ !== 'cabra') {
@@ -511,6 +600,10 @@ function setupDragAndDrop() {
 function playCard(instanceId) {
     if (state.isDead) return;
     if (!state.isMyTurn) return showFloatingText('Aguarde o seu turno!', innerWidth/2, 220, 'danger');
+
+    if (state.player.champ === 'borboleta' && state.butterflyBots.length > 0) {
+        return showFloatingText('⚠️ Suas cartas estão em branco enquanto os Bots agem!', innerWidth/2, 220, 'danger');
+    }
 
     const idx = state.hand.findIndex(c => c.instanceId === instanceId);
     if (idx === -1) return;
@@ -570,7 +663,7 @@ function calculateDeterministicCrit(baseDmg) {
 
     let finalDmg = baseDmg;
     if (isCrit) {
-        finalDmg *= 1.8;
+        finalDmg *= 1.75;
         showFloatingText('CRÍTICO!', innerWidth/2, innerHeight/2 - 50, 'gold');
     }
 
@@ -579,6 +672,14 @@ function calculateDeterministicCrit(baseDmg) {
 }
 
 function dealDamage(amount, isTrue = false) {
+    if (state.stats.shield > 0) {
+        let absorbed = Math.min(state.stats.shield, amount);
+        state.stats.shield -= absorbed;
+        amount -= absorbed;
+        showFloatingText(`🛡️ Escudo absorveu ${Math.floor(absorbed)} de dano!`, innerWidth/2, 210, 'cyan');
+        if (amount <= 0) return;
+    }
+
     state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
 
     state.gold += 25;
@@ -592,7 +693,6 @@ function dealDamage(amount, isTrue = false) {
         setTimeout(() => enemyCardEl.classList.remove('taking-damage'), 300);
     }
 
-    // Passiva do Galo: Vampirismo proporcional ao crítico
     if (state.player.champ === 'galo') {
         state.stats.vamp = state.stats.crit;
     }
@@ -771,7 +871,7 @@ window.farmEnemyMinion = function(id, clientX, clientY, reward) {
    ========================================================================= */
 const EVENTS = [
     { title: 'SURTO DE OURO', desc: 'Ouro passivo e GPS duplicados por 15s.', apply: s => s.baseGps *= 2, remove: s => s.baseGps /= 2 },
-    { title: 'FRENESI NA Tropa', desc: 'Minions aliados com ataque dobrado.', apply: s => s.myMinions.forEach(m => m.atk *= 2), remove: s => s.myMinions.forEach(m => m.atk /= 2) }
+    { title: 'FRENESI NA TROPA', desc: 'Minions aliados com ataque dobrado.', apply: s => s.myMinions.forEach(m => m.atk *= 2), remove: s => s.myMinions.forEach(m => m.atk /= 2) }
 ];
 
 function triggerRandomEvent() {
@@ -857,26 +957,32 @@ function renderHand() {
     if (!cont) return;
     cont.innerHTML = '';
 
+    let isHandBlank = (state.player.champ === 'borboleta' && state.butterflyBots.length > 0);
+
     state.hand.forEach(c => {
         let el = document.createElement('div');
         el.className = 'card';
-        el.draggable = true;
+        if (isHandBlank || c.name === 'Carta em Branco') el.classList.add('blank-card');
+        
+        el.draggable = !isHandBlank && c.name !== 'Carta em Branco';
         
         el.innerHTML = `
             <div>
-                <strong class="card-title">${c.name}</strong>
-                <p class="card-desc">${c.desc}</p>
+                <strong class="card-title">${isHandBlank ? '🌀 [EM BRANCO]' : c.name}</strong>
+                <p class="card-desc">${isHandBlank ? 'Seus bots estão agindo por você.' : c.desc}</p>
             </div>
             <div class="card-footer">
-                <span class="energy-cost">${state.player.champ === 'cabra' ? '🎨' : c.cost + ' EN'}</span>
+                <span class="energy-cost">${isHandBlank || c.name === 'Carta em Branco' ? '0' : (state.player.champ === 'cabra' ? '🎨' : c.cost + ' EN')}</span>
             </div>
         `;
         
-        el.addEventListener('dragstart', e => {
-            el.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', c.instanceId);
-        });
-        el.addEventListener('dragend', () => el.classList.remove('dragging'));
+        if (el.draggable) {
+            el.addEventListener('dragstart', e => {
+                el.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', c.instanceId);
+            });
+            el.addEventListener('dragend', () => el.classList.remove('dragging'));
+        }
         cont.appendChild(el);
     });
 }
