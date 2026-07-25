@@ -2,9 +2,9 @@
 // UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE
 // ==========================================================================
 import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
-import { syncMyNexusHP } from './firebase.js'; // (certifique-se de importar o update se precisar, ou use uma função de atualizar o oponente)
+
 let myFirebaseKey = '';
-let enemyFirebaseKey = ''; // <--- Adicione para guardar a chave do oponente
+let enemyFirebaseKey = ''; // <--- Guarda a chave do oponente no Firebase
 /* --- 1. BANCO DE DADOS: ITENS --- */
 // Baseado exatamente nas suas descrições
 const ALL_ITEMS = {
@@ -133,9 +133,9 @@ document.getElementById('btn-join-game').addEventListener('click', async () => {
     listenToRoomState(
         state.player.room, 
         myFirebaseKey, 
-        (enemyHp, enemyName, remoteEnemyKey) => { // <--- Capture a chave do inimigo aqui se ajustar o firebase.js
+        (enemyHp, enemyName, remoteKey) => { // <--- Captura o HP e a chave do oponente
             state.enemyNexus.hp = enemyHp;
-            enemyFirebaseKey = remoteEnemyKey; // Salva a chave do oponente
+            enemyFirebaseKey = remoteKey; 
             updateUI();
         },
         (champsInRoom) => {
@@ -300,9 +300,14 @@ function useCard(cardIndex) {
 function dealDamage(amount) {
     state.enemyNexus.hp = Math.max(0, state.enemyNexus.hp - amount);
     state.gold += 20; // Recompensa por acerto
+
+    // Se temos a chave do oponente, atualiza o Nexus DELE no Firebase para ele sofrer o dano na tela dele
+    if (enemyFirebaseKey) {
+        syncMyNexusHP(state.player.room, enemyFirebaseKey, state.enemyNexus.hp);
+    }
+
     if (state.enemyNexus.hp === 0) alert("VITÓRIA! Nexus Inimigo Destruído!");
 }
-
 function healNexus(amount) {
     let max = state.myNexus.maxHp + state.stats.bonusHp;
     state.myNexus.hp = Math.min(max, state.myNexus.hp + amount);
