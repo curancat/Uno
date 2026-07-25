@@ -1,92 +1,102 @@
 // ==========================================================================
-// UNO LEGENDS: MIRACULOUS NEXUS - FIREBASE REALTIME ENGINE (SYNC DE SALA)
+// FIREBASE MODULE: SINCRONIZAÇÃO EM TEMPO REAL (SALAS E NEXUS)
 // ==========================================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// ==========================================================================
+// CONFIGURAÇÃO DO SEU BANCO DE DADOS FIREBASE
+// (Substitua abaixo com as credenciais do seu projeto criado no console do Firebase)
+// ==========================================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
-  authDomain: "uno3-17cc6.firebaseapp.com",
-  databaseURL: "https://uno3-17cc6-default-rtdb.firebaseio.com",
-  projectId: "uno3-17cc6",
-  storageBucket: "uno3-17cc6.firebasestorage.app",
-  messagingSenderId: "834810148105",
-  appId: "1:834810148105:web:e2824feabb794c39670fd8",
-  measurementId: "G-PTCZVR4Z77"
+    apiKey: "SUA_API_KEY_AQUI",
+    authDomain: "seu-projeto.firebaseapp.com",
+    databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com/",
+    projectId: "seu-projeto",
+    storageBucket: "seu-projeto.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcde"
 };
 
+// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 /**
- * Registra o jogador e o seu campeão escolhido na sala do Firebase
+ * Entra em uma sala do Firebase e registra o jogador atual
+ * @param {string} roomName - Código da sala digitado
+ * @param {string} playerName - Nome do invocador
+ * @param {string} champ - Miraculous escolhido (galo, cabra, borboleta)
+ * @param {number} maxHp - Vida máxima inicial do Nexus
+ * @returns {Promise<string>} - Retorna o ID único (chave) do jogador na sala
  */
-export async function joinRoomFirebase(roomId, playerName, champ, initialHp) {
-    const playerKey = sanitizeKey(playerName);
-    const roomRef = ref(db, `rooms/${roomId}/${playerKey}`);
+export async function joinRoomFirebase(roomName, playerName, champ, maxHp) {
+    const roomRef = ref(db, `rooms/${roomName}/players`);
+    const newPlayerRef = push(roomRef);
+    const playerKey = newPlayerRef.key;
 
-    try {
-        await set(roomRef, {
-            name: playerName,
-            champion: champ,
-            nexusHp: initialHp,
-            timestamp: Date.now()
-        });
-        return playerKey;
-    } catch (error) {
-        console.error("[Firebase] Erro ao entrar na sala:", error);
-    }
-}
-
-/**
- * Atualiza o HP atual do seu Nexus no banco de dados
- */
-export function syncMyNexusHP(roomId, playerKey, currentHp) {
-    if (!roomId || !playerKey) return;
-    const playerRef = ref(db, `rooms/${roomId}/${playerKey}`);
-    update(playerRef, {
-        nexusHp: currentHp,
-        timestamp: Date.now()
+    // Registra os dados iniciais do jogador na sala
+    await set(newPlayerRef, {
+        name: playerName,
+        champ: champ,
+        hp: maxHp,
+        alive: true
     });
+
+    // Remove o jogador automaticamente da sala se fechar ou atualizar a aba (Bedwars style)
+    window.addEventListener('beforeunload', () => {
+        remove(newPlayerRef);
+    });
+
+    return playerKey;
 }
 
 /**
- * Escuta em tempo real o estado completo da sala (HP do inimigo e campeões presentes)
+ * Sincroniza o HP atual do seu Nexus no banco de dados para os outros verem
+ * @param {string} roomName - Código da sala
+ * @param {string} playerKey - Sua chave única no Firebase
+ * @param {number} hp - HP atual
  */
-export function listenToRoomState(roomId, myPlayerKey, onEnemyHpUpdate, onRoomChampionsUpdate) {
-    const roomRef = ref(db, `rooms/${roomId}`);
+export async function syncMyNexusHP(roomName, playerKey, hp) {
+    if (!playerKey) return;
+    const playerRef = ref(db, `rooms/${roomName}/players/${playerKey}`);
+    await update(playerRef, { hp: hp });
+}
+
+/**
+ * Escuta em tempo real as mudanças na sala (vida dos oponentes e campeões presentes)
+ * @param {string} roomName - Código da sala
+ * @param {string} myKey - Sua chave para diferenciar você dos inimigos
+ * @param {Function} onEnemyHpUpdate - Callback chamado quando o HP inimigo muda
+ * @param {Function} onChampsUpdate - Callback chamado quando a lista de campeões na sala muda
+ */
+export function listenToRoomState(roomName, myKey, onEnemyHpUpdate, onChampsUpdate) {
+    const roomRef = ref(db, `rooms/${roomName}/players`);
     
     onValue(roomRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
 
-        let activeChampions = [];
+        let champsInRoom = [];
+        let enemyHp = 5000;
+        let enemyKey = null;
 
+        // Percorre todos os jogadores conectados na mesma sala
         Object.keys(data).forEach(key => {
-            const playerData = data[key];
-            
-            // Coleta o campeão de todos os players na sala
-            if (playerData && playerData.champion) {
-                if (!activeChampions.includes(playerData.champion)) {
-                    activeChampions.push(playerData.champion);
-                }
-            }
+            const player = data[key];
+            champsInRoom.push(player.champ);
 
-            // Atualiza o HP do oponente (quem não é você)
-            if (key !== myPlayerKey && playerData && typeof playerData.nexusHp !== 'undefined') {
-                onEnemyHpUpdate(playerData.nexusHp, playerData.name);
+            // Se a chave não for a minha, é o oponente/inimigo na sala
+            if (key !== myKey) {
+                enemyHp = player.hp;
+                enemyKey = key;
             }
         });
 
-        // Envia a lista unificada de campeões para atualizar a loja de todos
-        if (onRoomChampionsUpdate) {
-            onRoomChampionsUpdate(activeChampions);
+        // Atualiza a barra de campeões no topo e o HP do Nexus oponente
+        onChampsUpdate(champsInRoom);
+        if (enemyKey) {
+            onEnemyHpUpdate(enemyHp, 'Inimigo', enemyKey);
         }
     });
-}
-
-function sanitizeKey(str) {
-    return str.replace(/[.#$\/\[\]]/g, "_").toLowerCase();
 }
