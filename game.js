@@ -1,7 +1,7 @@
 // ==========================================================================
 // UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE
 // ==========================================================================
-
+import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
 /* --- 1. BANCO DE DADOS: ITENS --- */
 // Baseado exatamente nas suas descrições
 const ALL_ITEMS = {
@@ -78,7 +78,8 @@ let state = {
     enemyNexus: { hp: 5000, maxHp: 5000 },
     stats: { ad: 10, ap: 10, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0 },
     inventory: [],
-    hand: []
+    hand: [],
+    roomChampions: []
 };
 
 // Loops
@@ -118,7 +119,26 @@ document.getElementById('btn-join-game').addEventListener('click', () => {
     state.player.room = document.getElementById('room-id').value || '1';
     
     if (!state.player.champ) return alert('Selecione um Miraculous!');
-    
+    myFirebaseKey = await joinRoomFirebase(
+    state.player.room, 
+    state.player.name, 
+    state.player.champ, 
+    state.myNexus.maxHp + state.stats.bonusHp
+);
+    listenToRoomState(
+    state.player.room, 
+    myFirebaseKey, 
+    (enemyHp, enemyName) => {
+        // Callback de HP do Inimigo
+        state.enemyNexus.hp = enemyHp;
+        updateUI();
+    },
+    (champsInRoom) => {
+        // Callback de Campeões na Sala (Modifica a loja para todos)
+        state.roomChampions = champsInRoom;
+        populateShop(); 
+    }
+);
     setupChampionStats();
     switchScreen('game');
     startGame();
@@ -309,8 +329,12 @@ function populateShop() {
     ui.shopGrid.innerHTML = '';
     Object.keys(ALL_ITEMS).forEach(key => {
         const item = ALL_ITEMS[key];
-        // Mostra poções (all) e itens específicos da classe
-        if (item.type !== 'all' && item.type !== state.player.champ) return;
+
+        // O item aparece se for global ('all') OU se o campeão dono do item estiver na sala
+        const isGlobal = item.type === 'all';
+        const isChampInRoom = state.roomChampions.includes(item.type);
+
+        if (!isGlobal && !isChampInRoom) return;
 
         const el = document.createElement('div');
         el.className = 'shop-item-card';
