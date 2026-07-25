@@ -2,6 +2,9 @@
 // UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE
 // ==========================================================================
 import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
+import { syncMyNexusHP } from './firebase.js'; // (certifique-se de importar o update se precisar, ou use uma função de atualizar o oponente)
+let myFirebaseKey = '';
+let enemyFirebaseKey = ''; // <--- Adicione para guardar a chave do oponente
 /* --- 1. BANCO DE DADOS: ITENS --- */
 // Baseado exatamente nas suas descrições
 const ALL_ITEMS = {
@@ -114,31 +117,33 @@ document.querySelectorAll('.champ-card').forEach(card => {
     });
 });
 
-document.getElementById('btn-join-game').addEventListener('click', () => {
+document.getElementById('btn-join-game').addEventListener('click', async () => { // <--- ADICIONADO 'async' AQUI
     state.player.name = document.getElementById('player-name').value || 'Jogador';
     state.player.room = document.getElementById('room-id').value || '1';
     
     if (!state.player.champ) return alert('Selecione um Miraculous!');
+    
     myFirebaseKey = await joinRoomFirebase(
-    state.player.room, 
-    state.player.name, 
-    state.player.champ, 
-    state.myNexus.maxHp + state.stats.bonusHp
-);
+        state.player.room, 
+        state.player.name, 
+        state.player.champ, 
+        state.myNexus.maxHp + state.stats.bonusHp
+    );
+
     listenToRoomState(
-    state.player.room, 
-    myFirebaseKey, 
-    (enemyHp, enemyName) => {
-        // Callback de HP do Inimigo
-        state.enemyNexus.hp = enemyHp;
-        updateUI();
-    },
-    (champsInRoom) => {
-        // Callback de Campeões na Sala (Modifica a loja para todos)
-        state.roomChampions = champsInRoom;
-        populateShop(); 
-    }
-);
+        state.player.room, 
+        myFirebaseKey, 
+        (enemyHp, enemyName, remoteEnemyKey) => { // <--- Capture a chave do inimigo aqui se ajustar o firebase.js
+            state.enemyNexus.hp = enemyHp;
+            enemyFirebaseKey = remoteEnemyKey; // Salva a chave do oponente
+            updateUI();
+        },
+        (champsInRoom) => {
+            state.roomChampions = champsInRoom;
+            populateShop(); 
+        }
+    );
+
     setupChampionStats();
     switchScreen('game');
     startGame();
