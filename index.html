@@ -3,1047 +3,1156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Uno Legends: Miraculous Brawl - Definitiva</title>
+    <title>Uno Legends: Miraculous Brawl & Nexus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
     <style>
-        :root {
-            --bg-dark: #090d16;
-            --panel-bg: rgba(15, 23, 42, 0.95);
-            --primary: #3b82f6;
-            --danger: #ef4444;
-            --success: #22c55e;
-            --gold: #fbbf24;
-            --purple: #a855f7;
-            --cyan: #38bdf8;
-            --text-main: #f8fafc;
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        h1, h2, h3, .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        body {
+            background-color: #090d16;
+            color: #f8fafc;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 4px;
+        }
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease-in-out;
+        }
+        .glass-card:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+            transform: translateY(-2px);
+        }
+        /* Card Styles */
+        .uno-card {
+            width: 100px;
+            height: 145px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px;
+        }
+        @media (max-width: 640px) {
+            .uno-card {
+                width: 80px;
+                height: 120px;
+                padding: 5px;
+            }
+        }
+        .uno-card:hover {
+            transform: translateY(-12px) scale(1.05);
+            z-index: 20;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+        }
+        .card-red { background: linear-gradient(135deg, #ef4444, #991b1b); border: 2px solid #fca5a5; }
+        .card-blue { background: linear-gradient(135deg, #3b82f6, #1e3a8a); border: 2px solid #93c5fd; }
+        .card-yellow { background: linear-gradient(135deg, #eab308, #854d0e); border: 2px solid #fef08a; }
+        .card-purple { background: linear-gradient(135deg, #a855f7, #581c87); border: 2px solid #d8b4fe; }
+        .card-green { background: linear-gradient(135deg, #22c55e, #14532d); border: 2px solid #86efac; }
+        .card-gold { background: linear-gradient(135deg, #f59e0b, #78350f); border: 2px solid #fde68a; }
+
+        /* Floating Damage Text */
+        .floating-text {
+            position: absolute;
+            font-weight: 900;
+            font-size: 1.4rem;
+            animation: floatUp 1s ease-out forwards;
+            pointer-events: none;
+            z-index: 100;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { opacity: 1; transform: translateY(-30px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
-        body { background: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
-
-        .hidden { display: none !important; }
-
-        /* TELA DE LOBBY / MENU */
-        #lobby-screen {
-            position: fixed; inset: 0; background: radial-gradient(circle, #1e293b 0%, #090d16 100%);
-            display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 20px;
+        /* Pulse Animations */
+        .pulse-glow {
+            animation: pulseGlow 2s infinite alternate;
         }
-        .lobby-card {
-            background: var(--panel-bg); border: 2px solid var(--primary); border-radius: 16px;
-            padding: 30px; width: 100%; max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-            display: flex; flex-direction: column; gap: 16px; text-align: center;
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.4); }
+            100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.9); }
         }
-        .lobby-card h1 { font-size: 1.5rem; color: var(--gold); text-shadow: 0 0 10px rgba(251,191,36,0.4); }
-        .input-group { display: flex; flex-direction: column; gap: 6px; text-align: left; }
-        .input-group label { font-size: 0.8rem; color: var(--cyan); font-weight: bold; }
-        .input-group input { background: #020617; border: 1px solid #334155; color: #fff; padding: 10px; border-radius: 8px; font-size: 0.95rem; }
-        
-        .champ-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 5px; }
-        .champ-select-btn {
-            background: #1e293b; border: 2px solid #334155; border-radius: 10px; padding: 12px 6px;
-            color: #fff; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: bold;
-        }
-        .champ-select-btn.active { border-color: var(--gold); background: rgba(251,191,36,0.15); box-shadow: 0 0 15px rgba(251,191,36,0.3); }
-
-        .btn { background: var(--primary); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .btn-gold { background: var(--gold); color: #000; }
-        .btn-danger { background: var(--danger); }
-
-        /* TELA DE JOGO */
-        #game-screen { display: flex; flex-direction: column; flex: 1; padding: 10px; max-width: 1400px; margin: 0 auto; width: 100%; }
-
-        /* BARRA SUPERIOR DE STATUS */
-        .status-header {
-            display: flex; justify-content: space-between; align-items: center; background: rgba(15,23,42,0.9);
-            border: 2px solid #334155; border-radius: 12px; padding: 10px 16px; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;
-        }
-        .player-info-box { display: flex; align-items: center; gap: 10px; }
-        .hp-bar-outer { width: 140px; height: 12px; background: #1e293b; border-radius: 6px; overflow: hidden; border: 1px solid #475569; }
-        .hp-bar-inner { height: 100%; width: 100%; background: var(--success); transition: width 0.3s; }
-        .hp-bar-enemy { background: var(--danger); }
-
-        /* HUD FLUTUANTE DA DIREITA */
-        .side-hud {
-            position: fixed; top: 15px; right: 15px; width: 320px; background: rgba(15,23,42,0.97);
-            border: 2px solid var(--danger); border-radius: 12px; padding: 14px; display: flex; flex-direction: column;
-            gap: 12px; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.8); max-height: 94vh; overflow-y: auto;
-        }
-
-        /* ÁREA DE BATALHA E MAPA */
-        .battle-arena {
-            display: grid; grid-template-columns: 1fr 320px; gap: 15px; flex: 1; align-items: start;
-        }
-        @media(max-width: 900px) { .battle-arena { grid-template-columns: 1fr; } .side-hud { position: relative; top: 0; right: 0; width: 100%; margin-bottom: 15px; } }
-
-        .board-main { display: flex; flex-direction: column; gap: 12px; }
-
-        /* LANES DE MINIONS E FARME */
-        .lanes-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .lane-box { background: rgba(15,23,42,0.8); border: 1px solid #334155; border-radius: 10px; padding: 10px; min-height: 110px; }
-        .lane-title { font-size: 0.75rem; color: var(--cyan); font-weight: bold; margin-bottom: 6px; display: flex; justify-content: space-between; }
-        .minions-flex { display: flex; flex-wrap: wrap; gap: 6px; }
-        .minion-chip { background: #1e293b; border: 1px solid #475569; border-radius: 6px; padding: 6px 10px; font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
-        .minion-chip:hover { border-color: var(--gold); background: rgba(251,191,36,0.1); }
-
-        /* ZONA DE SOLTAR CARTAS (DROP ZONE) */
-        .drop-zone {
-            background: rgba(30, 41, 59, 0.6); border: 2px dashed var(--primary); border-radius: 16px;
-            padding: 30px; text-align: center; color: var(--cyan); font-weight: bold; transition: 0.2s;
-        }
-        .drop-zone.drag-over { background: rgba(59, 130, 246, 0.2); border-color: var(--gold); transform: scale(1.01); }
-
-        /* MÃO DE CARTAS (ESTILO UNO) */
-        .hand-container {
-            display: flex; gap: 10px; overflow-x: auto; padding: 10px 4px; min-height: 180px; align-items: center;
-        }
-        .card {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 2px solid var(--primary);
-            border-radius: 12px; width: 120px; height: 160px; padding: 10px; display: flex; flex-direction: column;
-            justify-content: space-between; cursor: grab; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            transition: transform 0.2s, border-color 0.2s; position: relative;
-        }
-        .card:hover { transform: translateY(-8px); border-color: var(--gold); }
-        .card.dragging { opacity: 0.4; }
-        .card.blank-card { border-color: #64748b; background: #334155; }
-        .card-title { font-size: 0.75rem; color: var(--gold); font-weight: bold; line-height: 1.1; }
-        .card-desc { font-size: 0.6rem; color: #cbd5e1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
-        .card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; border-top: 1px solid #334155; padding-top: 4px; }
-        .energy-cost { background: #020617; padding: 2px 6px; border-radius: 4px; color: var(--cyan); font-weight: bold; }
-
-        /* PAINEL DE ATRIBUTOS E LOJA */
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: rgba(15,23,42,0.9); padding: 10px; border-radius: 10px; border: 1px solid #334155; font-size: 0.75rem; text-align: center; }
-        .stat-item span { display: block; color: var(--cyan); font-weight: bold; }
-
-        /* MODAL DE LOJA */
-        #shop-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; padding: 20px;
-        }
-        .shop-content { background: var(--panel-bg); border: 2px solid var(--gold); border-radius: 16px; width: 100%; max-width: 700px; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; gap: 15px; }
-        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; overflow-y: auto; max-height: 50vh; padding-right: 5px; }
-
-        /* EVENTO / ABA ALEATÓRIA */
-        #random-event-banner {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, #7c2d12, #b91c1c);
-            border: 2px solid var(--gold); padding: 10px 20px; border-radius: 12px; font-weight: bold; font-size: 0.85rem; z-index: 4000; box-shadow: 0 0 20px rgba(251,191,36,0.6);
-            animation: pulseBanner 1s infinite alternate;
-        }
-        @keyframes pulseBanner { 0% { transform: translateX(-50%) scale(1); } 100% { transform: translateX(-50%) scale(1.03); } }
-
-        /* TEXTOS FLUTUANTES */
-        .floating-text { position: fixed; font-weight: bold; font-size: 1.1rem; pointer-events: none; z-index: 5000; animation: floatUp 1.1s forwards ease-out; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-        .floating-text.gold { color: var(--gold); }
-        .floating-text.danger { color: var(--danger); }
-        .floating-text.success { color: var(--success); }
-        .floating-text.cyan { color: var(--cyan); }
-        .floating-text.purple { color: var(--purple); }
-        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(0.9); } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col justify-between text-slate-100">
 
-    <div id="lobby-screen">
-        <div class="lobby-card">
-            <h1>UNO LEGENDS: MIRACULOUS BRAWL</h1>
-            <p style="font-size: 0.75rem; color: #94a3b8;">Batalhe diretamente contra oponentes em tempo real! Sem Nexus, apenas KILLS.</p>
-            
-            <div class="input-group">
-                <label>Nome do Herói / Jogador:</label>
-                <input type="text" id="player-name" placeholder="Ex: Chat Noir / Brawler" value="Brawler">
-            </div>
-
-            <div class="input-group">
-                <label>Código da Sala (IP da Sala):</label>
-                <input type="text" id="room-id" placeholder="Ex: sala_miraculous_1" value="sala_miraculous_1">
-            </div>
-
-            <div class="input-group">
-                <label>Escolha seu Miraculous:</label>
-                <div class="champ-select-grid">
-                    <button class="champ-select-btn active" data-champ="galo">
-                        <span style="font-size:1.2rem">🐔</span> Galo
-                    </button>
-                    <button class="champ-select-btn" data-champ="cabra">
-                        <span style="font-size:1.2rem">🐐</span> Cabra
-                    </button>
-                    <button class="champ-select-btn" data-champ="borboleta">
-                        <span style="font-size:1.2rem">🦋</span> Borboleta
-                    </button>
-                </div>
-            </div>
-
-            <button class="btn btn-gold" id="btn-join-game" style="margin-top: 10px; font-size: 1rem;">🚀 ENTRAR NA ARENA DE BRAWL</button>
-        </div>
-    </div>
-
-    <div id="game-screen" class="hidden">
-        
-        <div class="status-header">
-            <div class="player-info-box">
-                <span id="my-brawl-name" style="font-weight:bold; color:var(--success);">Você</span>
-                <div class="hp-bar-outer"><div id="my-player-hp-bar" class="hp-bar-inner"></div></div>
-                <span id="my-player-hp-text" style="font-size:0.75rem; color:var(--success);">3000 HP</span>
-            </div>
-            <div style="text-align:center;">
-                <span id="match-timer-hud" style="background:#7f1d1d; color:#f87171; padding:4px 10px; border-radius:6px; font-weight:bold; font-size:0.85rem;">15:00</span>
-                <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">Kills: <span id="my-kills-count" style="color:var(--gold); font-weight:bold;">0</span></div>
-            </div>
-            <div class="player-info-box">
-                <span id="enemy-player-hp-text" style="font-size:0.75rem; color:var(--danger);">3000 HP</span>
-                <div class="hp-bar-outer"><div id="enemy-player-hp-bar" class="hp-bar-inner hp-bar-enemy"></div></div>
-                <span id="enemy-brawl-name" style="font-weight:bold; color:var(--danger);">Inimigo</span>
-            </div>
-        </div>
-
-        <div class="battle-arena">
-            
-            <div class="board-main">
-                
-                <div class="lanes-container">
-                    <div class="lane-box">
-                        <div class="lane-title"><span>🛡️ SUAS TROPAS & BOTS</span> <span id="player-lvl-text" style="color:var(--gold);">NÍVEL 1</span></div>
-                        <div class="minions-flex" id="my-minions-lane"></div>
-                    </div>
-                    <div class="lane-box">
-                        <div class="lane-title"><span>⚔️ TROPAS INIMIGAS (CLIQUE PARA FARMAR)</span> <span id="player-xp-text" style="color:var(--cyan);">0/100 XP</span></div>
-                        <div class="minions-flex" id="enemy-minions-lane"></div>
-                    </div>
-                </div>
-
-                <div class="drop-zone" id="drop-zone">
-                    📥 ARRASTE SUA CARTA AQUI PARA JOGAR NO OPONENTE
-                </div>
-
+    <header id="game-header" class="glass-panel sticky top-0 z-40 px-4 py-2 flex items-center justify-between border-b border-slate-800 hidden">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600/30 p-2 rounded-lg border border-blue-500/40 flex items-center space-x-2">
+                <i class="fa-solid fa-shield-halved text-blue-400 text-lg"></i>
                 <div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:0.8rem;">
-                        <span style="color:var(--gold); font-weight:bold;">SUA MÃO DE CARTAS (<span id="hand-limit-text">0/7</span>)</span>
-                        <button class="btn" style="padding:4px 10px; font-size:0.7rem;" onclick="drawCard()">🃏 COMPRAR CARTA</button>
-                    </div>
-                    <div class="hand-container" id="hand-container"></div>
+                    <div class="text-xs text-slate-400 uppercase tracking-wider">Sala / ID</div>
+                    <div id="room-display-id" class="font-bold text-sm text-blue-300">SALA-001</div>
                 </div>
             </div>
-
-            <div class="side-hud">
-                <div style="font-size:0.85rem; color:var(--gold); font-weight:bold; border-bottom:1px solid #334155; padding-bottom:6px; display:flex; justify-content:space-between;">
-                    <span>⚡ PAINEL DE BRAWL</span>
-                    <span id="gold-text" style="color:var(--gold);">500 G</span>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#94a3b8;">
-                    <span>Energia: <strong id="energy-text" style="color:var(--cyan);">5/5</strong></span>
-                    <span>Deck: <strong id="deck-count" style="color:#fff;">20</strong></span>
-                    <span>GPS: <strong id="gps-text" style="color:var(--success);">5 G/s</strong></span>
-                </div>
-
-                <div style="background:rgba(30,41,59,0.85); border:1px solid var(--danger); padding:8px; border-radius:8px;">
-                    <div style="font-size:0.7rem; color:var(--danger); font-weight:bold; margin-bottom:4px;">🎯 ALVO PVP FOCADO:</div>
-                    <select id="target-select" style="width:100%; background:#020617; color:#fff; border:1px solid #334155; padding:6px; border-radius:6px; font-size:0.75rem;" onchange="changeTarget(this.value)">
-                        <option value="">Aguardando oponentes...</option>
-                    </select>
-                </div>
-
-                <div id="cabra-hud-panel" class="hidden" style="background:rgba(30,41,59,0.85); border:1px solid var(--gold); padding:8px; border-radius:8px;">
-                    <div style="font-size:0.7rem; color:var(--gold); font-weight:bold; margin-bottom:6px;">🎨 OFICINA DE TINTAS</div>
-                    <div style="display:flex; gap:4px; margin-bottom:6px;">
-                        <button class="btn" style="background:var(--danger); padding:4px; flex:1; font-size:0.65rem;" onclick="addInk('red')">Verm (<span id="ink-red-count">3</span>)</button>
-                        <button class="btn" style="background:var(--primary); padding:4px; flex:1; font-size:0.65rem;" onclick="addInk('blue')">Azul (<span id="ink-blue-count">3</span>)</button>
-                        <button class="btn btn-gold" style="padding:4px; flex:1; font-size:0.65rem; color:#000;" onclick="addInk('yellow')">Amar (<span id="ink-yellow-count">3</span>)</button>
-                    </div>
-                    <div style="font-size:0.65rem; color:#cbd5e1; margin-bottom:6px; background:#020617; padding:4px; border-radius:4px; text-align:center;" id="ink-mix-display">Mistura: Nenhuma</div>
-                    <button class="btn btn-gold" style="width:100%; padding:6px; font-size:0.7rem; font-weight:bold;" onclick="mergeInksButton()">✨ MESCLAR 2 TINTAS</button>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-item">AD <span id="stat-ad">15</span></div>
-                    <div class="stat-item">AP <span id="stat-ap">15</span></div>
-                    <div class="stat-item">Armadura <span id="stat-armor">10</span></div>
-                    <div class="stat-item">Res. Mag <span id="stat-mr">10</span></div>
-                    <div class="stat-item">Crítico <span id="stat-crit">0%</span></div>
-                    <div class="stat-item">Vamp <span id="stat-vamp">0%</span></div>
-                </div>
-
-                <div style="display:flex; gap:6px;">
-                    <button class="btn btn-gold" style="flex:1; padding:8px; font-size:0.75rem;" onclick="toggleShop()">🛒 LOJA</button>
-                    <button class="btn btn-danger" style="flex:1; padding:8px; font-size:0.75rem;" onclick="buyDeckReload()">🔄 REPOR DECK (100G)</button>
-                </div>
-
-                <div style="background:rgba(30,41,59,0.7); border:1px solid #334155; padding:8px; border-radius:8px;">
-                    <div style="font-size:0.7rem; color:var(--cyan); font-weight:bold; margin-bottom:4px;">📦 INVENTÁRIO & ITENS</div>
-                    <div id="inventory-list" style="display:flex; flex-direction:column; gap:4px; max-height:100px; overflow-y:auto;">
-                        <span style="font-size:0.65rem; color:#64748b;">Nenhum item comprado.</span>
-                    </div>
-                </div>
-
-                <div>
-                    <button class="btn btn-danger" style="width:100%; padding:10px; font-size:0.8rem; font-weight:bold;" onclick="endTurn()">⏳ PASSAR TURNO</button>
-                </div>
+            <div class="bg-amber-500/20 px-3 py-1.5 rounded-lg border border-amber-500/40 flex items-center space-x-2">
+                <i class="fa-solid fa-coins text-amber-400"></i>
+                <span id="hud-gold" class="font-orbitron font-bold text-amber-300 text-lg">0</span>
+                <span class="text-xs text-amber-400/80">G (+5/s)</span>
             </div>
-
         </div>
-    </div>
 
-    <div id="shop-modal">
-        <div class="shop-content">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="color:var(--gold);">🛒 LOJA DA ARENA MIRACULOUS</h3>
-                <button class="btn btn-danger" style="padding:6px 12px; font-size:0.75rem;" onclick="toggleShop()">X</button>
-            </div>
-            <div class="shop-grid" id="shop-grid"></div>
+        <div class="text-center">
+            <div id="match-timer" class="font-orbitron text-xl font-bold text-emerald-400">15:00</div>
+            <div id="event-ticker" class="text-xs text-slate-400 italic">Batalha em andamento...</div>
         </div>
-    </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, get, update, onValue, push, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleShopModal()" class="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center space-x-1 text-sm transition">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>LOJA</span>
+            </button>
+            <button onclick="toggleSound()" id="sound-btn" class="bg-slate-800 hover:bg-slate-700 p-2 rounded-lg text-slate-300 border border-slate-700">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </header>
 
-        // Configuração Firebase utilizando as suas credenciais fornecidas
-        const firebaseConfig = {
-            apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
-            authDomain: "uno3-17cc6.firebaseapp.com",
-            databaseURL: "https://uno3-17cc6-default-rtdb.firebaseio.com",
-            projectId: "uno3-17cc6",
-            storageBucket: "uno3-17cc6.firebasestorage.app",
-            messagingSenderId: "834810148105",
-            appId: "1:834810148105:web:e2824feabb794c39670fd8",
-            measurementId: "G-PTCZVR4Z77"
-        };
+    <main id="main-container" class="flex-1 flex flex-col justify-center items-center p-2 md:p-4 relative">
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        <section id="lobby-screen" class="w-full max-w-4xl glass-panel rounded-2xl p-6 shadow-2xl my-auto border border-blue-500/30">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-amber-400 tracking-wider">
+                    UNO LEGENDS
+                </h1>
+                <p class="text-slate-400 text-sm md:text-base mt-1">Miraculous Brawl & Bedwars Nexus Edition</p>
+            </div>
 
-        // ==========================================================================
-        // 1. BANCO DE DADOS DE ITENS E CARTAS
-        // ==========================================================================
-        const ALL_ITEMS = {
-            'pocao': { name: 'Poção de Combate', cost: 50, type: 'all', stats: {}, desc: 'Restaura 300 de HP imediato.' },
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Seu Nome de Herói</label>
+                    <input type="text" id="player-name-input" value="Lendário" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 font-bold text-blue-300">
+                </div>
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Código da Sala (Firebase)</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="room-code-input" value="NEXUS1" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 font-bold text-emerald-400 uppercase">
+                        <button onclick="createOrJoinRoom()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-bold text-sm text-white shadow">CONECTAR</button>
+                    </div>
+                </div>
+            </div>
 
-            // Galo
-            'lacre3000': { name: 'Lacre 3000g', cost: 3000, type: 'galo', stats: { crit: 10, ad: 100 }, desc: 'Executa almas com menos de 90% da vida.' },
-            'skate2900': { name: 'Skate 2900g', cost: 2900, type: 'galo', stats: { crit: 5, ad: 60, armor: 40, mr: 30 }, desc: 'Paralisa inimigos por 3s ao causar dano.' },
-            'mandrakit': { name: 'Mandrakit 2400g', cost: 2400, type: 'galo', stats: { crit: 30, ad: 30, ap: 30, mr: 30, bonusHp: 30 }, desc: '+15% de vida ao levar dano fatal.' },
-            'alma_sebosa': { name: 'Alma Sebosa 3000g', cost: 3000, type: 'galo', stats: { crit: 15, ap: 20 }, desc: 'Bloqueie CC por 10s.' },
-            'pate': { name: 'E o Patê? 2000g', cost: 2000, type: 'galo', stats: { crit: 5, armor: 40, mr: 30 }, desc: 'Atrasa dano inimigo por 5s.' },
-            'bota_sapatona': { name: 'Bota (Sapatona) 1000g', cost: 1000, type: 'galo', stats: { crit: 2, pen: 3, ad: 5 }, desc: '+30 Vel. de Spawn e +5 AD.' },
+            <h2 class="text-lg font-bold text-blue-400 mb-3 flex items-center space-x-2">
+                <i class="fa-solid fa-user-ninja"></i>
+                <span>ESCOLHA SEU MIRACULOUS</span>
+            </h2>
 
-            // Cabra (Littlegot)
-            'pyton': { name: 'Pyton 2000g', cost: 2000, type: 'cabra', stats: { ad: 20, ap: 100, crit: 3 }, desc: 'Veneno causa dano contínuo por 5s.' },
-            'javascript': { name: 'Java Script 2800g', cost: 2800, type: 'cabra', stats: { ap: 80, mr: 20 }, desc: 'Ganha escudo ao ser atingido (4s).' },
-            'java': { name: 'Java 1900g', cost: 1900, type: 'cabra', stats: { crit: 50, ap: 50, ad: 50 }, desc: 'Cura 5 de vida a cada 20s.' },
-            'bf2300': { name: 'BF 2300g', cost: 2300, type: 'cabra', stats: { bonusHp: 200, ad: 20, ap: 40, armor: 50 }, desc: '+1 AP para cada 1 de Armadura.' },
-            'cadelagem': { name: 'Cadelagem 2000g', cost: 2000, type: 'cabra', stats: { ad: 80, ap: 50 }, desc: '+4 de gold por segundo.' },
-            'bota_cadelagem': { name: 'Bota (Cadelagem) 1000g', cost: 1000, type: 'cabra', stats: { ap: 3, ad: 4, crit: 5 }, desc: '+20 Vel. de carta.' },
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div onclick="selectHero('galo')" id="hero-card-galo" class="hero-select-card glass-card rounded-xl p-4 cursor-pointer border-2 border-transparent hover:border-amber-500 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 bg-amber-500 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded-bl">CRÍTICO & AD</div>
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-400 text-2xl font-bold">🐓</div>
+                        <div>
+                            <h3 class="font-bold text-amber-300">Miraculous do Galo</h3>
+                            <p class="text-xs text-slate-400 italic">"Queridinha!, vá para o quinto dos infernos"</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 mb-2">Especialista em Ataques Básicos, Acertos Críticos e Vampirismo brutal.</p>
+                    <div class="text-[11px] text-amber-400/90 bg-amber-950/40 p-2 rounded border border-amber-800/40">
+                        <strong>Passiva:</strong> Vampirismo proporcional ao Crítico.
+                    </div>
+                </div>
 
-            // Borboleta
-            'incubus': { name: 'Incubus 3000g', cost: 3000, type: 'borboleta', stats: { ap: 80, ad: 50, armor: 30 }, desc: 'Recupere vida ao invocar bots.' },
-            'dono_inferno': { name: 'Dono do Inferno 4000g', cost: 4000, type: 'borboleta', stats: { ad: 20, ap: 80, bonusHp: 300, armor: 90 }, desc: 'Renasça após a morte.' },
-            'fome_luxuria': { name: 'Fome de Luxúria 3500g', cost: 3500, type: 'borboleta', stats: { ap: 110, crit: 40, mr: 40, bonusHp: 100 }, desc: 'Bloqueie uma ação inimiga.' },
-            'bibi_fogosa': { name: 'Bibi Fogosa 4000g', cost: 4000, type: 'borboleta', stats: { ap: 90, ad: 80 }, desc: 'Bots nocauteiam e dão dano contínuo.' },
-            'vem_com_tudo': { name: 'Vem com Tudo 3900g', cost: 3900, type: 'borboleta', stats: { armor: 100, mr: 100 }, desc: 'Reduz dano em 40% abaixo de 60% HP.' },
-            'bota_funk': { name: 'Bota (Funk) 1000g', cost: 1000, type: 'borboleta', stats: { ap: 3, bonusHp: 40 }, desc: '+30 Vel. de carta.' }
-        };
+                <div onclick="selectHero('cabra')" id="hero-card-cabra" class="hero-select-card glass-card rounded-xl p-4 cursor-pointer border-2 border-transparent hover:border-purple-500 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 bg-purple-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-bl">AP & MAGIA</div>
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-12 h-12 rounded-full bg-purple-500/20 border border-purple-400 flex items-center justify-center text-purple-400 text-2xl font-bold">🐐</div>
+                        <div>
+                            <h3 class="font-bold text-purple-300">Miraculous da Cabra</h3>
+                            <p class="text-xs text-slate-400 italic">"Em terra de orelhudo, qualquer sussurro é fofoca"</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 mb-2">Mestre das Tintas (Vermelho, Amarelo, Azul) para criar magias customizadas.</p>
+                    <div class="text-[11px] text-purple-400/90 bg-purple-950/40 p-2 rounded border border-purple-800/40">
+                        <strong>Passiva:</strong> Misture potes de tinta para alternar decks e poderes.
+                    </div>
+                </div>
 
-        const MINION_TYPES = {
-            'lvl1': { name: 'Recruta Melee', cost: 40, hp: 150, atk: 15, goldReward: 50 },
-            'lvl2': { name: 'Mago Arcano', cost: 90, hp: 220, atk: 35, goldReward: 95 },
-            'lvl3': { name: 'Canhão Tático', cost: 160, hp: 400, atk: 70, goldReward: 160 }
-        };
+                <div onclick="selectHero('borboleta')" id="hero-card-borboleta" class="hero-select-card glass-card rounded-xl p-4 cursor-pointer border-2 border-transparent hover:border-cyan-500 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 bg-cyan-500 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded-bl">DRENAGEM & DEBUFF</div>
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-12 h-12 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 text-2xl font-bold">🦋</div>
+                        <div>
+                            <h3 class="font-bold text-cyan-300">Miraculous da Borboleta</h3>
+                            <p class="text-xs text-slate-400 italic">"Me xinga!!"</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 mb-2">Infecta oponentes com Akumas, drenando Vida, Mana e Atributos permanentemente.</p>
+                    <div class="text-[11px] text-cyan-400/90 bg-cyan-950/40 p-2 rounded border border-cyan-800/40">
+                        <strong>Passiva:</strong> Drene atributos dos inimigos afetados por borboletas.
+                    </div>
+                </div>
+            </div>
 
-        const CHAMPION_CARDS = {
-            'galo': [
-                { name: 'Auto Ataque', type: 'galo', cost: 1, desc: 'Ataque básico direto no oponente (Usa AD e Crítico LoL).', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(calculateDeterministicCrit(s.stats.ad))) },
-                { name: 'Marola', type: 'galo', cost: 2, desc: 'Pena envenenada: dá dano contínuo. 3 pilhas = 10% da vida atual do alvo em dano verdadeiro.', action: (s) => executeCardAttack('Marola', () => { s.marolaStacks = (s.marolaStacks || 0) + 1; if(s.marolaStacks >= 3) { dealDamage(s.enemyPlayerHp * 0.10, true); s.marolaStacks = 0; showFloatingText('ESTOURO DE MAROLA (Dano Verdadeiro)!', innerWidth/2, 250, 'gold'); playSound('crit'); } else { dealDamage(s.stats.ad * 1.4); showFloatingText(`Pena Envenenada (${s.marolaStacks}/3)`, innerWidth/2, 220, 'purple'); playSound('hit'); } }) },
-                { name: 'Dessa cor eu não tenho', type: 'galo', cost: 2, desc: 'Copia a última habilidade gasta.', action: (s) => executeCardAttack('Cópia', () => { dealDamage(s.lastEnemySkillDmg || (s.stats.ad * 1.6)); showFloatingText('Habilidade Copiada!', innerWidth/2, 200, 'cyan'); playSound('hit'); }) },
-                { name: 'Aiin', type: 'galo', cost: 2, desc: 'Concede escudo protetor decrescente.', action: (s) => executeCardAttack('Aiin', () => { s.stats.shield = (s.stats.shield || 0) + 350; showFloatingText('Escudo Aiin Ativado!', innerWidth/2, 200, 'success'); playSound('shield'); }) },
-                { name: 'UTI do Galo', type: 'galo', cost: 3, desc: 'Frenesi: ganha mais crítico e AD proporcional ao crítico.', action: (s) => executeCardAttack('UTI', () => { let b = Math.floor(s.stats.crit * 0.5); s.stats.crit += b; s.stats.ad += b * 3; showFloatingText(`FRENESI UTI: +${b}% Crit!`, innerWidth/2, 230, 'gold'); playSound('buff'); }) }
-            ],
-            'cabra': [
-                { name: 'Carta em Branco', type: 'cabra', cost: 0, desc: 'Sem efeito. Use a Oficina de Tintas para mesclar!', action: () => showFloatingText('Use a Oficina de Tintas para desenhar!', innerWidth/2, 200, 'danger') }
-            ],
-            'borboleta': [
-                { name: 'Auto Ataque', type: 'borboleta', cost: 1, desc: 'Disparo mágico básico no oponente.', action: (s) => executeCardAttack('Auto Ataque', () => dealDamage(s.stats.ap)) },
-                { name: 'Akuma', type: 'borboleta', cost: 2, desc: 'Carrega borboleta com energia negativa e invoca bot.', action: (s) => executeCardAttack('Akuma', () => spawnButterflyBot(s)) },
-                { name: 'Beijo Saliente', type: 'borboleta', cost: 3, desc: 'Infecta e drena 5% da vida máxima do alvo por segundo.', action: (s) => executeCardAttack('Beijo Saliente', () => { let d = s.enemyPlayerMaxHp * 0.15; dealDamage(d); healPlayer(d); showFloatingText('Beijo Saliente Drenado!', innerWidth/2, 200, 'purple'); playSound('buff'); }) },
-                { name: 'Desejo do Pecado', type: 'borboleta', cost: 2, desc: 'Rouba poderes do campeão alvo temporariamente.', action: (s) => executeCardAttack('Desejo', () => { s.stats.ap += 25; s.stats.ad += 20; showFloatingText('Poderes Drenados!', innerWidth/2, 200, 'purple'); playSound('buff'); }) },
-                { name: 'UTI da Borboleta', type: 'borboleta', cost: 4, desc: 'Explode energia e drena cartas.', action: (s) => executeCardAttack('UTI Borboleta', () => { s.deck.push({ name: 'Carta Caos', type: 'borboleta', cost: 0, desc: 'Caos', action: () => dealDamage(250) }); showFloatingText('🌪️ CAOS NA MESA!', innerWidth/2, 230, 'purple'); playSound('crit'); }) }
-            ],
-            'global': [
-                { name: 'Poção Rápida', type: 'global', cost: 1, desc: 'Cura 150 de HP.', action: () => { healPlayer(150); playSound('heal'); } }
-            ]
-        };
+            <button onclick="startGame()" class="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-orbitron font-extrabold text-lg py-3 rounded-xl shadow-xl transition transform active:scale-95 flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-play"></i>
+                <span>INICIAR BATALHA</span>
+            </button>
+        </section>
 
-        // ==========================================================================
-        // 2. ESTADO GLOBAL DO JOGO
-        // ==========================================================================
-        let state = {
-            player: { name: '', room: '', champ: '', level: 1, xp: 0, maxXp: 100, kills: 0, deaths: 0 },
-            myKey: '', enemyKey: '', selectedEnemyKey: null, roomPlayers: {},
-            gold: 500, baseGps: 5, energy: 5, maxEnergy: 5,
-            hand: [], maxHandSize: 7, deck: [], maxDeckCards: 20, inventory: [],
-            myMinions: [], enemyMinions: [],
-            isMyTurn: true, turnNumber: 1,
-            matchTimeRemaining: 900, matchActive: true,
+        <section id="arena-screen" class="w-full max-w-6xl flex-1 flex flex-col justify-between hidden relative">
             
-            inkPots: { red: 3, blue: 3, yellow: 3, max: 6 },
-            currentInkMix: [],
-            inkDecks: {
-                red: [
-                    { name: 'Bola de Fogo', cost: 2, desc: 'Atira bola de fogo com dano contínuo.', action: (s) => executeCardAttack('Bola de Fogo', () => dealDamage(s.stats.ap * 1.5)) },
-                    { name: 'Laser', cost: 2, desc: 'Tiro potente queimando o oponente.', action: (s) => executeCardAttack('Laser', () => dealDamage(s.stats.ap * 1.8)) },
-                    { name: 'Lança Chamas', cost: 3, desc: 'Dano contínuo crescente com AP.', action: (s) => executeCardAttack('Lança Chamas', () => dealDamage(s.stats.ap * 2.2)) }
-                ],
-                yellow: [
-                    { name: 'Lanterna', cost: 1, desc: 'Cria escudo protetor.', action: (s) => { s.stats.shield = (s.stats.shield || 0) + 150; showFloatingText('Escudo Criado!', innerWidth/2, 200, 'gold'); playSound('shield'); } },
-                    { name: 'Lâmpada', cost: 2, desc: 'Concede cura e blindagem.', action: () => { healPlayer(300); playSound('heal'); } },
-                    { name: 'Sol', cost: 2, desc: 'Escudo absoluto.', action: (s) => { s.stats.armor += 20; showFloatingText('Defesa Fortalecida!', innerWidth/2, 200, 'gold'); playSound('buff'); } }
-                ],
-                blue: [
-                    { name: 'Pedra', cost: 1, desc: 'Joga pedra pesada causando dano físico.', action: (s) => executeCardAttack('Pedra', () => dealDamage(s.stats.ad * 1.3)) },
-                    { name: 'Chicote', cost: 2, desc: 'Chicoteia o oponente, roubando carta.', action: (s) => { s.hand.push({ name: 'Carta Roubada', type: 'cabra', cost: 1, desc: 'Espólio', action: () => dealDamage(100) }); showFloatingText('Carta Roubada!', innerWidth/2, 200, 'cyan'); } },
-                    { name: 'Água', cost: 1, desc: 'Recupera vida e tinta.', action: (s) => { healPlayer(120); state.inkPots.blue = Math.min(state.inkPots.max, state.inkPots.blue + 1); showFloatingText('Vida e Tinta Restauradas!', innerWidth/2, 200, 'success'); playSound('heal'); } }
-                ]
-            },
-            butterflyBots: [], roomChampions: [], marolaStacks: 0, isDead: false,
-            myPlayerHp: 3000, myPlayerMaxHp: 3000, enemyPlayerHp: 3000, enemyPlayerMaxHp: 3000,
-            stats: { ad: 15, ap: 15, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0, shield: 0 },
-            critCredit: 0
-        };
+            <div id="enemy-section" class="glass-panel rounded-xl p-3 mb-2 border border-rose-900/40 flex flex-col md:flex-row items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <div id="enemy-avatar" class="w-14 h-14 rounded-full bg-rose-950 border-2 border-rose-500 flex items-center justify-center text-2xl shadow-lg">🦹</div>
+                        <span id="enemy-status-badge" class="absolute -bottom-1 -right-1 bg-rose-600 text-[10px] font-bold px-1.5 py-0.5 rounded text-white">INIMIGO</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 id="enemy-name" class="font-bold text-rose-300 text-base">Inimigo (Rival Nexus)</h3>
+                            <span id="enemy-hero-type" class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">Miraculous</span>
+                        </div>
+                        <div class="w-48 md:w-64 space-y-1 mt-1">
+                            <div class="flex justify-between text-[10px] font-bold text-amber-400">
+                                <span>NEXUS INIMIGO</span>
+                                <span id="enemy-nexus-hp-text">1000 / 1000</span>
+                            </div>
+                            <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-amber-900/50">
+                                <div id="enemy-nexus-hp-bar" class="bg-gradient-to-r from-amber-600 to-yellow-400 h-full transition-all duration-300" style="width: 100%;"></div>
+                            </div>
 
-        // ==========================================================================
-        // 3. SISTEMA DE ÁUDIO WEB API (EFEITOS SONOROS SEM ARQUIVOS EXTERNOS)
-        // ==========================================================================
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        window.playSound = function(type) {
-            if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+                            <div class="flex justify-between text-[10px] font-bold text-rose-400">
+                                <span>VIDA RIVAL</span>
+                                <span id="enemy-hp-text">500 / 500</span>
+                            </div>
+                            <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-rose-900/50">
+                                <div id="enemy-hp-bar" class="bg-gradient-to-r from-rose-600 to-red-500 h-full transition-all duration-300" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-xs">
+                    <div class="text-center">
+                        <div class="text-slate-400 text-[10px]">CARTAS NA MÃO</div>
+                        <div id="enemy-hand-count" class="font-orbitron font-bold text-rose-400 text-base">5</div>
+                    </div>
+                    <div class="border-r border-slate-800 h-8"></div>
+                    <div class="grid grid-cols-2 gap-x-3 text-[11px]">
+                        <div>AD: <span id="enemy-ad" class="text-amber-400 font-bold">50</span></div>
+                        <div>AP: <span id="enemy-ap" class="text-purple-400 font-bold">0</span></div>
+                        <div>ARM: <span id="enemy-arm" class="text-blue-400 font-bold">30</span></div>
+                        <div>MR: <span id="enemy-mr" class="text-cyan-400 font-bold">30</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 my-2">
+                <div class="glass-panel rounded-xl p-3 border border-slate-800 flex flex-col h-40 md:h-auto overflow-hidden">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                        <span><i class="fa-solid fa-scroll text-blue-400"></i> Histórico de Ações</span>
+                        <span id="game-status-tag" class="text-[10px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-800">EM BOCA</span>
+                    </div>
+                    <div id="combat-log" class="flex-1 overflow-y-auto space-y-1 text-xs text-slate-300 font-mono pr-1">
+                        <p class="text-slate-500">[Sistema] Batalha iniciada! Quebre as defesas do Nexus inimigo!</p>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-xl p-3 border border-slate-800 flex flex-col items-center justify-center relative min-h-[160px]">
+                    <div class="flex items-center justify-center space-x-6">
+                        <div onclick="drawCard()" class="uno-card card-blue flex flex-col items-center justify-center text-center cursor-pointer transform hover:scale-105 active:scale-95 shadow-xl border-2 border-cyan-300">
+                            <i class="fa-solid fa-layer-group text-3xl mb-1 text-cyan-200"></i>
+                            <span class="font-bold text-xs">COMPRAR</span>
+                            <span class="text-[10px] text-cyan-200/80">(100g se vazio)</span>
+                        </div>
+
+                        <i class="fa-solid fa-arrow-right-long text-slate-600 text-2xl"></i>
+
+                        <div id="active-card-slot" class="uno-card card-purple flex flex-col items-center justify-between p-2">
+                            <span class="text-[9px] uppercase font-bold text-purple-200">Última Carta</span>
+                            <i id="active-card-icon" class="fa-solid fa-bolt text-2xl my-auto text-yellow-300"></i>
+                            <span id="active-card-title" class="font-bold text-xs text-center leading-tight">Ataque Básico</span>
+                        </div>
+                    </div>
+
+                    <div id="event-banner" class="hidden absolute bottom-2 bg-amber-500/90 text-slate-950 font-bold text-xs px-3 py-1 rounded-full shadow-lg border border-yellow-300 animate-bounce">
+                        ⚡ Evento Aleatório Ativo!
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-xl p-3 border border-slate-800 flex flex-col justify-between">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                        <span><i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> Painel do Miraculous</span>
+                        <span id="cabra-ink-badge" class="hidden text-[10px] bg-purple-900 text-purple-200 px-1.5 py-0.5 rounded">TINTA ATIVA</span>
+                    </div>
+
+                    <div id="special-hero-panel" class="flex-1 flex flex-col justify-center items-center text-center p-2">
+                        <div class="text-xs text-slate-400 italic">Habilidades passivas e estado do Miraculous sincronizados.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="player-section" class="glass-panel rounded-xl p-3 border border-blue-900/40">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-3 mb-2">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div id="player-avatar" class="w-14 h-14 rounded-full bg-blue-950 border-2 border-blue-500 flex items-center justify-center text-2xl shadow-lg">🐓</div>
+                            <span class="absolute -bottom-1 -right-1 bg-blue-600 text-[10px] font-bold px-1.5 py-0.5 rounded text-white">VOCÊ</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h3 id="player-display-name" class="font-bold text-blue-300 text-base">Lendário</h3>
+                                <span id="player-hero-title" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Miraculous do Galo</span>
+                            </div>
+                            <div class="w-48 md:w-64 space-y-1 mt-1">
+                                <div class="flex justify-between text-[10px] font-bold text-amber-400">
+                                    <span>SEU NEXUS</span>
+                                    <span id="player-nexus-hp-text">1000 / 1000</span>
+                                </div>
+                                <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-amber-900/50">
+                                    <div id="player-nexus-hp-bar" class="bg-gradient-to-r from-amber-600 to-yellow-400 h-full transition-all duration-300" style="width: 100%;"></div>
+                                </div>
+
+                                <div class="flex justify-between text-[10px] font-bold text-emerald-400">
+                                    <span>SUA VIDA</span>
+                                    <span id="player-hp-text">500 / 500</span>
+                                </div>
+                                <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-emerald-900/50">
+                                    <div id="player-hp-bar" class="bg-gradient-to-r from-emerald-600 to-teal-400 h-full transition-all duration-300" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 md:grid-cols-6 gap-2 bg-slate-950/80 p-2 rounded-lg border border-slate-800 text-[11px]">
+                        <div class="text-center">
+                            <span class="text-slate-400 text-[9px] block">AD</span>
+                            <span id="stat-ad" class="font-bold text-amber-400">50</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-slate-400 text-[9px] block">AP</span>
+                            <span id="stat-ap" class="font-bold text-purple-400">0</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-slate-400 text-[9px] block">CRÍTICO</span>
+                            <span id="stat-crit" class="font-bold text-yellow-400">0%</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-slate-400 text-[9px] block">ARMADURA</span>
+                            <span id="stat-arm" class="font-bold text-blue-400">30</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-slate-400 text-[9px] block">RES. MÁG.</span>
+                            <span id="stat-mr" class="font-bold text-cyan-400">30</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-slate-400 text-[9px] block">VAMPIR.</span>
+                            <span id="stat-vamp" class="font-bold text-rose-400">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-1">
+                        <span class="text-[10px] text-slate-400 mr-1 uppercase font-bold">Itens:</span>
+                        <div id="hud-inventory" class="flex space-x-1">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            <i class="fa-solid fa-hand text-blue-400"></i> Sua Mão de Cartas (<span id="hand-count">0</span>)
+                        </span>
+                        <span class="text-[10px] text-slate-500">Clique em uma carta para jogar</span>
+                    </div>
+                    <div id="player-hand" class="flex items-center space-x-2 overflow-x-auto pb-2 pt-1 min-h-[155px]">
+                        </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="shop-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 hidden">
+        <div class="glass-panel w-full max-w-3xl rounded-2xl border border-amber-500/30 p-5 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-store text-amber-400 text-2xl"></i>
+                    <div>
+                        <h2 class="text-xl font-orbitron font-bold text-amber-300">LOJA DE ITENS & BARALHOS</h2>
+                        <p class="text-xs text-slate-400">Compre itens para fortalecer seus atributos ou recarregue seu baralho</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-amber-500/20 px-3 py-1 rounded-lg border border-amber-500/40">
+                        <span id="shop-gold" class="font-orbitron font-bold text-amber-300">0</span> <span class="text-xs text-amber-400">G</span>
+                    </div>
+                    <button onclick="toggleShopModal()" class="text-slate-400 hover:text-white text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex space-x-2 border-b border-slate-800 pb-2 mb-4">
+                <button onclick="switchShopTab('all')" id="tab-btn-all" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950">Gerais / Consumíveis</button>
+                <button onclick="switchShopTab('hero')" id="tab-btn-hero" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">Exclusivos do Miraculous</button>
+                <button onclick="switchShopTab('inventory')" id="tab-btn-inventory" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">Meu Inventário (Vender)</button>
+            </div>
+
+            <div id="shop-items-container" class="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-3 pr-1">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
             try {
+                initAudio();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
+
                 const now = audioCtx.currentTime;
 
-                if (type === 'hit') {
+                if (type === 'attack') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
                     gain.gain.setValueAtTime(0.3, now);
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-                    osc.start(now); osc.stop(now + 0.15);
-                } else if (type === 'crit') {
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(300, now);
-                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
-                    gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                    osc.start(now); osc.stop(now + 0.3);
-                } else if (type === 'heal') {
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'skill') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(400, now);
                     osc.frequency.exponentialRampToValueAtTime(800, now + 0.25);
                     gain.gain.setValueAtTime(0.2, now);
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-                    osc.start(now); osc.stop(now + 0.25);
-                } else if (type === 'shield' || type === 'buff') {
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'buy') {
                     osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(250, now);
-                    osc.frequency.linearRampToValueAtTime(500, now + 0.2);
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
                     gain.gain.setValueAtTime(0.2, now);
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
-                    osc.start(now); osc.stop(now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'ult') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(600, now + 0.4);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
                 }
-            } catch(e) {}
+            } catch (e) { console.log(e); }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-btn');
+            btn.innerHTML = soundEnabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark text-rose-400"></i>';
+        }
+    </script>
+
+    <script>
+        // ==========================================
+        // 1. DADOS DE ITENS E HEROIS
+        // ==========================================
+        const SHOP_ITEMS = {
+            // GLOBAIS
+            'pocao': { id: 'pocao', name: 'Poção de Cura', cost: 50, type: 'all', desc: 'Restaura 150 de VIDA.', stats: {} },
+            'deck_refill': { id: 'deck_refill', name: 'Recarregar Baralho (+5 Cartas)', cost: 100, type: 'all', desc: 'Compra 5 novas cartas para sua mão.', stats: {} },
+            'espada_longa': { id: 'espada_longa', name: 'Espada Longa', cost: 350, type: 'all', desc: '+15 Dano de Ataque (AD)', stats: { ad: 15 } },
+            'tomo_amplificador': { id: 'tomo_amplificador', name: 'Tomo Amplificador', cost: 435, type: 'all', desc: '+20 Poder de Habilidade (AP)', stats: { ap: 20 } },
+
+            // GALO
+            'lacre3000': { id: 'lacre3000', name: 'Lacre 3000g', cost: 3000, type: 'galo', desc: 'Colete almas com menos de 90% da vida atual.', stats: { crit: 10, ad: 100 } },
+            'skate2900': { id: 'skate2900', name: 'Skate 2900g', cost: 2900, type: 'galo', desc: 'Paralisa inimigos por 3s ao causar nojo.', stats: { crit: 5, ad: 60, arm: 40, mr: 30 } },
+            'mandrakit': { id: 'mandrakit', name: 'Mandrakit 2400g', cost: 2400, type: 'galo', desc: 'Ressuscita com +15% de vida ao sofrer dano fatal.', stats: { crit: 30, ad: 30, ap: 30, mr: 30, hp: 30 } },
+            'alma_sebosa': { id: 'alma_sebosa', name: 'Alma Sebosa 3000g', cost: 3000, type: 'galo', desc: 'Concede escudo que bloqueia controle de grupo por 10s.', stats: { crit: 15, ap: 20 } },
+            'pate': { id: 'pate', name: 'E o Patê? 2000g', cost: 2000, type: 'galo', desc: 'Atrasa o dano sofrido por 5s. Se matar o alvo antes, anula.', stats: { crit: 5, arm: 40, mr: 30 } },
+            'bota_sapatona': { id: 'bota_sapatona', name: 'Bota (Sapatona) 1000g', cost: 1000, type: 'galo', desc: '+30 Vel Spawn Cartas, +2% Crit, +3 Pen Armadura, +5 AD.', stats: { crit: 2, ad: 5 } },
+
+            // CABRA
+            'pyton': { id: 'pyton', name: 'Pyton 2000g', cost: 2000, type: 'cabra', desc: 'Seu veneno causa dano contínuo por 5 segundos.', stats: { ad: 20, ap: 100, crit: 3 } },
+            'javascript': { id: 'javascript', name: 'JavaScript 2800g', cost: 2800, type: 'cabra', desc: 'Escudo automático a cada 4s quando atingido.', stats: { ap: 80, mr: 20 } },
+            'java': { id: 'java', name: 'Java 1900g', cost: 1900, type: 'cabra', desc: 'Cura 5 de vida a cada 20 segundos.', stats: { crit: 50, ap: 50, ad: 50 } },
+            'bf': { id: 'bf', name: 'BF 2300g', cost: 2300, type: 'cabra', desc: 'Ganhe +1 AP para cada 1 de suas resistências.', stats: { hp: 200, ad: 20, ap: 40, arm: 50 } },
+            'cadelagem': { id: 'cadelagem', name: 'Cadelagem 2000g', cost: 2000, type: 'cabra', desc: 'Ganha +4 de Gold a cada segundo.', stats: { ad: 80, ap: 50 } },
+            'bota_cadelagem': { id: 'bota_cadelagem', name: 'Bota (Cadelagem) 1000g', cost: 1000, type: 'cabra', desc: '+20 Vel Spawn Cartas, +3 AP, +4 AD, +5% Crit.', stats: { ap: 3, ad: 4, crit: 5 } },
+
+            // BORBOLETA
+            'incubus': { id: 'incubus', name: 'Incubus 3000g', cost: 3000, type: 'borboleta', desc: 'Recupere vida conforme você ataca os inimigos.', stats: { ap: 80, ad: 50, arm: 30 } },
+            'dono_inferno': { id: 'dono_inferno', name: 'Dono do Inferno 4000g', cost: 4000, type: 'borboleta', desc: 'Renasça após sua morte (CD: 10 min).', stats: { ad: 20, ap: 80, hp: 300, arm: 90 } },
+            'fome_luxuria': { id: 'fome_luxuria', name: 'Fome de Luxúria 3500g', cost: 3500, type: 'borboleta', desc: 'Bloqueie uma ação inimiga periodicamente.', stats: { ap: 110, crit: 40, mr: 40, hp: 100 } },
+            'bibi_fogosa': { id: 'bibi_fogosa', name: 'Bibi Fogosa 4000g', cost: 4000, type: 'borboleta', desc: 'Nocauteie e dê dano contínuo por 6s.', stats: { ap: 90, ad: 80 } },
+            'vem_com_tudo': { id: 'vem_com_tudo', name: 'Vem Com Tudo 3900g', cost: 3900, type: 'borboleta', desc: 'Abaixo de 60% HP, reduz todo dano em até 40%.', stats: { arm: 100, mr: 100 } },
+            'bota_funk': { id: 'bota_funk', name: 'Bota (Funk) 1000g', cost: 1000, type: 'borboleta', desc: '+30 Vel Spawn Cartas, +3 AP, +4 Vida.', stats: { ap: 3, hp: 4 } }
         };
 
-        // ==========================================================================
-        // 4. INICIALIZAÇÃO & FIREBASE DE SALA
-        // ==========================================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.champ-select-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.champ-select-btn').forEach(b => b.classList.remove('active'));
-                    e.currentTarget.classList.add('active');
-                    state.player.champ = e.currentTarget.dataset.champ;
-                });
+        // ESTADO DO JOGO
+        let gameState = {
+            roomId: 'NEXUS1',
+            selectedHero: 'galo',
+            playerName: 'Lendário',
+            gold: 500,
+            hp: 500,
+            maxHp: 500,
+            nexusHp: 1000,
+            maxNexusHp: 1000,
+            kills: 0,
+            inventory: [],
+            hand: [],
+            lastUsedSkill: null,
+            cabraInk: 'red', // red, yellow, blue
+            stats: {
+                ad: 50,
+                ap: 0,
+                crit: 0,
+                arm: 30,
+                mr: 30,
+                vamp: 0
+            },
+            enemy: {
+                name: 'Rival Nexus',
+                hero: 'cabra',
+                hp: 500,
+                maxHp: 500,
+                nexusHp: 1000,
+                maxNexusHp: 1000,
+                ad: 50,
+                ap: 10,
+                arm: 30,
+                mr: 30,
+                handCount: 5
+            },
+            isDead: false,
+            isSpectator: false,
+            matchTime: 900 // 15 min
+        };
+
+        let firebaseApp = null;
+        let firebaseDb = null;
+        let activeShopTab = 'all';
+
+        // ==========================================
+        // 2. SELEÇÃO E INICIALIZAÇÃO
+        // ==========================================
+        function selectHero(heroKey) {
+            gameState.selectedHero = heroKey;
+            document.querySelectorAll('.hero-select-card').forEach(el => {
+                el.classList.remove('border-amber-500', 'border-purple-500', 'border-cyan-500', 'ring-2');
             });
+            const card = document.getElementById(`hero-card-${heroKey}`);
+            if (card) {
+                const borderColors = { galo: 'border-amber-500', cabra: 'border-purple-500', borboleta: 'border-cyan-500' };
+                card.classList.add(borderColors[heroKey], 'ring-2');
+            }
+            playSound('skill');
+        }
 
-            document.getElementById('btn-join-game').addEventListener('click', async () => {
-                state.player.name = document.getElementById('player-name').value || 'Brawler';
-                state.player.room = document.getElementById('room-id').value || 'sala_miraculous_1';
-                if (!state.player.champ) return alert('Escolha um Miraculous!');
+        function createOrJoinRoom() {
+            const roomInput = document.getElementById('room-code-input').value.trim();
+            const nameInput = document.getElementById('player-name-input').value.trim();
+            if (roomInput) gameState.roomId = roomInput.toUpperCase();
+            if (nameInput) gameState.playerName = nameInput;
 
-                applyChampBaseStats();
-                buildDeck();
+            document.getElementById('room-display-id').innerText = gameState.roomId;
+            document.getElementById('player-display-name').innerText = gameState.playerName;
 
-                // Conectar ao Firebase e criar jogador na sala
-                const newPlayerRef = push(ref(db, `rooms/${state.player.room}/players`));
-                state.myKey = newPlayerRef.key;
-                
-                await set(newPlayerRef, {
-                    name: state.player.name,
-                    champ: state.player.champ,
-                    hp: state.myPlayerMaxHp,
-                    maxHp: state.myPlayerMaxHp,
-                    kills: state.player.kills
-                });
-
-                // Remove o jogador se ele fechar a aba
-                onDisconnect(newPlayerRef).remove();
-                window.addEventListener('beforeunload', () => remove(newPlayerRef));
-
-                document.getElementById('lobby-screen').classList.add('hidden');
-                document.getElementById('game-screen').classList.remove('hidden');
-
-                if (state.player.champ === 'cabra') {
-                    document.getElementById('cabra-hud-panel').classList.remove('hidden');
-                }
-
-                // Listener Firebase da Sala para escutar os oponentes
-                onValue(ref(db, `rooms/${state.player.room}/players`), (snapshot) => {
-                    const data = snapshot.val();
-                    if (!data) return;
-                    state.roomPlayers = data;
-
-                    let champs = [];
-                    let selectEl = document.getElementById('target-select');
-                    let optionsHtml = '';
-
-                    Object.keys(data).forEach(key => {
-                        const p = data[key];
-                        champs.push(p.champ);
-                        if (key !== state.myKey) {
-                            const isSelected = state.selectedEnemyKey === key ? 'selected' : '';
-                            optionsHtml += `<option value="${key}" ${isSelected}>${p.name} (${p.champ.toUpperCase()} - ${Math.floor(p.hp || 3000)} HP)</option>`;
+            // Tentativa de Inicialização do Firebase se configurado
+            try {
+                if (!firebaseApp) {
+                    const firebaseConfig = {
+                        databaseURL: "https://uno-legends-default-rtdb.firebaseio.com"
+                    };
+                    firebaseApp = firebase.initializeApp(firebaseConfig);
+                    firebaseDb = firebase.database();
+                    
+                    // Sincronizar sala
+                    const roomRef = firebaseDb.ref(`rooms/${gameState.roomId}`);
+                    roomRef.on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data && data.players) {
+                            // Atualizar estado de inimigos multiplayer
+                            Object.keys(data.players).forEach(pKey => {
+                                if (pKey !== gameState.playerName) {
+                                    const p = data.players[pKey];
+                                    gameState.enemy.name = p.name || 'Rival Online';
+                                    gameState.enemy.hero = p.hero || 'borboleta';
+                                    gameState.enemy.hp = p.hp;
+                                    gameState.enemy.nexusHp = p.nexusHp;
+                                    updateUI();
+                                }
+                            });
                         }
                     });
-
-                    state.roomChampions = champs;
-                    populateShop();
-
-                    if (selectEl) selectEl.innerHTML = optionsHtml || '<option value="">Sozinho na Arena (Modo Treino)</option>';
-
-                    const otherKeys = Object.keys(data).filter(k => k !== state.myKey);
-                    if ((!state.selectedEnemyKey || !data[state.selectedEnemyKey]) && otherKeys.length > 0) {
-                        state.selectedEnemyKey = otherKeys[0];
-                        if (selectEl) selectEl.value = state.selectedEnemyKey;
-                    }
-
-                    if (state.selectedEnemyKey && data[state.selectedEnemyKey]) {
-                        state.enemyPlayerHp = data[state.selectedEnemyKey].hp || 3000;
-                        state.enemyPlayerMaxHp = data[state.selectedEnemyKey].maxHp || 3000;
-                        state.enemyKey = state.selectedEnemyKey;
-                        const enemyNameEl = document.getElementById('enemy-brawl-name');
-                        if (enemyNameEl) enemyNameEl.innerText = data[state.selectedEnemyKey].name || 'Inimigo';
-                        
-                        // Atualiza as Kills do Inimigo
-                        const enemyKills = data[state.selectedEnemyKey].kills || 0;
-                        if (document.getElementById('enemy-kills-count')) document.getElementById('enemy-kills-count').innerText = enemyKills;
-                    }
-
-                    updateUI();
-                });
-
-                for (let i = 0; i < 4; i++) drawCard(true);
-                startGameLoops();
-                setupDragAndDrop();
-                updateUI();
-            });
-        });
-
-        window.changeTarget = function(targetKey) {
-            state.selectedEnemyKey = targetKey;
-            if (state.roomPlayers && state.roomPlayers[targetKey]) {
-                state.enemyPlayerHp = state.roomPlayers[targetKey].hp || 3000;
-                state.enemyKey = targetKey;
-                const enemyNameEl = document.getElementById('enemy-brawl-name');
-                if (enemyNameEl) enemyNameEl.innerText = state.roomPlayers[targetKey].name || 'Inimigo';
-                showFloatingText(`Alvo focado: ${state.roomPlayers[targetKey].name}`, innerWidth/2, 160, 'cyan');
-            }
-            updateUI();
-        }
-
-        function applyChampBaseStats() {
-            if (state.player.champ === 'galo') { state.stats.ad = 60; state.stats.crit = 20; state.stats.vamp = 20; }
-            if (state.player.champ === 'cabra') { state.stats.ap = 55; state.stats.armor = 20; }
-            if (state.player.champ === 'borboleta') { state.stats.ap = 60; state.stats.ad = 35; state.stats.mr = 30; }
-        }
-
-        // ==========================================================================
-        // 5. SISTEMA DE XP E NÍVEL 18
-        // ==========================================================================
-        function addXp(amount) {
-            if (state.player.level >= 18) return;
-            state.player.xp += amount;
-            if (state.player.xp >= state.player.maxXp) {
-                state.player.level++;
-                state.player.xp -= state.player.maxXp;
-                state.player.maxXp = Math.floor(state.player.maxXp * 1.3);
-                state.stats.ad += 6; state.stats.ap += 6; state.stats.bonusHp += 150;
-                state.myPlayerMaxHp += 150;
-                healPlayer(150);
-                showFloatingText(`🌟 LEVEL UP! Nível ${state.player.level}!`, innerWidth/2, innerHeight/2 - 100, 'gold');
-                playSound('buff');
-            }
-            updateUI();
-        }
-
-        // ==========================================================================
-        // 6. TINTAS E FUSÃO (CABRA)
-        // ==========================================================================
-        window.addInk = function(color) {
-            if (state.inkPots[color] <= 0) return showFloatingText('Pote de Tinta Vazio!', innerWidth/2, 200, 'danger');
-            if (state.currentInkMix.length >= 2) return showFloatingText('Máximo de 2 tintas na mistura!', innerWidth/2, 200, 'danger');
-            state.inkPots[color]--;
-            state.currentInkMix.push(color);
-            showFloatingText(`Tinta ${color.toUpperCase()} adicionada!`, innerWidth/2, 200, 'cyan');
-            updateUI();
-        }
-
-        window.mergeInksButton = function() {
-            if (state.currentInkMix.length === 0) return showFloatingText('Adicione tintas antes de mesclar!', innerWidth/2, 200, 'danger');
-            let mixKey = state.currentInkMix.sort().join('+');
-            let cardName = `Magia Mesclada (${mixKey.toUpperCase()})`;
-            let actionFn = (s) => executeCardAttack(cardName, () => {
-                dealDamage(s.stats.ap * 2.5);
-                healPlayer(200);
-                s.gold += 50;
-                showFloatingText('✨ FUSÃO DE TINTAS EXPLOSIVA!', innerWidth/2, 240, 'gold');
-                playSound('crit');
-            });
-
-            const blankIdx = state.hand.findIndex(c => c.name === 'Carta em Branco');
-            const mergedCard = { name: cardName, type: 'cabra', cost: 0, desc: `Fusão: ${mixKey}`, action: actionFn, instanceId: 'c_' + Math.random() };
-
-            if (blankIdx !== -1) state.hand[blankIdx] = mergedCard;
-            else if (state.hand.length < state.maxHandSize) state.hand.push(mergedCard);
-            else state.hand[0] = mergedCard;
-
-            state.currentInkMix = [];
-            showFloatingText('🎨 CARTA GERADA COM SUCESSO!', innerWidth/2, 210, 'gold');
-            addXp(15);
-            updateUI();
-        }
-
-        // ==========================================================================
-        // 7. SISTEMA DE CARTAS, DECK E DRAG & DROP
-        // ==========================================================================
-        function buildDeck() {
-            state.deck = [];
-            let pool = CHAMPION_CARDS[state.player.champ] || CHAMPION_CARDS['global'];
-            if (state.player.champ === 'cabra') pool = [...pool, ...state.inkDecks.red, ...state.inkDecks.yellow, ...state.inkDecks.blue];
-
-            for (let i = 0; i < state.maxDeckCards; i++) {
-                const rand = pool[Math.floor(Math.random() * pool.length)];
-                state.deck.push({ ...rand, instanceId: 'c_' + Math.random().toString(36).substring(2) });
-            }
-        }
-
-        window.drawCard = function(free = false) {
-            if (state.isDead) return;
-            if (!state.isMyTurn && !free) return showFloatingText('Aguarde o seu turno!', innerWidth/2, 220, 'danger');
-            if (state.hand.length >= state.maxHandSize) return showFloatingText('Mão cheia (7/7)!', innerWidth/2, 220, 'danger');
-            if (state.deck.length === 0) return showFloatingText('Monte Vazio! Recarregue na Loja.', innerWidth/2, 220, 'danger');
-            
-            if (!free && state.player.champ !== 'cabra') {
-                if (state.energy < 1) return showFloatingText('Sem Energia!', innerWidth/2, 220, 'danger');
-                state.energy--;
-            }
-            state.hand.push(state.deck.pop());
-            updateUI();
-        }
-
-        window.buyDeckReload = function() {
-            if (state.gold < 100) return showFloatingText('Ouro Insuficiente (100G)', innerWidth/2, 220, 'danger');
-            state.gold -= 100;
-            buildDeck();
-            showFloatingText('Deck Reposto com Sucesso!', innerWidth/2, 220, 'gold');
-            updateUI();
-        }
-
-        function setupDragAndDrop() {
-            const dropZone = document.getElementById('drop-zone');
-            if (!dropZone) return;
-            dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-            dropZone.addEventListener('drop', e => {
-                e.preventDefault(); dropZone.classList.remove('drag-over');
-                playCard(e.dataTransfer.getData('text/plain'));
-            });
-        }
-
-        function playCard(instanceId) {
-            if (state.isDead) return;
-            if (!state.isMyTurn) return showFloatingText('Aguarde o seu turno!', innerWidth/2, 220, 'danger');
-            
-            const idx = state.hand.findIndex(c => c.instanceId === instanceId);
-            if (idx === -1) return;
-            const card = state.hand[idx];
-            
-            if (state.energy < card.cost && state.player.champ !== 'cabra') {
-                return showFloatingText('Sem Energia Suficiente!', innerWidth/2, innerHeight/2, 'danger');
-            }
-            
-            state.energy -= card.cost;
-            card.action(state);
-            state.lastEnemySkillDmg = card.cost * 45;
-            state.hand.splice(idx, 1);
-            addXp(15);
-            updateUI();
-        }
-
-        function executeCardAttack(name, callback) { callback(); }
-
-        // CRÍTICO DETERMINÍSTICO ESTILO LOL
-        function calculateDeterministicCrit(baseDmg) {
-            let critChance = state.stats.crit / 100;
-            let isCrit = false;
-
-            if (state.critCredit >= 1.0) {
-                isCrit = true;
-                state.critCredit -= 1.0;
-            } else if (Math.random() < critChance + state.critCredit) {
-                isCrit = true;
-                state.critCredit = 0;
-            } else {
-                state.critCredit += critChance * 0.5;
-            }
-
-            let finalDmg = baseDmg;
-            if (isCrit) {
-                finalDmg *= 1.85;
-                showFloatingText('💥 CRÍTICO FATAL (LOL STYLE)!', innerWidth/2, innerHeight/2 - 50, 'gold');
-                playSound('crit');
-            } else {
-                playSound('hit');
-            }
-
-            let mitigation = 100 / (100 + Math.max(0, 40 - state.stats.pen));
-            return Math.floor(finalDmg * mitigation);
-        }
-
-        // ==========================================================================
-        // SISTEMA DE COMBATE E DANO DIRETO
-        // ==========================================================================
-        function dealDamage(amount, isTrue = false) {
-            if (state.stats.shield > 0 && !isTrue) {
-                if (state.stats.shield >= amount) {
-                    state.stats.shield -= amount;
-                    showFloatingText(`🛡️ Escudo absorveu ${Math.floor(amount)}!`, innerWidth/2, 180, 'cyan');
-                    return;
-                } else {
-                    amount -= state.stats.shield;
-                    state.stats.shield = 0;
                 }
+            } catch (e) {
+                console.log("Modo Offline / Firebase Demo:", e);
             }
 
-            state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
-            state.gold += 30;
-            addXp(12);
-            showFloatingText(`-${Math.floor(amount)} Dano!`, innerWidth/2, 180, 'danger');
+            logCombat(`[Sistema] Conectado à sala: ${gameState.roomId}`);
+        }
 
-            if (state.player.champ === 'galo') state.stats.vamp = state.stats.crit;
-            if (state.stats.vamp > 0) healPlayer(amount * (state.stats.vamp / 100));
+        function startGame() {
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-header').classList.remove('hidden');
+            document.getElementById('arena-screen').classList.remove('hidden');
 
-            // SINCRONIZA O DANO NO FIREBASE PARA O INIMIGO VER
-            if (state.selectedEnemyKey) {
-                update(ref(db, `rooms/${state.player.room}/players/${state.selectedEnemyKey}`), { hp: state.enemyPlayerHp });
-            }
+            // Ajustar HUD do Campeão
+            const heroTitles = { galo: 'Miraculous do Galo 🐓', cabra: 'Miraculous da Cabra 🐐', borboleta: 'Miraculous da Borboleta 🦋' };
+            const heroAvatars = { galo: '🐓', cabra: '🐐', borboleta: '🦋' };
+            
+            document.getElementById('player-hero-title').innerText = heroTitles[gameState.selectedHero];
+            document.getElementById('player-avatar').innerText = heroAvatars[gameState.selectedHero];
 
-            // SISTEMA DE KILLS
-            if (state.enemyPlayerHp <= 0) {
-                state.player.kills++;
-                showFloatingText('💀 INIMIGO ABATIDO! +1 KILL!', innerWidth/2, 220, 'gold');
-                
-                // Respawn do Inimigo para a luta continuar
-                state.enemyPlayerHp = state.enemyPlayerMaxHp;
-                
-                // Atualiza as estatísticas no Firebase
-                if (state.selectedEnemyKey) {
-                    update(ref(db, `rooms/${state.player.room}/players/${state.selectedEnemyKey}`), { hp: state.enemyPlayerHp });
-                }
-                update(ref(db, `rooms/${state.player.room}/players/${state.myKey}`), { kills: state.player.kills });
-            }
+            // Setup inicial da mão
+            drawInitialHand();
             updateUI();
+            setupHeroSpecialPanel();
+
+            // Loops do Jogo
+            startGameLoops();
+            playSound('ult');
         }
 
-        function healPlayer(amount) {
-            let limit = state.myPlayerMaxHp + state.stats.bonusHp;
-            state.myPlayerHp = Math.min(limit, state.myPlayerHp + amount);
-            showFloatingText(`+${Math.floor(amount)} HP`, innerWidth/3, 200, 'success');
-            // Sincroniza sua própria vida no Firebase
-            update(ref(db, `rooms/${state.player.room}/players/${state.myKey}`), { hp: state.myPlayerHp });
-        }
-
-        // ==========================================================================
-        // 8. LOJA E INVENTÁRIO COM VENDAS
-        // ==========================================================================
-        window.toggleShop = function() {
-            const modal = document.getElementById('shop-modal');
-            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        function populateShop() {
-            const grid = document.getElementById('shop-grid');
-            if (!grid) return;
-            grid.innerHTML = '';
-            Object.keys(ALL_ITEMS).forEach(key => {
-                const item = ALL_ITEMS[key];
-                if (item.type !== 'all' && !state.roomChampions.includes(item.type)) return;
-                grid.innerHTML += `
-                    <div style="background:rgba(0,0,0,0.6); border:1px solid #334155; padding:10px; border-radius:8px; display:flex; flex-direction:column; justify-content:space-between;">
-                        <div>
-                            <strong style="color:var(--gold); font-size:0.85rem;">${item.name}</strong>
-                            <p style="font-size:0.65rem; color:#cbd5e1; margin-top:4px;">${item.desc}</p>
-                        </div>
-                        <button class="btn btn-gold" style="padding:6px; font-size:0.7rem; margin-top:8px;" onclick="buyItem('${key}')">${item.cost} G</button>
+        function setupHeroSpecialPanel() {
+            const container = document.getElementById('special-hero-panel');
+            if (gameState.selectedHero === 'cabra') {
+                document.getElementById('cabra-ink-badge').classList.remove('hidden');
+                container.innerHTML = `
+                    <div class="text-xs mb-2 text-purple-300 font-bold">POTES DE TINTA (DECK ATIVO)</div>
+                    <div class="flex space-x-2">
+                        <button onclick="changeCabraInk('red')" class="px-2.5 py-1 bg-red-600 hover:bg-red-500 rounded text-xs font-bold">Vermelho (Dano)</button>
+                        <button onclick="changeCabraInk('yellow')" class="px-2.5 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-xs font-bold text-slate-950">Amarelo (Escudo)</button>
+                        <button onclick="changeCabraInk('blue')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs font-bold">Azul (Util.)</button>
                     </div>
                 `;
-            });
-        }
-
-        window.buyItem = function(key) {
-            const item = ALL_ITEMS[key];
-            if (state.gold >= item.cost) {
-                state.gold -= item.cost;
-                if (key === 'pocao') healPlayer(300);
-                else {
-                    state.inventory.push(key);
-                    applyItemStats(item.stats, 1);
-                    renderInventory();
-                }
-                updateUI();
-                showFloatingText(`Comprou ${item.name}!`, innerWidth/2, 200, 'gold');
-                playSound('buff');
+            } else if (gameState.selectedHero === 'galo') {
+                container.innerHTML = `
+                    <div class="text-xs text-amber-300 font-bold mb-1">PASSIVA DO GALO</div>
+                    <div class="text-[11px] text-slate-300">Vampirismo ativado conforme Crítico aumenta. Ataques Básicos causam dano devastador ao Nexus!</div>
+                `;
             } else {
-                showFloatingText('Ouro Insuficiente!', innerWidth/2, 200, 'danger');
+                container.innerHTML = `
+                    <div class="text-xs text-cyan-300 font-bold mb-1">PASSIVA DA BORBOLETA</div>
+                    <div class="text-[11px] text-slate-300">Infecte com Akuma e Beijo Saliente para drenar Vida e Atributos permanentemente.</div>
+                `;
             }
         }
 
-        window.sellItem = function(index) {
-            const key = state.inventory[index];
-            const item = ALL_ITEMS[key];
-            let refund = Math.floor(item.cost * 0.7);
-            state.gold += refund;
-            applyItemStats(item.stats, -1);
-            state.inventory.splice(index, 1);
-            renderInventory();
+        function changeCabraInk(color) {
+            gameState.cabraInk = color;
+            logCombat(`[Cabra] Trocou o pote de tinta para: ${color.toUpperCase()}`);
+            drawInitialHand();
             updateUI();
-            showFloatingText(`Vendido por +${refund}G`, innerWidth/2, 200, 'gold');
-            playSound('heal');
+            playSound('skill');
         }
 
-        function renderInventory() {
-            const list = document.getElementById('inventory-list');
-            if (!list) return;
-            if (state.inventory.length === 0) {
-                list.innerHTML = `<span style="font-size:0.65rem; color:#64748b;">Nenhum item comprado.</span>`;
+        // ==========================================
+        // 3. SISTEMA DE DECK E CARTAS (ESTILO UNO)
+        // ==========================================
+        function drawInitialHand() {
+            gameState.hand = [];
+            // Cartas Globais Básicas
+            gameState.hand.push(createCard('ataque', 'Ataque Básico', 'Causa AD em dano físico', 'card-red', 'fa-hand-fist'));
+            gameState.hand.push(createCard('pocao', 'Poção de Cura', 'Restaura 150 de HP', 'card-green', 'fa-heart-pulse'));
+            gameState.hand.push(createCard('escudo', 'Barreira Nexus', 'Absorve 200 de dano no Nexus', 'card-blue', 'fa-shield-cat'));
+
+            // Cartas Específicas do Herói
+            if (gameState.selectedHero === 'galo') {
+                gameState.hand.push(createCard('marola', 'Marola (Pena)', 'Dano contínuo. 3 stacks = 10% vida em dano verdadeiro', 'card-yellow', 'fa-feather'));
+                gameState.hand.push(createCard('copiar', 'Dessa Cor Eu Não Tenho', 'Copia a última habilidade gasta', 'card-purple', 'fa-copy'));
+                gameState.hand.push(createCard('aiin', 'Aiin (Escudo)', 'Concede escudo temporário que decai', 'card-gold', 'fa-ghost'));
+                gameState.hand.push(createCard('ult_galo', 'ULT: Fúria do Galo', 'Aumenta Crítico e Dano massivamente', 'card-red', 'fa-bolt'));
+            } else if (gameState.selectedHero === 'cabra') {
+                if (gameState.cabraInk === 'red') {
+                    gameState.hand.push(createCard('fogo', 'Bola de Fogo', 'Dano contínuo de fogo por 4s', 'card-red', 'fa-fire'));
+                    gameState.hand.push(createCard('laser', 'Laser Potente', 'Queima uma carta inimiga e dá dano', 'card-red', 'fa-bolt-lightning'));
+                } else if (gameState.cabraInk === 'yellow') {
+                    gameState.hand.push(createCard('lanterna', 'Lanterna Escudo', 'Cria escudo de luz', 'card-yellow', 'fa-lightbulb'));
+                    gameState.hand.push(createCard('sol', 'Sol Radiante', 'Protege as cartas na sua mão', 'card-yellow', 'fa-sun'));
+                } else {
+                    gameState.hand.push(createCard('pedra', 'Lançar Pedra', 'Atira pedra causando dano físico', 'card-blue', 'fa-gem'));
+                    gameState.hand.push(createCard('chicote', 'Chicoteador', 'Rouba 1 carta do inimigo', 'card-blue', 'fa-spaghetti-monster-flying'));
+                }
+                gameState.hand.push(createCard('ult_cabra', 'ULT: Troca de Tinta', 'Recarrega potes e alterna cor', 'card-purple', 'fa-palette'));
+            } else if (gameState.selectedHero === 'borboleta') {
+                gameState.hand.push(createCard('akuma', 'Akuma', 'Infecta o deck inimigo com borboleta negra', 'card-purple', 'fa-bugs'));
+                gameState.hand.push(createCard('beijo', 'Beijo Saliente', 'Drene 5% da vida máxima por segundo por 10s', 'card-purple', 'fa-heart-crack'));
+                gameState.hand.push(createCard('desejo', 'Desejo do Pecado', 'Disfarça borboleta na mão inimiga', 'card-purple', 'fa-mask'));
+                gameState.hand.push(createCard('ult_borboleta', 'ULT: Caos de Borboletas', 'Explode energia negativa e embaralha as mãos', 'card-gold', 'fa-wind'));
+            }
+        }
+
+        function createCard(id, title, desc, colorClass, iconClass) {
+            return { id, title, desc, colorClass, iconClass };
+        }
+
+        function drawCard() {
+            if (gameState.hand.length >= 8) {
+                logCombat("[Sistema] Mão cheia! (Máx 8 cartas)");
                 return;
             }
-            list.innerHTML = '';
-            state.inventory.forEach((key, index) => {
-                const item = ALL_ITEMS[key];
-                list.innerHTML += `
-                    <div style="background:rgba(255,255,255,0.08); padding:6px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:0.75rem; color:#fff;">${item.name}</span>
-                        <button class="btn btn-danger" style="padding:2px 6px; font-size:0.6rem;" onclick="sellItem(${index})">Vender</button>
+            if (gameState.gold < 10) {
+                logCombat("[Sistema] Ouro insuficiente para comprar carta (Precisa de 10g)");
+                return;
+            }
+            gameState.gold -= 10;
+            const basicCards = [
+                createCard('ataque', 'Ataque Básico', 'Causa AD em dano físico', 'card-red', 'fa-hand-fist'),
+                createCard('pocao', 'Poção de Cura', 'Restaura 150 de HP', 'card-green', 'fa-heart-pulse'),
+                createCard('escudo', 'Barreira Nexus', 'Absorve 200 de dano', 'card-blue', 'fa-shield-cat')
+            ];
+            const drawn = basicCards[Math.floor(Math.random() * basicCards.length)];
+            gameState.hand.push(drawn);
+            logCombat(`[Baralho] Comprou a carta: ${drawn.title}`);
+            updateUI();
+            playSound('buy');
+        }
+
+        function playCard(index) {
+            if (gameState.isDead) return;
+            const card = gameState.hand[index];
+            if (!card) return;
+
+            gameState.hand.splice(index, 1);
+            
+            // Atualizar carta ativa na mesa
+            document.getElementById('active-card-title').innerText = card.title;
+            document.getElementById('active-card-icon').className = `fa-solid ${card.iconClass} text-2xl my-auto text-yellow-300`;
+
+            // LÓGICA DE CRÍTICO IGUAL LOL (DETERMINÍSTICO DE ACORDO COM CRIT %)
+            let isCrit = false;
+            if (gameState.stats.crit > 0) {
+                isCrit = (Math.random() * 100) <= gameState.stats.crit;
+            }
+
+            let baseDamage = gameState.stats.ad;
+            if (isCrit) baseDamage *= 1.75; // Crit multiplier
+
+            // EXECUÇÃO DOS EFEITOS
+            if (card.id === 'ataque') {
+                dealDamageToEnemy(baseDamage, 'físico');
+                if (gameState.stats.vamp > 0) {
+                    let heal = baseDamage * (gameState.stats.vamp / 100);
+                    gameState.hp = Math.min(gameState.maxHp, gameState.hp + heal);
+                    logCombat(`[Vampirismo] Curou ${Math.floor(heal)} HP!`);
+                }
+                playSound('attack');
+            } else if (card.id === 'pocao') {
+                gameState.hp = Math.min(gameState.maxHp, gameState.hp + 150);
+                logCombat(`[Poção] Restaurou 150 de Vida!`);
+                playSound('skill');
+            } else if (card.id === 'escudo') {
+                gameState.nexusHp = Math.min(gameState.maxNexusHp, gameState.nexusHp + 200);
+                logCombat(`[Nexus] Escudo reforçou o Nexus (+200 HP)!`);
+                playSound('skill');
+            } 
+            // GALO
+            else if (card.id === 'marola') {
+                dealDamageToEnemy(baseDamage + 40, 'mágico');
+                logCombat(`[Galo] Atirou pena envenenada Marola!`);
+                playSound('skill');
+            } else if (card.id === 'ult_galo') {
+                gameState.stats.crit += 25;
+                gameState.stats.ad += 40;
+                logCombat(`[ULT Galo] Fúria Ativada! +25% Crit e +40 AD!`);
+                playSound('ult');
+            }
+            // CABRA
+            else if (card.id === 'fogo') {
+                dealDamageToEnemy(gameState.stats.ap + 60, 'mágico');
+                logCombat(`[Cabra] Bola de Fogo disparada!`);
+                playSound('attack');
+            } else if (card.id === 'ult_cabra') {
+                gameState.cabraInk = gameState.cabraInk === 'red' ? 'yellow' : (gameState.cabraInk === 'yellow' ? 'blue' : 'red');
+                setupHeroSpecialPanel();
+                logCombat(`[ULT Cabra] Tinta alternada para: ${gameState.cabraInk.toUpperCase()}`);
+                playSound('ult');
+            }
+            // BORBOLETA
+            else if (card.id === 'akuma') {
+                gameState.enemy.ad = Math.max(10, gameState.enemy.ad - 10);
+                gameState.stats.ap += 15;
+                dealDamageToEnemy(40 + gameState.stats.ap, 'mágico');
+                logCombat(`[Borboleta] Akuma enviado! Drenou -10 AD do inimigo.`);
+                playSound('skill');
+            } else if (card.id === 'ult_borboleta') {
+                dealDamageToEnemy(120 + gameState.stats.ap, 'mágico');
+                logCombat(`[ULT Borboleta] Caos de Borboletas! Roubou atributos inimigos!`);
+                playSound('ult');
+            }
+
+            gameState.lastUsedSkill = card.id;
+            
+            // Bot de contra-ataque simulado se offline
+            setTimeout(enemyAutoTurn, 1000);
+
+            updateUI();
+        }
+
+        // ==========================================
+        // 4. DANOS, COMBATE E BEDWARS NEXUS
+        // ==========================================
+        function dealDamageToEnemy(amount, type) {
+            // Regra do Nexus Bedwars: Primeiro destrói o Nexus, depois acerta a vida do player
+            if (gameState.enemy.nexusHp > 0) {
+                gameState.enemy.nexusHp = Math.max(0, gameState.enemy.nexusHp - amount);
+                logCombat(`[Ataque] Causou ${Math.floor(amount)} de dano ao NEXUS Inimigo!`);
+                if (gameState.enemy.nexusHp === 0) {
+                    logCombat(`🔥 [NEXUS DESTRUÍDO] O Nexus inimigo caiu! Agora acerte a vida final do rival!`);
+                }
+            } else {
+                gameState.enemy.hp = Math.max(0, gameState.enemy.hp - amount);
+                logCombat(`⚔️ [Dano Direto] Causou ${Math.floor(amount)} de dano à Vida do Rival!`);
+                if (gameState.enemy.hp === 0) {
+                    gameState.kills++;
+                    gameState.gold += 300;
+                    logCombat(`☠️ [KILL!] Você abateu o rival e ganhou +300 Gold!`);
+                    alert("🏆 VITÓRIA! Você destruiu o Nexus e derrotou o inimigo!");
+                    window.location.reload();
+                }
+            }
+
+            // Sincronizar com Firebase
+            if (firebaseDb) {
+                firebaseDb.ref(`rooms/${gameState.roomId}/players/${gameState.playerName}`).update({
+                    hp: gameState.hp,
+                    nexusHp: gameState.nexusHp
+                });
+            }
+        }
+
+        function enemyAutoTurn() {
+            if (gameState.isDead) return;
+            const enemyDmg = Math.floor(Math.random() * 30) + 20;
+            
+            if (gameState.nexusHp > 0) {
+                gameState.nexusHp = Math.max(0, gameState.nexusHp - enemyDmg);
+                logCombat(`🛡️ [Aviso] Inimigo atacou seu NEXUS causando ${enemyDmg} de dano!`);
+                if (gameState.nexusHp === 0) {
+                    logCombat(`⚠️ [SEU NEXUS CAIU] Seu Nexus foi destruído! Se morrer agora será PERMANENTE!`);
+                }
+            } else {
+                gameState.hp = Math.max(0, gameState.hp - enemyDmg);
+                logCombat(`💥 [Aviso] Inimigo causou ${enemyDmg} de dano direto à sua VIDA!`);
+                if (gameState.hp === 0) {
+                    gameState.isDead = true;
+                    logCombat(`☠️ [DERROTA] Você foi eliminado! Entrando em Modo Espectador...`);
+                    alert("💀 GAME OVER! Seu Nexus e sua Vida foram destruídos!");
+                }
+            }
+            updateUI();
+        }
+
+        // ==========================================
+        // 5. LOJA E INVENTÁRIO (SISTEMA DE VENDAS)
+        // ==========================================
+        function toggleShopModal() {
+            const modal = document.getElementById('shop-modal');
+            modal.classList.toggle('hidden');
+            renderShopItems();
+        }
+
+        function switchShopTab(tab) {
+            activeShopTab = tab;
+            document.querySelectorAll('#shop-modal button[id^="tab-btn-"]').forEach(btn => {
+                btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700";
+            });
+            document.getElementById(`tab-btn-${tab}`).className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950";
+            renderShopItems();
+        }
+
+        function renderShopItems() {
+            const container = document.getElementById('shop-items-container');
+            document.getElementById('shop-gold').innerText = gameState.gold;
+            container.innerHTML = '';
+
+            if (activeShopTab === 'inventory') {
+                if (gameState.inventory.length === 0) {
+                    container.innerHTML = `<div class="col-span-2 text-center text-slate-500 py-6 text-sm">Seu inventário está vazio.</div>`;
+                    return;
+                }
+                gameState.inventory.forEach((item, idx) => {
+                    const sellPrice = Math.floor(item.cost * 0.7);
+                    container.innerHTML += `
+                        <div class="glass-card p-3 rounded-xl flex items-center justify-between border border-slate-700">
+                            <div>
+                                <h4 class="font-bold text-amber-300 text-sm">${item.name}</h4>
+                                <p class="text-xs text-slate-400">${item.desc}</p>
+                            </div>
+                            <button onclick="sellItem(${idx})" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow">
+                                Vender (+${sellPrice}g)
+                            </button>
+                        </div>
+                    `;
+                });
+                return;
+            }
+
+            Object.keys(SHOP_ITEMS).forEach(key => {
+                const item = SHOP_ITEMS[key];
+                if (activeShopTab === 'hero' && item.type !== gameState.selectedHero) return;
+                if (activeShopTab === 'all' && item.type !== 'all') return;
+
+                container.innerHTML += `
+                    <div class="glass-card p-3 rounded-xl flex flex-col justify-between border border-slate-800">
+                        <div class="mb-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <h4 class="font-bold text-amber-300 text-sm">${item.name}</h4>
+                                <span class="bg-amber-500/20 text-amber-300 text-xs px-2 py-0.5 rounded font-orbitron font-bold">${item.cost}g</span>
+                            </div>
+                            <p class="text-xs text-slate-300">${item.desc}</p>
+                        </div>
+                        <button onclick="buyItem('${item.id}')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1.5 rounded-lg text-xs transition shadow">
+                            Comprar Item
+                        </button>
                     </div>
                 `;
             });
         }
 
-        function applyItemStats(stats, mult) {
-            if (!stats) return;
-            if (stats.ad) state.stats.ad += stats.ad * mult;
-            if (stats.ap) state.stats.ap += stats.ap * mult;
-            if (stats.armor) state.stats.armor += stats.armor * mult;
-            if (stats.mr) state.stats.mr += stats.mr * mult;
-            if (stats.crit) state.stats.crit += stats.crit * mult;
-            if (stats.pen) state.stats.pen += stats.pen * mult;
-            if (stats.bonusHp) { state.stats.bonusHp += stats.bonusHp * mult; if (mult > 0) healPlayer(stats.bonusHp); }
-        }
+        function buyItem(itemId) {
+            const item = SHOP_ITEMS[itemId];
+            if (!item) return;
 
-        // ==========================================================================
-        // 9. MINIONS E EVENTOS ALEATÓRIOS
-        // ==========================================================================
-        function spawnEnemyMinion() {
-            if (state.enemyMinions.length >= 4) return;
-            state.enemyMinions.push({ id: Math.random(), goldReward: 50 });
-            renderEnemyMinions();
-        }
+            if (gameState.gold < item.cost) {
+                logCombat(`[Loja] Ouro insuficiente para comprar ${item.name}!`);
+                return;
+            }
 
-        window.farmEnemyMinion = function(id, clientX, clientY, reward) {
-            if (!state.isMyTurn) return showFloatingText('Aguarde seu turno!', clientX, clientY, 'danger');
-            state.enemyMinions = state.enemyMinions.filter(m => m.id !== id);
-            state.gold += reward;
-            addXp(12);
-            showFloatingText(`+${reward} G (Farm)`, clientX, clientY, 'gold');
-            renderEnemyMinions();
+            if (itemId === 'pocao') {
+                gameState.gold -= item.cost;
+                gameState.hp = Math.min(gameState.maxHp, gameState.hp + 150);
+                logCombat(`[Loja] Usou Poção de Cura (+150 HP)!`);
+            } else if (itemId === 'deck_refill') {
+                gameState.gold -= item.cost;
+                drawInitialHand();
+                logCombat(`[Loja] Baralho recarregado com 5 novas cartas!`);
+            } else {
+                if (gameState.inventory.length >= 6) {
+                    logCombat(`[Loja] Inventário cheio! (Máx 6 itens)`);
+                    return;
+                }
+                gameState.gold -= item.cost;
+                gameState.inventory.push(item);
+
+                // Aplicar Atributos do Item
+                if (item.stats) {
+                    if (item.stats.ad) gameState.stats.ad += item.stats.ad;
+                    if (item.stats.ap) gameState.stats.ap += item.stats.ap;
+                    if (item.stats.crit) gameState.stats.crit += item.stats.crit;
+                    if (item.stats.arm) gameState.stats.arm += item.stats.arm;
+                    if (item.stats.mr) gameState.stats.mr += item.stats.mr;
+                }
+
+                // Passiva Galo: Lifesteal baseado em Crit
+                if (gameState.selectedHero === 'galo') {
+                    gameState.stats.vamp = gameState.stats.crit * 0.8;
+                }
+
+                logCombat(`[Loja] Comprou ${item.name}! Atributos aumentados.`);
+            }
+
+            playSound('buy');
             updateUI();
-            playSound('heal');
+            renderShopItems();
+        }
+
+        function sellItem(index) {
+            const item = gameState.inventory[index];
+            if (!item) return;
+
+            const sellPrice = Math.floor(item.cost * 0.7);
+            gameState.gold += sellPrice;
+
+            // Remover Atributos
+            if (item.stats) {
+                if (item.stats.ad) gameState.stats.ad -= item.stats.ad;
+                if (item.stats.ap) gameState.stats.ap -= item.stats.ap;
+                if (item.stats.crit) gameState.stats.crit -= item.stats.crit;
+                if (item.stats.arm) gameState.stats.arm -= item.stats.arm;
+                if (item.stats.mr) gameState.stats.mr -= item.stats.mr;
+            }
+
+            gameState.inventory.splice(index, 1);
+            logCombat(`[Loja] Vendeu ${item.name} por +${sellPrice}g.`);
+            playSound('buy');
+            updateUI();
+            renderShopItems();
+        }
+
+        // ==========================================
+        // 6. LOOPS DE TEMPO E EVENTOS ALEATÓRIOS
+        // ==========================================
+        function startGameLoops() {
+            // Ouro Passivo (+5g por segundo)
+            setInterval(() => {
+                if (gameState.isDead) return;
+                let goldGain = 5;
+                if (gameState.inventory.some(i => i.id === 'cadelagem')) goldGain += 4;
+                gameState.gold += goldGain;
+                document.getElementById('hud-gold').innerText = gameState.gold;
+            }, 1000);
+
+            // Temporizador de Batalha (15 Minutos)
+            setInterval(() => {
+                if (gameState.matchTime > 0) {
+                    gameState.matchTime--;
+                    const m = Math.floor(gameState.matchTime / 60);
+                    const s = gameState.matchTime % 60;
+                    document.getElementById('match-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+
+            // Eventos Aleatórios a cada 30 segundos
+            setInterval(() => {
+                if (gameState.isDead) return;
+                triggerRandomEvent();
+            }, 30000);
         }
 
         function triggerRandomEvent() {
             const events = [
-                { name: '💰 Chuva de Ouro na Arena! +150G para todos!', action: () => { state.gold += 150; } },
-                { name: '✨ Bênção Arcana! +50 XP instantâneo!', action: () => { addXp(50); } },
-                { name: '❤️ Poção de Emergência! +250 HP recuperados!', action: () => { healPlayer(250); } }
+                { title: '💰 BÁU DE OURO DA MESA', effect: () => { gameState.gold += 150; logCombat('[Evento] Baú Caído! Todos os jogadores ganham +150g!'); } },
+                { title: '⚡ TEMPESTADE MÁGICA', effect: () => { gameState.stats.ap += 20; logCombat('[Evento] Tempestade Mágica! +20 Poder de Habilidade temporário!'); } },
+                { title: '🛡️ ESCUDO DO NEXUS', effect: () => { gameState.nexusHp = Math.min(gameState.maxNexusHp, gameState.nexusHp + 150); logCombat('[Evento] Escudo Divino! Nexus regenerou +150 HP!'); } }
             ];
+
             const ev = events[Math.floor(Math.random() * events.length)];
-            const banner = document.createElement('div');
-            banner.id = 'random-event-banner';
-            banner.innerText = `⚡ EVENTO: ${ev.name}`;
-            document.body.appendChild(banner);
-            ev.action();
-            setTimeout(() => banner.remove(), 4000);
-            playSound('buff');
+            ev.effect();
+
+            const banner = document.getElementById('event-banner');
+            banner.innerText = ev.title;
+            banner.classList.remove('hidden');
+            setTimeout(() => banner.classList.add('hidden'), 4000);
         }
 
-        function spawnButterflyBot(s) {
-            const copyTarget = state.roomChampions.length > 0 ? state.roomChampions[Math.floor(Math.random() * state.roomChampions.length)] : 'Oponente';
-            showFloatingText(`🦋 Akuma invocado! Replicando: ${copyTarget.toUpperCase()}`, innerWidth/2, 220, 'purple');
-            s.stats.ap += 15; s.stats.mr += 10; s.stats.armor += 10; healPlayer(150);
-            state.butterflyBots.push({ id: Math.random(), name: `Sombra de ${copyTarget}`, power: s.stats.ap * 1.6, turnsLeft: 3 });
-            updateUI();
-        }
-
-        function executeButterflyBots() {
-            state.butterflyBots.forEach(bot => {
-                let replicatedDmg = bot.power * 0.9;
-                showFloatingText(`🦋 ${bot.name} atacou! (-${Math.floor(replicatedDmg)})`, innerWidth/2, 280, 'purple');
-                dealDamage(replicatedDmg);
-                bot.turnsLeft--;
-            });
-            state.butterflyBots = state.butterflyBots.filter(b => b.turnsLeft > 0);
-        }
-
-        // ==========================================================================
-        // 10. RENDERIZAÇÃO & LOOPS DE TEMPO (15 MIN)
-        // ==========================================================================
-        window.endTurn = function() {
-            if (!state.isMyTurn) return;
-            state.isMyTurn = false;
-            showFloatingText('Fim do seu turno!', innerWidth/2, innerHeight/2, 'cyan');
-            
-            if (state.butterflyBots.length > 0) executeButterflyBots();
-
-            setTimeout(() => {
-                state.turnNumber++;
-                state.isMyTurn = true;
-                state.energy = state.maxEnergy;
-                if (state.player.champ === 'cabra') {
-                    state.inkPots.red = Math.min(state.inkPots.max, state.inkPots.red + 1);
-                    state.inkPots.blue = Math.min(state.inkPots.max, state.inkPots.blue + 1);
-                    state.inkPots.yellow = Math.min(state.inkPots.max, state.inkPots.yellow + 1);
-                }
-                showFloatingText(`Seu Turno (Rodada ${state.turnNumber})`, innerWidth/2, innerHeight/2, 'gold');
-                drawCard(true);
-                updateUI();
-            }, 3000);
-        }
-
+        // ==========================================
+        // 7. ATUALIZAÇÃO DE INTERFACE (UI)
+        // ==========================================
         function updateUI() {
-            if (document.getElementById('player-lvl-text')) document.getElementById('player-lvl-text').innerText = `NÍVEL ${state.player.level}`;
-            if (document.getElementById('player-xp-text')) document.getElementById('player-xp-text').innerText = `${state.player.xp}/${state.player.maxXp} XP`;
-            
-            if (state.player.champ === 'cabra') {
-                if (document.getElementById('ink-mix-display')) document.getElementById('ink-mix-display').innerText = `Mistura: ${state.currentInkMix.join(' + ') || 'Nenhuma'}`;
-                if (document.getElementById('ink-red-count')) document.getElementById('ink-red-count').innerText = state.inkPots.red;
-                if (document.getElementById('ink-blue-count')) document.getElementById('ink-blue-count').innerText = state.inkPots.blue;
-                if (document.getElementById('ink-yellow-count')) document.getElementById('ink-yellow-count').innerText = state.inkPots.yellow;
-            }
+            // HUD
+            document.getElementById('hud-gold').innerText = gameState.gold;
 
-            if (document.getElementById('my-player-hp-text')) document.getElementById('my-player-hp-text').innerText = `${Math.floor(state.myPlayerHp)} HP`;
-            let maxMyHp = state.myPlayerMaxHp + state.stats.bonusHp;
-            if (document.getElementById('my-player-hp-bar')) document.getElementById('my-player-hp-bar').style.width = `${Math.max(0, Math.min(100, (state.myPlayerHp / maxMyHp) * 100))}%`;
+            // BARS PLAYER
+            document.getElementById('player-hp-text').innerText = `${Math.floor(gameState.hp)} / ${gameState.maxHp}`;
+            document.getElementById('player-hp-bar').style.width = `${(gameState.hp / gameState.maxHp) * 100}%`;
+            document.getElementById('player-nexus-hp-text').innerText = `${Math.floor(gameState.nexusHp)} / ${gameState.maxNexusHp}`;
+            document.getElementById('player-nexus-hp-bar').style.width = `${(gameState.nexusHp / gameState.maxNexusHp) * 100}%`;
 
-            if (document.getElementById('enemy-player-hp-text')) document.getElementById('enemy-player-hp-text').innerText = `${Math.floor(state.enemyPlayerHp)} HP`;
-            if (document.getElementById('enemy-player-hp-bar')) document.getElementById('enemy-player-hp-bar').style.width = `${Math.max(0, Math.min(100, (state.enemyPlayerHp / state.enemyPlayerMaxHp) * 100))}%`;
+            // BARS ENEMY
+            document.getElementById('enemy-hp-text').innerText = `${Math.floor(gameState.enemy.hp)} / ${gameState.enemy.maxHp}`;
+            document.getElementById('enemy-hp-bar').style.width = `${(gameState.enemy.hp / gameState.enemy.maxHp) * 100}%`;
+            document.getElementById('enemy-nexus-hp-text').innerText = `${Math.floor(gameState.enemy.nexusHp)} / ${gameState.enemy.maxNexusHp}`;
+            document.getElementById('enemy-nexus-hp-bar').style.width = `${(gameState.enemy.nexusHp / gameState.enemy.maxNexusHp) * 100}%`;
 
-            if (document.getElementById('my-kills-count')) document.getElementById('my-kills-count').innerText = state.player.kills;
+            // STATS PLAYER
+            document.getElementById('stat-ad').innerText = gameState.stats.ad;
+            document.getElementById('stat-ap').innerText = gameState.stats.ap;
+            document.getElementById('stat-crit').innerText = `${gameState.stats.crit}%`;
+            document.getElementById('stat-arm').innerText = gameState.stats.arm;
+            document.getElementById('stat-mr').innerText = gameState.stats.mr;
+            document.getElementById('stat-vamp').innerText = `${Math.floor(gameState.stats.vamp)}%`;
 
-            if (document.getElementById('stat-ad')) document.getElementById('stat-ad').innerText = Math.floor(state.stats.ad);
-            if (document.getElementById('stat-ap')) document.getElementById('stat-ap').innerText = Math.floor(state.stats.ap);
-            if (document.getElementById('stat-armor')) document.getElementById('stat-armor').innerText = Math.floor(state.stats.armor);
-            if (document.getElementById('stat-mr')) document.getElementById('stat-mr').innerText = Math.floor(state.stats.mr);
-            if (document.getElementById('stat-crit')) document.getElementById('stat-crit').innerText = `${Math.floor(state.stats.crit)}%`;
-            if (document.getElementById('stat-vamp')) document.getElementById('stat-vamp').innerText = `${Math.floor(state.stats.vamp)}%`;
+            // STATS ENEMY
+            document.getElementById('enemy-ad').innerText = gameState.enemy.ad;
+            document.getElementById('enemy-ap').innerText = gameState.enemy.ap;
+            document.getElementById('enemy-arm').innerText = gameState.enemy.arm;
+            document.getElementById('enemy-mr').innerText = gameState.enemy.mr;
 
-            if (document.getElementById('gold-text')) document.getElementById('gold-text').innerText = `${Math.floor(state.gold)} G`;
-            if (document.getElementById('energy-text')) document.getElementById('energy-text').innerText = `${state.energy}/${state.maxEnergy}`;
-            if (document.getElementById('deck-count')) document.getElementById('deck-count').innerText = state.deck.length;
-            if (document.getElementById('hand-limit-text')) document.getElementById('hand-limit-text').innerText = `${state.hand.length}/${state.maxHandSize}`;
+            // CARTAS NA MÃO
+            const handContainer = document.getElementById('player-hand');
+            handContainer.innerHTML = '';
+            document.getElementById('hand-count').innerText = gameState.hand.length;
 
-            renderHand();
-            renderEnemyMinions();
-        }
-
-        function renderHand() {
-            const cont = document.getElementById('hand-container');
-            if (!cont) return;
-            cont.innerHTML = '';
-            state.hand.forEach(c => {
-                let el = document.createElement('div');
-                el.className = 'card';
-                el.draggable = true;
-                el.innerHTML = `
-                    <div>
-                        <strong class="card-title">${c.name}</strong>
-                        <p class="card-desc">${c.desc}</p>
-                    </div>
-                    <div class="card-footer">
-                        <span class="energy-cost">${state.player.champ === 'cabra' ? '🎨' : c.cost + ' EN'}</span>
+            gameState.hand.forEach((card, idx) => {
+                handContainer.innerHTML += `
+                    <div onclick="playCard(${idx})" class="uno-card ${card.colorClass}">
+                        <div class="flex justify-between items-center text-[10px] font-bold">
+                            <span>UNO</span>
+                            <i class="fa-solid ${card.iconClass}"></i>
+                        </div>
+                        <div class="text-center my-auto">
+                            <div class="font-bold text-xs leading-tight mb-1">${card.title}</div>
+                            <div class="text-[9px] text-slate-100 opacity-90 leading-none">${card.desc}</div>
+                        </div>
+                        <div class="text-right text-[9px] font-bold">LEGEND</div>
                     </div>
                 `;
-                el.addEventListener('dragstart', e => {
-                    el.classList.add('dragging');
-                    e.dataTransfer.setData('text/plain', c.instanceId);
-                });
-                el.addEventListener('dragend', () => el.classList.remove('dragging'));
-                cont.appendChild(el);
             });
-        }
 
-        function renderEnemyMinions() {
-            const lane = document.getElementById('enemy-minions-lane');
-            if (!lane) return;
-            lane.innerHTML = '';
-            state.enemyMinions.forEach(m => {
-                lane.innerHTML += `
-                    <div class="minion-chip" onclick="farmEnemyMinion(${m.id}, event.clientX, event.clientY, ${m.goldReward})">
-                        <strong style="color:var(--danger)">Tropa (+${m.goldReward}G)</strong>
-                    </div>`;
-            });
-        }
-
-        function startGameLoops() {
-            // Temporizador de Partida (15 min)
-            setInterval(() => {
-                if (!state.matchActive) return;
-                if (state.matchTimeRemaining > 0) {
-                    state.matchTimeRemaining--;
-                    let m = Math.floor(state.matchTimeRemaining / 60);
-                    let s = state.matchTimeRemaining % 60;
-                    let timerEl = document.getElementById('match-timer-hud');
-                    if (timerEl) timerEl.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            // INVENTÁRIO
+            const invContainer = document.getElementById('hud-inventory');
+            invContainer.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                if (gameState.inventory[i]) {
+                    invContainer.innerHTML += `
+                        <div class="w-7 h-7 rounded bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-300 text-xs font-bold" title="${gameState.inventory[i].name}">
+                            ${gameState.inventory[i].name.charAt(0)}
+                        </div>
+                    `;
                 } else {
-                    state.matchActive = false;
-                    alert(`⏱️ FIM DE PARTIDA! Quem tiver mais kills (${state.player.kills}) vence!`);
-                    window.location.reload();
+                    invContainer.innerHTML += `<div class="w-7 h-7 rounded bg-slate-900 border border-slate-800"></div>`;
                 }
-            }, 1000);
-
-            // Ouro Passivo (5 G/s)
-            setInterval(() => {
-                if (state.isDead) return;
-                let gps = state.baseGps + (state.inventory.includes('cadelagem') ? 4 : 0);
-                state.gold += gps;
-                updateUI();
-            }, 1000);
-
-            // Minions spawn
-            setInterval(() => { if (!state.isDead) spawnEnemyMinion(); }, 8000);
-
-            // Eventos aleatórios na partida a cada 45 segundos
-            setInterval(() => { if (!state.isDead) triggerRandomEvent(); }, 45000);
+            }
         }
+
+        function logCombat(msg) {
+            const logBox = document.getElementById('combat-log');
+            const p = document.createElement('p');
+            p.innerText = msg;
+            logBox.appendChild(p);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        // Inicialização de Estilo padrão de Seleção
+        selectHero('galo');
     </script>
 </body>
 </html>
