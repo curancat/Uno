@@ -1,5 +1,5 @@
 // ==========================================================================
-// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA (BORBOLETA MALZAHAR STYLE)
+// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE DEFINITIVA (PLAYER -> 20s NEXUS + BORBOLETA MALZAHAR)
 // ==========================================================================
 import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
 
@@ -104,13 +104,20 @@ let state = {
     deck: [], maxDeckCards: 20,
     inventory: [],
     myMinions: [], enemyMinions: [],
-    butterflyBots: [], // Bots estilo Malzahar ativos
+    butterflyBots: [],
     roomChampions: [], activeEvent: null,
     cabraInk: 'vermelho',
     marolaStacks: 0,
     isDead: false,
     myNexus: { hp: 5000, maxHp: 5000 },
     enemyNexus: { hp: 5000, maxHp: 5000 },
+    
+    // Mecânica de Ataque ao Player e Janela de 20s do Nexus
+    enemyPlayerHp: 3000,
+    enemyPlayerMaxHp: 3000,
+    nexusVulnerable: false,
+    nexusVulnerabilityTimer: null,
+
     stats: { ad: 15, ap: 15, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0 },
     critCredit: 0
 };
@@ -126,8 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function injectShopAndCabraUI() {
     const resourcePanel = document.querySelector('.resource-panel');
-    if (resourcePanel && document.getElementById('cabra-panel') && !document.getElementById('cabra-panel').innerHTML) {
-        document.getElementById('cabra-panel').innerHTML = `
+    const cabraPanel = document.getElementById('cabra-panel');
+    if (cabraPanel && !cabraPanel.innerHTML) {
+        cabraPanel.innerHTML = `
             <div style="font-size:0.75rem; color:var(--gold); margin-bottom:2px;">TINTAS DA CABRA:</div>
             <div style="display:flex; gap:4px;">
                 <button class="btn" style="background:#ef4444; padding:4px; flex:1; font-size:0.65rem;" onclick="changeInk('vermelho')">Verm</button>
@@ -242,23 +250,20 @@ window.changeInk = function(color) {
 function spawnButterflyBot(s) {
     showFloatingText('🦋 Akuma enviado! Bot Sombra Invocado!', innerWidth/2, 220, 'gold');
     
-    // Cria um bot que replica ações e escala com o AP do usuário
     const newBot = {
         id: Math.random(),
         name: 'Bot Sombra (Cópia Inimiga)',
         power: s.stats.ap * 1.5,
-        duration: 8 // segundos ativo
+        duration: 8
     };
 
     state.butterflyBots.push(newBot);
     updateUI();
 
-    // Drena passivamente atributos do inimigo simulado enquanto o bot age
     let botInterval = setInterval(() => {
         dealDamage(newBot.power * 0.4);
     }, 1500);
 
-    // Remove o bot após 8 segundos e devolve o controle total das cartas
     setTimeout(() => {
         clearInterval(botInterval);
         state.butterflyBots = state.butterflyBots.filter(b => b.id !== newBot.id);
@@ -268,10 +273,11 @@ function spawnButterflyBot(s) {
 }
 
 /* ==========================================================================
-   6. DRAG & DROP, ANIMAÇÕES DE ATAQUE E COMBATE
+   6. DRAG & DROP, ANIMAÇÕES DE ATAQUE E COMBATE (PLAYER FIRST + 20s NEXUS)
    ========================================================================= */
 function setupDragAndDrop() {
     const dropZone = document.getElementById('drop-zone');
+    if (!dropZone) return;
     dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
     dropZone.addEventListener('drop', e => {
@@ -284,9 +290,8 @@ function setupDragAndDrop() {
 function playCard(instanceId) {
     if (state.isDead) return;
 
-    // Se o Miraculous da Borboleta estiver com Bots ativos, as cartas ficam em branco e sem efeito
     if (state.player.champ === 'borboleta' && state.butterflyBots.length > 0) {
-        return showFloatingText('⚠️ Cartas em branco! Seus Bots estão em campo replicando o inimigo!', innerWidth/2, 220, 'danger');
+        return showFloatingText('⚠️ Cartas em branco! Seus Bots estão em campo!', innerWidth/2, 220, 'danger');
     }
 
     const idx = state.hand.findIndex(c => c.instanceId === instanceId);
@@ -353,16 +358,18 @@ function calculateDeterministicCrit(baseDmg) {
     return Math.floor(finalDmg * mitigation);
 }
 
+// LÓGICA PRINCIPAL DE COMBATE: Ataca o Player Inimigo e abre a janela de 20s para ferir o Nexus
 function dealDamage(amount, isTrue = false) {
-    state.enemyNexus.hp = Math.max(0, state.enemyNexus.hp - amount);
-    state.gold += 20;
+    // 1. O ataque atinge sempre o Player Inimigo primeiro
+    state.enemyPlayerHp = Math.max(0, state.enemyPlayerHp - amount);
+    state.gold += 25;
 
-    showFloatingText(`-${Math.floor(amount)}`, innerWidth/1.5, 200, 'danger');
+    showFloatingText(`-${Math.floor(amount)} (Player)`, innerWidth / 2, 180, 'danger');
     
-    const enemyNexusEl = document.querySelector('.nexus-card.enemy');
-    if (enemyNexusEl) {
-        enemyNexusEl.classList.add('taking-damage');
-        setTimeout(() => enemyNexusEl.classList.remove('taking-damage'), 300);
+    const enemyCardEl = document.querySelector('.nexus-card.enemy');
+    if (enemyCardEl) {
+        enemyCardEl.classList.add('taking-damage');
+        setTimeout(() => enemyCardEl.classList.remove('taking-damage'), 300);
     }
 
     if (state.player.champ === 'galo') {
@@ -372,14 +379,49 @@ function dealDamage(amount, isTrue = false) {
         healNexus(amount * (state.stats.vamp / 100));
     }
 
+    // 2. Dispara a janela de 20 segundos de vulnerabilidade do Nexus
+    triggerNexusVulnerabilityWindow();
+
+    // 3. Se a janela de 20s estiver aberta, o dano também causa estragos no Nexus inimigo!
+    if (state.nexusVulnerable) {
+        state.enemyNexus.hp = Math.max(0, state.enemyNexus.hp - (amount * 0.5));
+        showFloatingText(`💥 NEXUS INIMIGO ATINGIDO NA BRECHA!`, innerWidth / 2, 230, 'gold');
+    } else {
+        showFloatingText(`🛡️ Defesas do Player ativas! Atinja o player para abrir o Nexus.`, innerWidth / 2, 230, 'cyan');
+    }
+
     if (state.enemyKey) {
         syncMyNexusHP(state.player.room, state.enemyKey, state.enemyNexus.hp);
     }
 
     if (state.enemyNexus.hp <= 0) {
-        alert('VITÓRIA! O Nexus inimigo foi destruído!');
+        alert('VITÓRIA! As defesas caíram e o Nexus inimigo foi destruído!');
         window.location.reload();
     }
+}
+
+// Função da Janela de 20 Segundos do Nexus
+function triggerNexusVulnerabilityWindow() {
+    state.nexusVulnerable = true;
+    
+    let banner = document.getElementById('event-banner');
+    if (banner) {
+        banner.innerText = "⚡ BRECHA ABERTA! NEXUS INIMIGO VULNERÁVEL POR 20 SEGUNDOS!";
+        banner.classList.add('active');
+    }
+
+    if (state.nexusVulnerabilityTimer) {
+        clearTimeout(state.nexusVulnerabilityTimer);
+    }
+
+    state.nexusVulnerabilityTimer = setTimeout(() => {
+        state.nexusVulnerable = false;
+        if (banner) {
+            banner.classList.remove('active');
+        }
+        showFloatingText(`🛡️ O Nexus inimigo fechou as defesas novamente!`, innerWidth / 2, 200, 'danger');
+        updateUI();
+    }, 20000);
 }
 
 function healNexus(amount) {
@@ -394,7 +436,7 @@ function healNexus(amount) {
    ========================================================================= */
 window.toggleShop = function() {
     const modal = document.getElementById('shop-modal');
-    modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    if (modal) modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
 }
 
 function populateShop() {
@@ -536,14 +578,24 @@ function updateUI() {
     let dynamicAp = state.stats.ap;
     if (state.inventory.includes('bf2300')) dynamicAp += state.stats.armor;
 
+    // Meu HP do Nexus
     const myHpText = document.getElementById('my-hp-text');
     if (myHpText) myHpText.innerText = `${Math.floor(state.myNexus.hp)} HP`;
     let maxMyHp = state.myNexus.maxHp + state.stats.bonusHp;
     const myHpBar = document.getElementById('my-hp-bar');
     if (myHpBar) myHpBar.style.width = `${Math.max(0, Math.min(100, (state.myNexus.hp / maxMyHp) * 100))}%`;
 
+    // HP do Player Inimigo
+    const enemyPlayerHpText = document.getElementById('enemy-player-hp-text');
+    if (enemyPlayerHpText) enemyPlayerHpText.innerText = `${Math.floor(state.enemyPlayerHp)} HP`;
+    const enemyPlayerHpBar = document.getElementById('enemy-player-hp-bar');
+    if (enemyPlayerHpBar) enemyPlayerHpBar.style.width = `${Math.max(0, Math.min(100, (state.enemyPlayerHp / state.enemyPlayerMaxHp) * 100))}%`;
+
+    // HP do Nexus Inimigo (Mostra se está vulnerável ou protegido)
     const enemyHpText = document.getElementById('enemy-hp-text');
-    if (enemyHpText) enemyHpText.innerText = `${Math.floor(state.enemyNexus.hp)} HP`;
+    if (enemyHpText) {
+        enemyHpText.innerText = `${Math.floor(state.enemyNexus.hp)} HP ${state.nexusVulnerable ? '⚡(VULNERÁVEL)' : '🛡️(BLINDADO)'}`;
+    }
     const enemyHpBar = document.getElementById('enemy-hp-bar');
     if (enemyHpBar) enemyHpBar.style.width = `${Math.max(0, Math.min(100, (state.enemyNexus.hp / state.enemyNexus.maxHp) * 100))}%`;
     
@@ -575,7 +627,7 @@ function renderHand() {
     state.hand.forEach(c => {
         let el = document.createElement('div');
         el.className = 'card';
-        if (isHandBlank) el.classList.add('blank-card'); // Estilo visual opcional para cartas em branco
+        if (isHandBlank) el.classList.add('blank-card');
         
         el.draggable = !isHandBlank;
         el.innerHTML = `
@@ -606,7 +658,6 @@ function renderMinions() {
     state.myMinions.forEach(m => {
         lane.innerHTML += `<div class="minion-card" style="border-color:var(--cyan-glow)"><strong>${m.name}</strong><p>⚔️ ${m.atk} | ❤️ ${m.currentHp}</p></div>`;
     });
-    // Renderiza também os bots da borboleta na lane
     state.butterflyBots.forEach(b => {
         lane.innerHTML += `<div class="minion-card" style="border-color:#a855f7"><strong>🦋 ${b.name}</strong><p>⚡ Poder: ${Math.floor(b.power)}</p></div>`;
     });
