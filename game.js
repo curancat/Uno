@@ -1,477 +1,474 @@
 // ==========================================================================
-// UNO LEGENDS: MIRACULOUS NEXUS - GAME ENGINE
+// UNO LEGENDS: MIRACULOUS NEXUS - CYBER-MOBA GAME ENGINE
 // ==========================================================================
+
 import { joinRoomFirebase, syncMyNexusHP, listenToRoomState } from './firebase.js';
 
-let myFirebaseKey = '';
-let enemyFirebaseKey = ''; // <--- Guarda a chave do oponente no Firebase
-/* --- 1. BANCO DE DADOS: ITENS --- */
-// Baseado exatamente nas suas descrições
-const ALL_ITEMS = {
-    // ITENS GLOBAIS
-    'pocao': { name: 'Poção de Cura', cost: 50, type: 'all', stats: {}, desc: 'Restaura 250 de HP do Nexus.' },
-    
-    // ITENS DO GALO
-    'lacre3000': { name: 'Lacre 3000g', cost: 3000, type: 'galo', stats: { crit: 10, ad: 100 }, desc: 'Colete as almas com menos de 90% da vida atual.' },
-    'skate2900': { name: 'Skate 2900g', cost: 2900, type: 'galo', stats: { crit: 5, ad: 60, armor: 40, mr: 30 }, desc: 'Ao causar nojo, paralise inimigos por 3s.' },
-    'mandrakit': { name: 'Mandrakit 2400g', cost: 2400, type: 'galo', stats: { crit: 30, ad: 30, ap: 30, mr: 30, bonusHp: 30 }, desc: 'Ao levar dano letal, ganhe 15% de vida extra.' },
-    'alma_sebosa': { name: 'Alma Sebosa 3000g', cost: 3000, type: 'galo', stats: { crit: 15, ap: 20 }, desc: 'Escudo que bloqueia CC por 10s.' },
-    'pate': { name: 'E o Patê? 2000g', cost: 2000, type: 'galo', stats: { crit: 5, armor: 40, mr: 30 }, desc: 'Atrasa dano em 5s. Se matar antes, anula o dano.' },
-    'bota_sapatona': { name: 'Bota (Sapatona) 1000g', cost: 1000, type: 'galo', stats: { crit: 2, pen: 3, ad: 5 }, desc: '+30 Vel. de Spawn de cartas.' },
-    
-    // ITENS DA CABRA
-    'pyton': { name: 'Pyton 2000g', cost: 2000, type: 'cabra', stats: { ad: 20, ap: 100, crit: 3 }, desc: 'Veneno dá dano contínuo por 5s.' },
-    'javascript': { name: 'Java Script 2800g', cost: 2800, type: 'cabra', stats: { ap: 80, mr: 20 }, desc: 'Escudo ao ser atingido (Recarga 6min).' },
-    'java': { name: 'Java 1900g', cost: 1900, type: 'cabra', stats: { crit: 50, ap: 50, ad: 50 }, desc: 'Cura 5 de vida a cada 20s.' },
-    'bf2300': { name: 'BF 2300g', cost: 2300, type: 'cabra', stats: { bonusHp: 200, ad: 20, ap: 40, armor: 50 }, desc: 'Ganha +1 AP para cada 1 de Armadura atual.' },
-    'cadelagem': { name: 'Cadelagem 2000g', cost: 2000, type: 'cabra', stats: { ad: 80, ap: 50 }, desc: 'Estou com pena, tome +4 de gold a cada segundo.' },
-    'bota_cadelagem': { name: 'Bota (Cadelagem) 1000g', cost: 1000, type: 'cabra', stats: { ap: 3, ad: 4, crit: 5 }, desc: '+20 Vel. de Spawn de carta.' },
-    
-    // ITENS DA BORBOLETA
-    'incubus': { name: 'Incubus 3000g', cost: 3000, type: 'borboleta', stats: { ap: 80, ad: 50, armor: 30 }, desc: 'Recupere vida conforme ataca.' },
-    'dono_inferno': { name: 'Dono do Inferno 4000g', cost: 4000, type: 'borboleta', stats: { ad: 20, ap: 80, bonusHp: 300, armor: 90 }, desc: 'Renasça após morte (Recarga 10min).' },
-    'fome_luxuria': { name: 'Fome de Luxúria 3500g', cost: 3500, type: 'borboleta', stats: { ap: 110, crit: 40, mr: 40, bonusHp: 100 }, desc: 'Bloqueie uma ação inimiga (Recarga 5min).' },
-    'bibi_fogosa': { name: 'Bibi Fogosa 4000g', cost: 4000, type: 'borboleta', stats: { ap: 90, ad: 80 }, desc: 'Nocauteie e dê dano contínuo por 6s.' },
-    'vem_com_tudo': { name: 'Vem com Tudo 3900g', cost: 3900, type: 'borboleta', stats: { armor: 100, mr: 100 }, desc: 'Abaixo de 60% de HP, reduz dano em 40%.' },
-    'bota_funk': { name: 'Bota (Funk) 1000g', cost: 1000, type: 'borboleta', stats: { ap: 3, bonusHp: 4 }, desc: '+30 Vel. de Spawn de carta.' }
+/* --- 1. BANCO DE DADOS: MINIONS E CARTAS --- */
+const MINION_TYPES = {
+    'm_lvl1': { id: 'm_lvl1', name: 'Recruta Melee', lvl: 1, cost: 40, hp: 150, atk: 15, desc: 'Tropa básica de linha de frente.' },
+    'm_lvl2': { id: 'm_lvl2', name: 'Mago Arcamo', lvl: 2, cost: 90, hp: 220, atk: 35, desc: 'Dano mágico à distância.' },
+    'm_lvl3': { id: 'm_lvl3', name: 'Canhão Tático', lvl: 3, cost: 160, hp: 400, atk: 70, desc: 'Destruidor de armaduras.' },
+    'm_lvl4': { id: 'm_lvl4', name: 'Guardião Titânico', lvl: 4, cost: 300, hp: 850, atk: 120, desc: 'Defensor lendário do Nexus.' }
 };
 
-/* --- 2. BANCO DE DADOS: DECKS DE CARTAS --- */
-const CHAMP_DECKS = {
+// Cartas por Campeão
+const CHAMPION_CARDS = {
     'galo': [
-        { id: 'ataque', name: 'Auto Ataque', desc: 'Ataque básico (AD). Pode critar.', type: 'ad', multiplier: 1.0 },
-        { id: 'marola', name: 'Marola', desc: 'Veneno + Dano Verdadeiro (10% Vida) no 3º hit.', type: 'ad_true', multiplier: 0.5 },
-        { id: 'copia', name: 'Dessa cor...', desc: 'Copia a última habilidade.', type: 'utility', multiplier: 1.0 },
-        { id: 'aiin', name: 'Aiin', desc: 'Escudo que absorve 1 hit.', type: 'defense', multiplier: 0.0 }
+        { id: 'g_atk', name: 'Auto Ataque', type: 'galo', cost: 1, desc: 'Causa dano AD. Pode Critar.', action: (s) => dealDamage(calculateDmg(s.stats.ad, true)) },
+        { id: 'g_marola', name: 'Marola', type: 'galo', cost: 2, desc: 'Veneno que causa dano verdadeiro massivo.', action: (s) => dealDamage(250) },
+        { id: 'g_aiin', name: 'Aiin', type: 'galo', cost: 2, desc: 'Concede 200 de Escudo ao Nexus.', action: (s) => healNexus(200) }
+    ],
+    'cabra': [
+        { id: 'c_vermelha', name: 'Tinta Vermelha', type: 'cabra', cost: 2, desc: 'Bola de Fogo (Dano baseado em AP).', action: (s) => dealDamage(calculateDmg(s.stats.ap * 1.5, false)) },
+        { id: 'c_amarela', name: 'Tinta Amarela', type: 'cabra', cost: 1, desc: '+20 de Armadura Permanente.', action: (s) => { s.stats.armor += 20; } },
+        { id: 'c_azul', name: 'Tinta Azul', type: 'cabra', cost: 2, desc: 'Cura seu Nexus em 300 HP.', action: (s) => healNexus(300) }
     ],
     'borboleta': [
-        { id: 'ataque', name: 'Auto Ataque', desc: 'Ataque básico (AD).', type: 'ad', multiplier: 1.0 },
-        { id: 'akuma', name: 'Akuma', desc: 'Nerfa a mão do inimigo.', type: 'debuff', multiplier: 0.5 },
-        { id: 'beijo', name: 'Beijo Saliente', desc: 'Drena 5% HP máx por 10s.', type: 'ap_drain', multiplier: 1.0 },
-        { id: 'desejo', name: 'Desejo do Pecado', desc: 'Armadilha no deck inimigo.', type: 'utility', multiplier: 0.0 }
+        { id: 'b_akuma', name: 'Akuma', type: 'borboleta', cost: 2, desc: 'Causa dano e rouba 10 de AD do inimigo.', action: (s) => { dealDamage(100); s.stats.ad += 10; } },
+        { id: 'b_beijo', name: 'Beijo Saliente', type: 'borboleta', cost: 3, desc: 'Drena 300 HP do Nexus Inimigo.', action: (s) => { dealDamage(300); healNexus(300); } }
+    ],
+    'global': [
+        { id: 'gl_farm', name: 'Dia de Pagamento', type: 'global', cost: 1, desc: 'Ganha +150 de Ouro.', action: (s) => addGold(150) },
+        { id: 'gl_def', name: 'Muralha', type: 'global', cost: 2, desc: '+15 Armadura e +15 Res. Mágica.', action: (s) => { s.stats.armor += 15; s.stats.mr += 15; } }
     ]
 };
 
-const CABRA_DECKS = {
-    'vermelho': [
-        { id: 'fogo', name: 'Bola de Fogo', desc: 'Dano contínuo por 4s (AP).', type: 'ap_dot', multiplier: 1.2 },
-        { id: 'laser', name: 'Laser', desc: 'Tiro de alto dano AP.', type: 'ap', multiplier: 1.8 },
-        { id: 'lanca', name: 'Lança Chamas', desc: 'Dano AP em área/crescente.', type: 'ap', multiplier: 1.5 }
-    ],
-    'amarelo': [
-        { id: 'lanterna', name: 'Lanterna', desc: 'Escudo pessoal.', type: 'defense', multiplier: 0 },
-        { id: 'lampada', name: 'Lâmpada', desc: 'Escudo no Nexus (10% HP).', type: 'defense_nexus', multiplier: 0 },
-        { id: 'sol', name: 'Sol', desc: 'Protege cartas contra destruição.', type: 'utility', multiplier: 0 }
-    ],
-    'azul': [
-        { id: 'pedra', name: 'Pedra', desc: 'Dano híbrido (AD + AP).', type: 'hybrid', multiplier: 1.0 },
-        { id: 'chicote', name: 'Chicote', desc: 'Rouba uma carta.', type: 'utility', multiplier: 0 },
-        { id: 'agua', name: 'Água', desc: 'Restaura vida.', type: 'heal', multiplier: 1.5 }
-    ]
-};
-
-/* --- 3. ESTADO GLOBAL DO JOGO (STATE) --- */
+/* --- 2. ESTADO DO JOGO --- */
 let state = {
     player: { name: '', room: '', champ: '' },
-    gold: 0,
-    baseGps: 5,
-    maxHandSize: 8,
-    cabraInk: 'vermelho',
+    myKey: '',
+    enemyKey: '',
+    gold: 300,
+    baseGps: 10, // Gold por segundo
+    energy: 5,
+    maxEnergy: 5,
+    hand: [],
+    maxHandSize: 7,
+    deck: [],
+    maxDeckCards: 20,
+    myMinions: [],
+    enemyMinions: [], // Opcional, para evoluir depois com o firebase
+    roomChampions: [],
+    activeEvent: null,
     myNexus: { hp: 5000, maxHp: 5000 },
     enemyNexus: { hp: 5000, maxHp: 5000 },
-    stats: { ad: 10, ap: 10, armor: 10, mr: 10, crit: 0, vamp: 0, pen: 0, bonusHp: 0 },
-    inventory: [],
-    hand: [],
-    roomChampions: []
+    stats: { ad: 20, ap: 20, armor: 15, mr: 15, crit: 0, vamp: 0, pen: 0, bonusHp: 0 }
 };
 
-// Loops
-let goldLoop, drawLoop, passiveLoop;
-let cardDrawSpeed = 4000; // 4 segundos base
+/* --- 3. DOM ELEMENTS & SETUP --- */
+document.addEventListener('DOMContentLoaded', () => {
+    setupLobby();
+    setupDragAndDrop();
+    
+    // Anexa funções ao window para poderem ser chamadas pelo HTML via onclick
+    window.drawCard = drawCard;
+    window.buyDeckReload = buyDeckReload;
+    window.buyMinion = buyMinion;
+});
 
-/* --- 4. ELEMENTOS DA DOM --- */
-const screens = { lobby: document.getElementById('lobby-screen'), game: document.getElementById('game-screen') };
-const ui = {
-    myHp: document.getElementById('my-nexus-hp-text'),
-    myHpBar: document.getElementById('my-nexus-fill'),
-    enemyHp: document.getElementById('enemy-nexus-hp-text'),
-    enemyHpBar: document.getElementById('enemy-nexus-fill'),
-    gold: document.getElementById('gold-display'),
-    gps: document.getElementById('gold-per-sec'),
-    log: document.getElementById('action-log'),
-    hand: document.getElementById('player-hand'),
-    cabraPanel: document.getElementById('cabra-ink-panel'),
-    currentInk: document.getElementById('current-ink-display'),
-    shopModal: document.getElementById('shop-modal'),
-    shopGrid: document.getElementById('shop-grid'),
-    inventoryList: document.getElementById('inventory-list')
-};
-const statsUI = ['ad', 'ap', 'armor', 'mr', 'crit', 'vamp'];
-
-/* --- 5. INICIALIZAÇÃO E EVENTOS --- */
-document.querySelectorAll('.champ-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-        document.querySelectorAll('.champ-card').forEach(c => c.style.borderColor = 'var(--border-color)');
-        e.currentTarget.style.borderColor = `var(--theme-${e.currentTarget.dataset.champ})`;
-        state.player.champ = e.currentTarget.dataset.champ;
+function setupLobby() {
+    // Lógica de seleção de campeão no HTML
+    document.querySelectorAll('.champ-select-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const target = e.currentTarget;
+            document.querySelectorAll('.champ-select-btn').forEach(b => b.classList.remove('active'));
+            target.classList.add('active');
+            state.player.champ = target.dataset.champ;
+        });
     });
-});
 
-document.getElementById('btn-join-game').addEventListener('click', async () => { // <--- ADICIONADO 'async' AQUI
-    state.player.name = document.getElementById('player-name').value || 'Jogador';
-    state.player.room = document.getElementById('room-id').value || '1';
-    
-    if (!state.player.champ) return alert('Selecione um Miraculous!');
-    
-    myFirebaseKey = await joinRoomFirebase(
-        state.player.room, 
-        state.player.name, 
-        state.player.champ, 
-        state.myNexus.maxHp + state.stats.bonusHp
-    );
+    // Botão de entrar na partida
+    document.getElementById('btn-join-game').addEventListener('click', async () => {
+        state.player.name = document.getElementById('player-name').value || 'Invocador';
+        state.player.room = document.getElementById('room-id').value || 'sala_1';
+        
+        if (!state.player.champ) return alert('Por favor, selecione um Miraculous!');
 
-    listenToRoomState(
-        state.player.room, 
-        myFirebaseKey, 
-        (enemyHp, enemyName, remoteKey) => { // <--- Captura o HP e a chave do oponente
-            state.enemyNexus.hp = enemyHp;
-            enemyFirebaseKey = remoteKey; 
-            updateUI();
-        },
-        (champsInRoom) => {
-            state.roomChampions = champsInRoom;
-            populateShop(); 
-        }
-    );
+        applyChampionBaseStats();
+        buildDeck();
 
-    setupChampionStats();
-    switchScreen('game');
-    startGame();
-});
+        // 1. Entra no Firebase
+        state.myKey = await joinRoomFirebase(
+            state.player.room,
+            state.player.name,
+            state.player.champ,
+            state.myNexus.maxHp
+        );
 
-function switchScreen(target) {
-    Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[target].classList.add('active');
+        // 2. Escuta mudanças da Sala
+        listenToRoomState(
+            state.player.room,
+            state.myKey,
+            (enemyHp, enemyName, remoteKey) => {
+                state.enemyNexus.hp = enemyHp;
+                state.enemyKey = remoteKey; // Precisamos da chave do inimigo para dar dano nele
+                updateUI();
+            },
+            (champsInRoom) => {
+                state.roomChampions = champsInRoom;
+                updatePlayersBar();
+            }
+        );
+
+        // Oculta lobby, mostra jogo
+        document.getElementById('lobby-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+
+        // Compra 4 cartas iniciais
+        for(let i=0; i<4; i++) drawCard(true); // true = sem custo de energia no inicio
+
+        startGameLoops();
+        updateUI();
+    });
 }
 
-function setupChampionStats() {
+function applyChampionBaseStats() {
     if (state.player.champ === 'galo') {
-        state.stats.ad = 70;
-        state.stats.crit = 15;
+        state.stats.ad = 60; state.stats.crit = 15; state.stats.vamp = 15;
     } else if (state.player.champ === 'cabra') {
-        state.stats.ap = 60;
-        state.stats.armor = 20;
-        ui.cabraPanel.style.display = 'flex';
-        // Cartas base da cabra para não iniciar vazio
-        CABRA_DECKS['vermelho'].push({ id: 'ataque', name: 'Auto Ataque', desc: 'Dano (AD)', type: 'ad', multiplier: 1.0 });
+        state.stats.ap = 50; state.stats.armor = 25;
     } else if (state.player.champ === 'borboleta') {
-        state.stats.ap = 45;
-        state.stats.ad = 45;
-        state.stats.mr = 30;
+        state.stats.ap = 35; state.stats.ad = 30; state.stats.mr = 30;
     }
 }
 
-/* --- 6. MECÂNICAS CENTRAIS --- */
-function startGame() {
-    log(`Partida iniciada! Você é ${state.player.name}.`);
-    updateUI();
-    populateShop();
+/* --- 4. GESTÃO DE DECK E CARTAS --- */
+function buildDeck() {
+    state.deck = [];
+    const myCards = CHAMPION_CARDS[state.player.champ];
+    const globalCards = CHAMPION_CARDS['global'];
+    const pool = [...myCards, ...myCards, ...globalCards]; // Mais peso para as cartas do champ
 
-    // Iniciar economia de Gold
-    goldLoop = setInterval(() => {
-        let extraGold = state.inventory.includes('cadelagem') ? 4 : 0;
-        state.gold += state.baseGps + extraGold;
-        updateUI();
-    }, 1000);
-
-    // Iniciar compra automática de cartas
-    startDrawLoop();
-
-    // Passivas de Itens que ativam com o tempo
-    passiveLoop = setInterval(() => {
-        if (state.inventory.includes('java')) {
-            healNexus(5); // Cura 5 a cada 20s (simplificado aqui no loop, verifique timer ideal)
-        }
-    }, 20000);
-}
-
-function startDrawLoop() {
-    clearInterval(drawLoop);
-    drawLoop = setInterval(() => {
-        if (state.hand.length < state.maxHandSize) {
-            drawCard();
-        }
-    }, cardDrawSpeed);
-}
-
-function drawCard() {
-    let pool = [];
-    if (state.player.champ === 'cabra') pool = CABRA_DECKS[state.cabraInk];
-    else pool = CHAMP_DECKS[state.player.champ];
-
-    const randomCard = pool[Math.floor(Math.random() * pool.length)];
-    state.hand.push(randomCard);
-    renderHand();
-}
-
-document.getElementById('btn-draw-deck').addEventListener('click', () => {
-    if (state.gold >= 100) {
-        state.gold -= 100;
-        for (let i = 0; i < 3; i++) {
-            if (state.hand.length < state.maxHandSize) drawCard();
-        }
-        updateUI();
-    } else {
-        alert("Ouro insuficiente (100G necessários).");
+    for (let i = 0; i < state.maxDeckCards; i++) {
+        const randomCard = pool[Math.floor(Math.random() * pool.length)];
+        // Precisamos clonar para adicionar um instanceId único para o Drag and Drop
+        state.deck.push({ ...randomCard, instanceId: 'card_' + Math.random().toString(36).substring(2, 9) });
     }
-});
+}
 
-/* --- 7. TINTAS DA CABRA --- */
-document.getElementById('ink-red').addEventListener('click', () => changeCabraInk('vermelho'));
-document.getElementById('ink-yellow').addEventListener('click', () => changeCabraInk('amarelo'));
-document.getElementById('ink-blue').addEventListener('click', () => changeCabraInk('azul'));
+function drawCard(free = false) {
+    if (state.hand.length >= state.maxHandSize) {
+        return showFloatingText('Mão Cheia!', window.innerWidth / 2, window.innerHeight - 150, 'danger');
+    }
+    if (state.deck.length === 0) {
+        return showFloatingText('Monte Vazio!', window.innerWidth / 2, window.innerHeight - 150, 'danger');
+    }
+    if (!free && state.energy < 1) {
+        return showFloatingText('Sem Energia!', window.innerWidth / 2, window.innerHeight - 150, 'danger');
+    }
 
-function changeCabraInk(color) {
-    state.cabraInk = color;
-    ui.currentInk.innerText = color.toUpperCase();
-    ui.currentInk.style.color = (color === 'vermelho') ? '#dc2626' : (color === 'amarelo') ? '#eab308' : '#3b82f6';
+    if (!free) state.energy -= 1; // Puxar custa 1 de energia
     
-    // Punição: perde o turno (Limpa a mão inteira)
-    state.hand = [];
-    renderHand();
-    log(`Mudou para o deck ${color}! Você perdeu suas cartas (Turno resetado).`);
+    const card = state.deck.pop();
+    state.hand.push(card);
+    updateUI();
 }
 
-/* --- 8. COMBATE E DANO (Fórmula Estilo LoL) --- */
-function useCard(cardIndex) {
+function buyDeckReload() {
+    if (state.gold < 100) return showFloatingText('Ouro Insuficiente!', window.innerWidth / 2, window.innerHeight - 100, 'danger');
+    state.gold -= 100;
+    buildDeck();
+    updateUI();
+}
+
+/* --- 5. DRAG & DROP ENGINE --- */
+function setupDragAndDrop() {
+    const dropZone = document.getElementById('drop-zone');
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        
+        const instanceId = e.dataTransfer.getData('text/plain');
+        playCard(instanceId);
+    });
+}
+
+function playCard(instanceId) {
+    const cardIndex = state.hand.findIndex(c => c.instanceId === instanceId);
+    if (cardIndex === -1) return;
+
     const card = state.hand[cardIndex];
-    let damage = 0;
-    let isCrit = false;
 
-    // Remove a carta da mão
+    if (state.energy < card.cost) {
+        return showFloatingText('Sem Energia!', window.innerWidth / 2, window.innerHeight / 2, 'danger');
+    }
+
+    // Paga o custo, aplica o efeito e remove da mão
+    state.energy -= card.cost;
+    card.action(state); // Executa a função da carta
     state.hand.splice(cardIndex, 1);
-    renderHand();
+    
+    updateUI();
+}
 
-    // 1. Dano Base AD ou AP
-    if (card.type.includes('ad')) damage = state.stats.ad * card.multiplier;
-    if (card.type.includes('ap')) damage = state.stats.ap * card.multiplier;
-    if (card.type === 'hybrid') damage = (state.stats.ad * 0.5) + (state.stats.ap * 0.5);
-
-    // 2. Cálculo de Crítico
-    if (card.type.includes('ad') && (Math.random() * 100) <= state.stats.crit) {
-        damage *= 1.75; // Dano crítico base
+/* --- 6. COMBATE E STATUS --- */
+function calculateDmg(baseDmg, canCrit) {
+    let finalDmg = baseDmg;
+    let isCrit = false;
+    
+    if (canCrit && (Math.random() * 100) <= state.stats.crit) {
+        finalDmg *= 1.75;
         isCrit = true;
     }
-
-    // 3. Mitigação por Armadura Inimiga (Simulando Inimigo)
-    // Multiplicador = 100 / (100 + Armor - Penetration)
-    let simEnemyArmor = 40; // Armadura base do inimigo
-    let effectiveArmor = Math.max(0, simEnemyArmor - state.stats.pen);
+    
+    // Redução de dano por armadura base do inimigo simulada (Fórmula do LoL)
+    let enemySimArmor = 40; 
+    let effectiveArmor = Math.max(0, enemySimArmor - state.stats.pen);
     let mitigation = 100 / (100 + effectiveArmor);
     
-    // Aplica o dano
-    if (damage > 0) {
-        let finalDamage = Math.floor(damage * mitigation);
-        dealDamage(finalDamage);
-        
-        // Vampirismo (Cura baseado no dano causado)
-        if (state.stats.vamp > 0) {
-            healNexus(finalDamage * (state.stats.vamp / 100));
-        }
+    finalDmg = Math.floor(finalDmg * mitigation);
 
-        log(`Usou ${card.name}! ${isCrit ? '💥 CRÍTICO!' : ''} Causou ${finalDamage} dano.`);
-        
-        // Animação CSS
-        ui.enemyHpBar.parentElement.classList.add('taking-damage');
-        setTimeout(() => ui.enemyHpBar.parentElement.classList.remove('taking-damage'), 400);
-    } 
-    else if (card.type === 'heal') {
-        let healAmount = state.stats.ap * card.multiplier;
-        healNexus(healAmount);
-        log(`Usou ${card.name}! Curou ${Math.floor(healAmount)} HP.`);
-    }
-    else {
-        log(`Usou ${card.name}! Efeito aplicado.`);
-    }
-
-    updateUI();
+    if (isCrit) showFloatingText('CRÍTICO!', window.innerWidth/2, window.innerHeight/2, 'gold');
+    
+    return finalDmg;
 }
 
 function dealDamage(amount) {
+    if(amount <= 0) return;
+    
     state.enemyNexus.hp = Math.max(0, state.enemyNexus.hp - amount);
-    state.gold += 20; // Recompensa por acerto
+    
+    // Animação CSS no Nexus inimigo
+    const enemyNexusEl = document.querySelector('.nexus-card.enemy');
+    enemyNexusEl.classList.add('taking-damage');
+    setTimeout(() => enemyNexusEl.classList.remove('taking-damage'), 300);
 
-    // Se temos a chave do oponente, atualiza o Nexus DELE no Firebase para ele sofrer o dano na tela dele
-    if (enemyFirebaseKey) {
-        syncMyNexusHP(state.player.room, enemyFirebaseKey, state.enemyNexus.hp);
+    // Mostra Dano Flutuante
+    showFloatingText(`-${amount}`, window.innerWidth / 1.5, 200, 'danger');
+
+    // Manda pro Firebase para o inimigo receber
+    if (state.enemyKey) {
+        syncMyNexusHP(state.player.room, state.enemyKey, state.enemyNexus.hp);
     }
 
-    if (state.enemyNexus.hp === 0) alert("VITÓRIA! Nexus Inimigo Destruído!");
+    // Vampirismo do Galo
+    if (state.stats.vamp > 0) {
+        healNexus(Math.floor(amount * (state.stats.vamp / 100)));
+    }
+
+    if (state.enemyNexus.hp === 0) {
+        alert('VITÓRIA! Você destruiu o Nexus inimigo!');
+        window.location.reload();
+    }
 }
+
 function healNexus(amount) {
-    let max = state.myNexus.maxHp + state.stats.bonusHp;
-    state.myNexus.hp = Math.min(max, state.myNexus.hp + amount);
-}
-
-/* --- 9. RENDERIZAÇÃO DA MÃO --- */
-function renderHand() {
-    ui.hand.innerHTML = '';
-    state.hand.forEach((card, index) => {
-        const el = document.createElement('div');
-        el.className = `card ${state.player.champ}`;
-        el.innerHTML = `
-            <div class="card-header">${card.name}</div>
-            <div class="card-body">
-                <strong>[${card.type.toUpperCase().replace('_', ' ')}]</strong><br>
-                ${card.desc}
-            </div>
-        `;
-        el.onclick = () => useCard(index);
-        ui.hand.appendChild(el);
-    });
-}
-
-/* --- 10. SISTEMA DE LOJA E STATUS --- */
-document.getElementById('btn-open-shop').addEventListener('click', () => ui.shopModal.classList.add('active'));
-document.getElementById('btn-close-shop').addEventListener('click', () => ui.shopModal.classList.remove('active'));
-
-function populateShop() {
-    ui.shopGrid.innerHTML = '';
-    Object.keys(ALL_ITEMS).forEach(key => {
-        const item = ALL_ITEMS[key];
-
-        // O item aparece se for global ('all') OU se o campeão dono do item estiver na sala
-        const isGlobal = item.type === 'all';
-        const isChampInRoom = state.roomChampions.includes(item.type);
-
-        if (!isGlobal && !isChampInRoom) return;
-
-        const el = document.createElement('div');
-        el.className = 'shop-item-card';
-        el.innerHTML = `
-            <div>
-                <h4>${item.name}</h4>
-                <p>${item.desc}</p>
-                <div style="font-size: 0.7rem; color: #94a3b8;">
-                    ${Object.entries(item.stats).map(([k, v]) => `+${v} ${k}`).join(', ')}
-                </div>
-            </div>
-            <button class="btn btn-gold" style="margin-top: 10px;" onclick="buyItem('${key}')">${item.cost} G</button>
-        `;
-        ui.shopGrid.appendChild(el);
-    });
-}
-
-window.buyItem = function(key) {
-    const item = ALL_ITEMS[key];
-    if (state.gold >= item.cost) {
-        state.gold -= item.cost;
-        
-        if (key === 'pocao') {
-            healNexus(250);
-            log("Comprou Poção! +250 HP.");
-        } else {
-            state.inventory.push(key);
-            applyStats(item.stats, 1);
-            checkItemPassives(); // Verifica buffs dinâmicos (ex: speed de cartas)
-            renderInventory();
-            log(`Adquiriu: ${item.name}`);
-        }
-        updateUI();
-    } else {
-        alert("Ouro insuficiente!");
-    }
-};
-
-window.sellItem = function(index) {
-    const key = state.inventory[index];
-    const item = ALL_ITEMS[key];
+    state.myNexus.hp = Math.min(state.myNexus.maxHp + state.stats.bonusHp, state.myNexus.hp + amount);
+    showFloatingText(`+${amount}`, window.innerWidth / 3, 200, 'success');
     
-    state.gold += Math.floor(item.cost * 0.6); // Vende por 60%
-    applyStats(item.stats, -1);
-    state.inventory.splice(index, 1);
-    
-    checkItemPassives();
-    renderInventory();
+    // Sincroniza meu próprio HP no firebase para os outros verem minha cura
+    syncMyNexusHP(state.player.room, state.myKey, state.myNexus.hp);
+}
+
+function addGold(amount) {
+    state.gold += amount;
+    showFloatingText(`+${amount}G`, window.innerWidth / 2, window.innerHeight - 100, 'gold');
     updateUI();
-};
-
-function renderInventory() {
-    ui.inventoryList.innerHTML = '';
-    state.inventory.forEach((key, index) => {
-        const item = ALL_ITEMS[key];
-        const el = document.createElement('div');
-        el.style.display = 'flex';
-        el.style.justifyContent = 'space-between';
-        el.style.alignItems = 'center';
-        el.style.background = 'var(--bg-dark)';
-        el.style.padding = '10px';
-        el.style.borderRadius = '5px';
-        el.style.border = '1px solid var(--border-color)';
-        
-        el.innerHTML = `
-            <span style="font-weight:bold; font-size: 0.85rem;">${item.name}</span>
-            <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.7rem;" onclick="sellItem(${index})">
-                Vender (+${Math.floor(item.cost * 0.6)}G)
-            </button>
-        `;
-        ui.inventoryList.appendChild(el);
-    });
 }
 
-function applyStats(stats, multiplier) {
-    if (!stats) return;
-    if (stats.ad) state.stats.ad += stats.ad * multiplier;
-    if (stats.ap) state.stats.ap += stats.ap * multiplier;
-    if (stats.armor) state.stats.armor += stats.armor * multiplier;
-    if (stats.mr) state.stats.mr += stats.mr * multiplier;
-    if (stats.crit) state.stats.crit += stats.crit * multiplier;
-    if (stats.pen) state.stats.pen += stats.pen * multiplier;
-    if (stats.bonusHp) {
-        state.stats.bonusHp += stats.bonusHp * multiplier;
-        if (multiplier > 0) healNexus(stats.bonusHp);
-        else state.myNexus.hp = Math.min(state.myNexus.hp, state.myNexus.maxHp + state.stats.bonusHp);
+/* --- 7. MINIONS & FARM --- */
+function buyMinion(lvlKey) {
+    const mType = MINION_TYPES[lvlKey];
+    if (!mType) return;
+
+    if (state.gold < mType.cost) {
+        return showFloatingText('Ouro Insuficiente!', window.innerWidth / 2, window.innerHeight - 100, 'danger');
     }
-}
 
-function checkItemPassives() {
-    // Passiva da Bota (Speed de cartas)
-    const hasBoots = state.inventory.some(i => i.startsWith('bota'));
-    cardDrawSpeed = hasBoots ? 2500 : 4000;
-    startDrawLoop(); // Reinicia o loop com a nova velocidade
-}
-
-/* --- 11. ATUALIZAÇÃO DA INTERFACE (UI) --- */
-function updateUI() {
-    // Passivas Dinâmicas de Personagem
-    if (state.player.champ === 'galo') state.stats.vamp = state.stats.crit;
+    state.gold -= mType.cost;
+    state.myMinions.push({
+        ...mType,
+        currentHp: mType.hp,
+        instanceId: Math.random().toString()
+    });
     
-    // Passiva Dinâmica de Item: BF2300 da Cabra (+1 AP por Armadura)
-    let dynamicAp = state.stats.ap;
-    if (state.inventory.includes('bf2300')) dynamicAp += state.stats.armor;
+    updateUI();
+}
 
-    // UI Gold
-    let extraGps = state.inventory.includes('cadelagem') ? 4 : 0;
-    ui.gold.innerText = `${Math.floor(state.gold)} G`;
-    ui.gps.innerText = state.baseGps + extraGps;
+// Farma minions inimigos para ganhar ouro extra
+window.farmEnemyMinion = function(event) {
+    const goldEarned = Math.floor(Math.random() * 20) + 30; // Farm entre 30 e 50 G
+    addGold(goldEarned);
+    showFloatingText(`+${goldEarned}G`, event.clientX, event.clientY, 'gold');
+    // Para efeito de demonstração, removemos o minion local simulado após o clique
+    event.currentTarget.remove(); 
+}
 
-    // UI Status
+/* --- 8. EVENTOS ALEATÓRIOS DO JOGO --- */
+const GAME_EVENTS = [
+    { title: 'SURTO DE OURO', desc: 'Sua produção de ouro dobrou!', apply: (s) => s.baseGps *= 2, remove: (s) => s.baseGps /= 2 },
+    { title: 'ECLIPSE MIRACULOSO', desc: 'Dano físico (AD) e Mágico (AP) aumentados em +40!', apply: (s) => { s.stats.ad += 40; s.stats.ap += 40; }, remove: (s) => { s.stats.ad -= 40; s.stats.ap -= 40; } },
+    { title: 'SOBRECARGA DE ENERGIA', desc: 'Você agora ganha 2 de Energia por rodada.', apply: (s) => {}, remove: (s) => {} }
+];
+
+function triggerEvent() {
+    if (state.activeEvent) return;
+    
+    const event = GAME_EVENTS[Math.floor(Math.random() * GAME_EVENTS.length)];
+    state.activeEvent = event;
+    event.apply(state);
+
+    const banner = document.getElementById('event-banner');
+    banner.innerText = `${event.title} - ${event.desc}`;
+    banner.classList.add('active');
+
+    setTimeout(() => {
+        event.remove(state);
+        state.activeEvent = null;
+        banner.classList.remove('active');
+        updateUI();
+    }, 15000); // Evento dura 15 segundos
+}
+
+/* --- 9. RENDERIZAÇÃO DA INTERFACE (UI) --- */
+function updateUI() {
+    // 1. Barras de Vida
+    document.getElementById('my-hp-text').innerText = `${Math.floor(state.myNexus.hp)} HP`;
+    document.getElementById('my-hp-bar').style.width = `${(state.myNexus.hp / (state.myNexus.maxHp + state.stats.bonusHp)) * 100}%`;
+
+    document.getElementById('enemy-hp-text').innerText = `${Math.floor(state.enemyNexus.hp)} HP`;
+    document.getElementById('enemy-hp-bar').style.width = `${(state.enemyNexus.hp / state.enemyNexus.maxHp) * 100}%`;
+
+    // 2. Status Base
     document.getElementById('stat-ad').innerText = Math.floor(state.stats.ad);
-    document.getElementById('stat-ap').innerText = Math.floor(dynamicAp);
+    document.getElementById('stat-ap').innerText = Math.floor(state.stats.ap);
     document.getElementById('stat-armor').innerText = Math.floor(state.stats.armor);
     document.getElementById('stat-mr').innerText = Math.floor(state.stats.mr);
     document.getElementById('stat-crit').innerText = `${Math.floor(state.stats.crit)}%`;
     document.getElementById('stat-vamp').innerText = `${Math.floor(state.stats.vamp)}%`;
 
-    // UI HP Barras
-    let maxMyHp = state.myNexus.maxHp + state.stats.bonusHp;
-    ui.myHp.innerText = `${Math.floor(state.myNexus.hp)} / ${maxMyHp}`;
-    ui.myHpBar.style.width = `${(state.myNexus.hp / maxMyHp) * 100}%`;
+    // 3. Recursos (Ouro, Energia, Limites)
+    document.getElementById('gold-text').innerText = `${Math.floor(state.gold)} G`;
+    document.getElementById('gps-text').innerText = `${state.baseGps} G/s`;
+    document.getElementById('energy-text').innerText = `${state.energy}/${state.maxEnergy}`;
+    document.getElementById('deck-count').innerText = state.deck.length;
+    document.getElementById('hand-limit-text').innerText = `${state.hand.length}/${state.maxHandSize}`;
 
-    ui.enemyHp.innerText = `${Math.floor(state.enemyNexus.hp)} / ${state.enemyNexus.maxHp}`;
-    ui.enemyHpBar.style.width = `${(state.enemyNexus.hp / state.enemyNexus.maxHp) * 100}%`;
+    renderHand();
+    renderMinions();
 }
 
-function log(msg) {
-    ui.log.innerText = msg;
+function renderHand() {
+    const container = document.getElementById('hand-container');
+    container.innerHTML = '';
+
+    state.hand.forEach(card => {
+        const el = document.createElement('div');
+        el.className = `card`;
+        el.style.borderColor = `var(--theme-${card.type === 'global' ? 'galo' : card.type})`;
+        el.draggable = true;
+        
+        el.innerHTML = `
+            <div>
+                <strong class="card-title">${card.name}</strong>
+                <p class="card-desc">${card.desc}</p>
+            </div>
+            <div class="card-footer">
+                <span class="energy-cost">⚡${card.cost}</span>
+                <span class="badge-champ badge-${card.type}">${card.type}</span>
+            </div>
+        `;
+
+        el.addEventListener('dragstart', (e) => {
+            el.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', card.instanceId);
+        });
+
+        el.addEventListener('dragend', () => {
+            el.classList.remove('dragging');
+        });
+
+        container.appendChild(el);
+    });
+}
+
+function renderMinions() {
+    const myLane = document.getElementById('my-minions-lane');
+    myLane.innerHTML = '';
+
+    state.myMinions.forEach(m => {
+        const el = document.createElement('div');
+        el.className = `minion-card lvl-${m.lvl}`;
+        el.innerHTML = `
+            <div class="minion-header">
+                <span>Lvl ${m.lvl}</span>
+                <span>${m.name}</span>
+            </div>
+            <div class="minion-stats" style="margin-top:auto;">
+                <span style="color:var(--danger)">⚔️ ${m.atk}</span>
+                <span style="color:var(--success)">❤️ ${m.currentHp}</span>
+            </div>
+        `;
+        myLane.appendChild(el);
+    });
+}
+
+function updatePlayersBar() {
+    const bar = document.getElementById('players-bar');
+    bar.innerHTML = `<span class="room-info">SALA: ${state.player.room.toUpperCase()}</span> <div class="players-list" id="p-list"></div>`;
+    
+    const list = document.getElementById('p-list');
+    state.roomChampions.forEach(champ => {
+        const isMe = champ === state.player.champ ? 'is-me' : '';
+        list.innerHTML += `
+            <div class="player-chip ${isMe}">
+                <span class="badge-champ badge-${champ}">${champ}</span>
+                ${isMe ? ' (Você)' : ''}
+            </div>
+        `;
+    });
+}
+
+function showFloatingText(text, x, y, type = 'gold') {
+    const el = document.createElement('div');
+    el.className = `floating-text ${type}`;
+    el.innerText = text;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+}
+
+/* --- 10. LOOPS DO JOGO (Tempo Real) --- */
+function startGameLoops() {
+    // 1. Ouro e Energia a cada 2 Segundos (Turno/Rodada)
+    setInterval(() => {
+        state.gold += state.baseGps;
+        
+        // Regenera Energia baseado no evento ativo
+        let energyRegen = (state.activeEvent && state.activeEvent.title === 'SOBRECARGA DE ENERGIA') ? 2 : 1;
+        state.energy = Math.min(state.maxEnergy, state.energy + energyRegen);
+        
+        updateUI();
+    }, 2000);
+
+    // 2. Auto-Ataque dos Minions
+    setInterval(() => {
+        let totalMinionDmg = 0;
+        state.myMinions.forEach(m => totalMinionDmg += m.atk);
+        
+        if (totalMinionDmg > 0) {
+            dealDamage(totalMinionDmg);
+            // Efeito visual leve
+            const dropZone = document.getElementById('drop-zone');
+            dropZone.style.boxShadow = "0 0 10px var(--danger)";
+            setTimeout(() => dropZone.style.boxShadow = "none", 300);
+        }
+    }, 4000); // Atacam a cada 4 segundos
+
+    // 3. Sistema de Eventos Aleatórios
+    setInterval(() => {
+        if (Math.random() > 0.5) triggerEvent();
+    }, 45000); // Tenta ativar um evento a cada 45 segundos
 }
