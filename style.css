@@ -1,273 +1,648 @@
 /* ==========================================================================
-   UNO LEGENDS: MIRACULOUS NEXUS - ESTILO VISUAL & ANIMAÇÕES
+   UNO LEGENDS: MIRACULOUS NEXUS - CYBER-MOBA UI ENGINE (V3.0)
    ========================================================================== */
 
+/* --- 1. VARIÁVEIS DE TEMA E CORES --- */
 :root {
-    --bg-dark: #090d16;
-    --bg-card: rgba(21, 30, 48, 0.85);
-    --border-glow: #38bdf8;
-    --gold: #f59e0b;
+    --bg-dark: #070a12;
+    --bg-panel: rgba(15, 23, 42, 0.75);
+    --bg-card: rgba(30, 41, 59, 0.85);
+    --bg-glass: rgba(255, 255, 255, 0.05);
+    
+    /* Neon Accents */
+    --cyan-glow: #00f2fe;
+    --gold: #fbbf24;
+    --gold-glow: rgba(251, 191, 36, 0.4);
     --danger: #ef4444;
+    --danger-glow: rgba(239, 68, 68, 0.5);
     --success: #10b981;
-    --energy: #a855f7;
+    --energy: #3b82f6;
+    
+    /* Temas dos Miraculous */
     --theme-galo: #f97316;
     --theme-cabra: #a855f7;
     --theme-borboleta: #ec4899;
+    --theme-cat: #22c55e;
+    
+    /* Bordas e Sombras */
+    --border-glow: rgba(56, 189, 248, 0.3);
+    --shadow-main: 0 10px 30px rgba(0, 0, 0, 0.8);
+    --font-main: 'Rajdhani', 'Segoe UI', Tahoma, sans-serif;
 }
 
+/* --- 2. RESET GERAL E LAYOUT BASE --- */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    user-select: none; /* Crucial para o Drag & Drop funcionar suavemente */
+    font-family: var(--font-main);
+    user-select: none;
 }
 
 body {
     background-color: var(--bg-dark);
     color: #f8fafc;
+    min-height: 100vh;
     overflow-x: hidden;
-    height: 100vh;
-    background: radial-gradient(circle at 50% 20%, #1e293b 0%, #090d16 100%);
-    display: flex;
-    flex-direction: column;
+    background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #070a12 85%);
 }
 
-/* --- BANNER DE EVENTOS ALEATÓRIOS --- */
+.hidden {
+    display: none !important;
+}
+
+/* --- 3. ANIMAÇÕES GLOBAIS --- */
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 10px var(--cyan-glow); }
+    50% { box-shadow: 0 0 25px var(--cyan-glow); }
+    100% { box-shadow: 0 0 10px var(--cyan-glow); }
+}
+
+@keyframes bannerSlideDown {
+    0% { transform: translate(-50%, -120%); opacity: 0; }
+    20% { transform: translate(-50%, 20px); opacity: 1; }
+    80% { transform: translate(-50%, 20px); opacity: 1; }
+    100% { transform: translate(-50%, -120%); opacity: 0; }
+}
+
+@keyframes floatUpText {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    50% { opacity: 1; transform: translateY(-30px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-60px) scale(1); }
+}
+
+@keyframes cardSpawn {
+    from { transform: scale(0.3) translateY(100px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes attackHit {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15) rotate(2deg); filter: brightness(1.5); }
+    100% { transform: scale(1); }
+}
+
+/* --- 4. BANNER DE EVENTOS ALEATÓRIOS --- */
 #event-banner {
     position: fixed;
-    top: -100px;
+    top: 0;
     left: 50%;
     transform: translateX(-50%);
-    background: linear-gradient(90deg, rgba(245, 158, 11, 0.9), rgba(239, 68, 68, 0.9));
+    background: linear-gradient(90deg, #b91c1c, #f59e0b, #7c3aed);
+    background-size: 200% 200%;
+    animation: gradientShift 3s infinite alternate;
     color: #fff;
-    padding: 12px 30px;
-    border-radius: 50px;
+    padding: 14px 40px;
+    border-radius: 40px;
     font-weight: 900;
-    font-size: 1.1rem;
-    box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
-    z-index: 9999;
-    transition: top 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    text-transform: uppercase;
+    font-size: 1.2rem;
     letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 35px var(--gold-glow);
+    z-index: 10000;
+    pointer-events: none;
+    display: none;
 }
 
 #event-banner.active {
-    top: 20px;
+    display: block;
+    animation: bannerSlideDown 6s ease-in-out forwards;
 }
 
-/* --- PAINEL DE JOGADORES NA SALA --- */
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+}
+
+/* --- 5. LOBBY & SELEÇÃO DE CAMPEÃO --- */
+.screen-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.lobby-box {
+    background: var(--bg-panel);
+    backdrop-filter: blur(16px);
+    border: 2px solid var(--border-glow);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 650px;
+    box-shadow: var(--shadow-main);
+    text-align: center;
+}
+
+.lobby-box h1 {
+    font-size: 2.5rem;
+    color: var(--cyan-glow);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 25px;
+    text-shadow: 0 0 15px var(--cyan-glow);
+}
+
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1.1rem;
+    outline: none;
+    transition: 0.3s;
+}
+
+.input-group input:focus {
+    border-color: var(--cyan-glow);
+    box-shadow: 0 0 12px var(--cyan-glow);
+}
+
+.champ-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.champ-select-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 15px 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.champ-select-btn:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.champ-select-btn.active {
+    border-color: var(--cyan-glow);
+    background: rgba(0, 242, 254, 0.15);
+    box-shadow: 0 0 20px var(--cyan-glow);
+}
+
+.champ-select-btn[data-champ="cabra"].active { border-color: var(--theme-cabra); box-shadow: 0 0 20px var(--theme-cabra); }
+.champ-select-btn[data-champ="galo"].active { border-color: var(--theme-galo); box-shadow: 0 0 20px var(--theme-galo); }
+.champ-select-btn[data-champ="borboleta"].active { border-color: var(--theme-borboleta); box-shadow: 0 0 20px var(--theme-borboleta); }
+
+/* --- 6. BARRA SUPERIOR DE PLAYERS NA SALA --- */
 .players-bar {
+    background: rgba(15, 23, 42, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(10px);
+}
+
+.room-info {
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 1px;
+}
+
+.players-list {
     display: flex;
     gap: 12px;
-    padding: 10px 20px;
-    background: rgba(15, 23, 42, 0.8);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    align-items: center;
-    overflow-x: auto;
 }
 
 .player-chip {
     display: flex;
     align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.08);
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 0.85rem;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    transition: 0.3s;
 }
 
-.player-chip.me {
-    border-color: var(--border-glow);
-    background: rgba(56, 189, 248, 0.15);
+.player-chip.is-me {
+    border-color: var(--cyan-glow);
+    background: rgba(0, 242, 254, 0.1);
 }
 
-/* --- ARENA PRINCIPAL --- */
-.game-container {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding: 15px;
+.badge-champ {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.badge-cabra { background: var(--theme-cabra); color: #fff; }
+.badge-galo { background: var(--theme-galo); color: #fff; }
+.badge-borboleta { background: var(--theme-borboleta); color: #fff; }
+
+/* --- 7. ARENA PRINCIPAL DO JOGO --- */
+.game-layout {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: calc(100vh - 55px);
+    padding: 15px 25px;
     gap: 15px;
 }
 
-/* HUD E STATUS */
-.hud-nexus {
+/* --- NEXUS & STATUS HUD --- */
+.nexus-hud {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
-    align-items: center;
 }
 
 .nexus-card {
-    background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 15px;
-    backdrop-filter: blur(10px);
+    background: var(--bg-panel);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 18px;
+    padding: 15px 20px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-.nexus-card.enemy { border-color: rgba(239, 68, 68, 0.4); }
+.nexus-card.enemy {
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.nexus-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.nexus-title {
+    font-weight: 800;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+}
+
+.nexus-hp-value {
+    font-size: 1.2rem;
+    font-weight: 900;
+}
 
 .hp-bar-outer {
     width: 100%;
     height: 18px;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     border-radius: 10px;
     overflow: hidden;
-    margin-top: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .hp-bar-inner {
     height: 100%;
-    background: linear-gradient(90deg, #10b981, #34d399);
+    background: linear-gradient(90deg, #059669, #34d399);
     width: 100%;
-    transition: width 0.3s ease;
+    transition: width 0.4s ease-out;
 }
 
-.enemy .hp-bar-inner { background: linear-gradient(90deg, #ef4444, #f87171); }
+.enemy .hp-bar-inner {
+    background: linear-gradient(90deg, #dc2626, #f87171);
+}
 
-/* CAMPO DE BATALHA & DRAG ZONE */
+/* --- 8. CAMPO DE BATALHA, LANES & ZONA DE DROPS --- */
 .battlefield {
-    flex: 1;
     display: grid;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 1fr 100px 1fr;
     gap: 10px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.4);
     border-radius: 20px;
-    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 15px;
     position: relative;
+    overflow: hidden;
 }
 
 .lane {
     display: flex;
-    gap: 10px;
     align-items: center;
-    padding: 10px;
+    gap: 12px;
     overflow-x: auto;
-    border-radius: 10px;
+    padding: 5px;
 }
 
+.lane-title {
+    position: absolute;
+    right: 15px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    pointer-events: none;
+}
+
+/* Zona de Arrastar e Soltar (Drop Zone) */
 .drop-zone {
-    border: 2px dashed var(--border-glow);
+    border: 2px dashed rgba(56, 189, 248, 0.4);
     background: rgba(56, 189, 248, 0.05);
-    transition: all 0.2s ease;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cyan-glow);
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
 }
 
 .drop-zone.drag-over {
-    background: rgba(56, 189, 248, 0.25);
-    transform: scale(1.02);
+    background: rgba(0, 242, 254, 0.2);
+    border-color: var(--cyan-glow);
+    scale: 1.02;
+    box-shadow: 0 0 30px var(--cyan-glow);
 }
 
-/* CARTAS E MINIONS */
+/* --- 9. MINIONS (NÍVEIS 1 A 4) --- */
 .minion-card {
-    min-width: 110px;
-    height: 140px;
-    background: linear-gradient(180deg, #1e293b, #0f172a);
+    min-width: 120px;
+    height: 120px;
+    background: var(--bg-card);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 10px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    animation: cardSpawn 0.3s ease-out;
+    position: relative;
+}
+
+.minion-card.lvl-1 { border-color: #94a3b8; }
+.minion-card.lvl-2 { border-color: #3b82f6; }
+.minion-card.lvl-3 { border-color: #a855f7; }
+.minion-card.lvl-4 { border-color: #fbbf24; box-shadow: 0 0 15px var(--gold-glow); }
+
+.minion-header {
+    display: flex;
+    justify-content: space-between;
     font-size: 0.8rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    animation: spawnAnim 0.3s ease-out;
+    font-weight: bold;
 }
 
-@keyframes spawnAnim {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+.minion-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 800;
 }
 
-.card {
-    min-width: 130px;
-    height: 180px;
-    background: #fff;
-    color: #0f172a;
-    border: 3px solid var(--border-glow);
-    border-radius: 14px;
-    padding: 12px;
-    cursor: grab;
+.farm-btn-target {
+    cursor: pointer;
+}
+
+.farm-btn-target:hover {
+    filter: brightness(1.3);
+    transform: scale(1.05);
+}
+
+/* --- 10. DECK (MONTE), MÃO E CARTAS --- */
+.bottom-controls {
+    display: grid;
+    grid-template-columns: 140px 1fr 180px;
+    gap: 20px;
+    align-items: center;
+}
+
+/* Monte / Deck */
+.deck-container {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    transition: transform 0.2s ease;
-    box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.6);
-}
-
-.card:hover {
-    transform: translateY(-15px) scale(1.05);
-    z-index: 10;
-}
-
-.card:active { cursor: grabbing; opacity: 0.8; }
-.card.dragging { opacity: 0.5; }
-
-/* RECURSOS E DECK AREA */
-.bottom-area {
-    display: flex;
-    gap: 20px;
-    align-items: flex-end;
-    background: var(--bg-card);
-    padding: 15px;
-    border-radius: 15px;
+    align-items: center;
+    gap: 8px;
 }
 
 .deck-pile {
     width: 110px;
-    height: 160px;
-    background: linear-gradient(135deg, #334155, #1e293b);
-    border: 3px solid var(--gold);
-    border-radius: 12px;
+    height: 145px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 2px solid var(--gold);
+    border-radius: 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
-    text-align: center;
-    transition: 0.2s;
+    box-shadow: 0 0 15px var(--gold-glow);
+    transition: all 0.3s ease;
+    position: relative;
 }
 
-.deck-pile:hover { transform: scale(1.05); }
+.deck-pile:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 0 25px var(--gold);
+}
+
+.deck-pile-count {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--gold);
+}
+
+/* Mão de Cartas & Limites */
+.hand-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.hand-limit-bar {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    padding: 0 10px;
+}
 
 .hand-container {
     display: flex;
-    gap: -10px;
+    gap: 12px;
     overflow-x: auto;
-    flex-grow: 1;
-    padding: 20px 0;
+    padding: 10px 5px;
+    min-height: 160px;
+    align-items: center;
 }
 
-/* ANIMAÇÃO DE FARM (OURO FLUTUANTE) */
-.floating-text {
-    position: fixed;
-    color: var(--gold);
+/* Carta Individual (Jogo) */
+.card {
+    min-width: 125px;
+    height: 155px;
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border: 2px solid var(--cyan-glow);
+    border-radius: 14px;
+    padding: 10px;
+    cursor: grab;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    animation: cardSpawn 0.3s ease-out;
+}
+
+.card:hover {
+    transform: translateY(-12px) scale(1.08);
+    box-shadow: 0 10px 25px var(--cyan-glow);
+    z-index: 50;
+}
+
+.card:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+}
+
+.card.dragging {
+    opacity: 0.4;
+    border-style: dashed;
+}
+
+.card-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.card-desc {
+    font-size: 0.7rem;
+    color: #cbd5e1;
+    margin-top: 4px;
+    line-height: 1.1;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.energy-cost {
+    background: var(--energy);
+    color: #fff;
     font-weight: 900;
-    font-size: 1.5rem;
-    pointer-events: none;
-    animation: floatUp 1s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-    z-index: 1000;
-    text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
 }
 
-@keyframes floatUp {
-    0% { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+/* --- 11. DADOS DE RECURSOS (OURO, ENERGIA) & BOTÕES --- */
+.resource-panel {
+    background: var(--bg-panel);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
+
+.resource-item {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.gold-val { color: var(--gold); }
+.energy-val { color: var(--energy); }
 
 .btn {
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: 10px 18px;
+    border-radius: 12px;
     border: none;
-    font-weight: bold;
+    font-weight: 800;
     cursor: pointer;
-    transition: 0.2s;
     text-transform: uppercase;
+    transition: all 0.2s ease;
 }
-.btn-primary { background: var(--energy); color: #fff; }
-.btn-gold { background: var(--gold); color: #000; }
+
+.btn-gold {
+    background: var(--gold);
+    color: #000;
+}
+
+.btn-gold:hover {
+    background: #f59e0b;
+    box-shadow: 0 0 15px var(--gold-glow);
+}
+
+.btn-cyan {
+    background: var(--cyan-glow);
+    color: #000;
+}
+
+.btn-cyan:hover {
+    box-shadow: 0 0 15px var(--cyan-glow);
+}
+
+/* --- 12. TEXTOS FLUTUANTES (FARM E DANO) --- */
+.floating-text {
+    position: fixed;
+    font-weight: 900;
+    font-size: 1.6rem;
+    pointer-events: none;
+    z-index: 99999;
+    animation: floatUpText 1.2s ease-out forwards;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.floating-text.gold { color: var(--gold); }
+.floating-text.damage { color: var(--danger); }
+.floating-text.heal { color: var(--success); }
+
+/* --- 13. LOJA DE ITENS GRID --- */
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    max-height: 350px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.shop-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: 0.2s;
+}
+
+.shop-card:hover {
+    border-color: var(--gold);
+}
