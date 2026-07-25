@@ -3,152 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNO Legends: Miraculous Nexus</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;900&display=swap" rel="stylesheet">
-    
+    <title>Uno Legends: Miraculous Nexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="event-banner">
-        TITAN FALL - DANO DE MINIONS DOBRADO!
-    </div>
+    <div id="event-banner"></div>
 
     <div id="lobby-screen" class="screen-container">
         <div class="lobby-box">
-            <h1>Miraculous Nexus</h1>
+            <h1>UNO LEGENDS</h1>
+            <p style="text-align: center; color: #94a3b8; margin-bottom: 20px; font-size: 0.9rem;">Miraculous Nexus & Bedwars</p>
             
             <div class="input-group">
                 <label for="player-name">Nome do Invocador</label>
-                <input type="text" id="player-name" placeholder="Digite seu nome..." autocomplete="off">
-            </div>
-            
-            <div class="input-group">
-                <label for="room-id">ID da Sala de Combate</label>
-                <input type="text" id="room-id" placeholder="Ex: sala_777" autocomplete="off">
+                <input type="text" id="player-name" placeholder="Ex: ChatNoir_Pro" autocomplete="off">
             </div>
 
+            <div class="input-group">
+                <label for="room-id">Código / ID da Sala</label>
+                <input type="text" id="room-id" placeholder="Ex: sala_miraculous_1" value="sala_1" autocomplete="off">
+            </div>
+
+            <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-top: 15px; text-transform: uppercase;">Escolha seu Miraculous</label>
             <div class="champ-grid">
                 <div class="champ-select-btn" data-champ="galo">
-                    <h3 style="color: var(--theme-galo);">GALO</h3>
-                    <p style="font-size: 0.8rem; color: #cbd5e1;">Dano Crítico & Vampirismo</p>
+                    <strong style="color:var(--theme-galo)">Galo</strong>
+                    <p style="font-size: 0.65rem; color:#94a3b8; margin-top:4px;">Crítico & AD</p>
                 </div>
                 <div class="champ-select-btn" data-champ="cabra">
-                    <h3 style="color: var(--theme-cabra);">CABRA</h3>
-                    <p style="font-size: 0.8rem; color: #cbd5e1;">Magia Arcana & Defesa</p>
+                    <strong style="color:var(--theme-cabra)">Cabra</strong>
+                    <p style="font-size: 0.65rem; color:#94a3b8; margin-top:4px;">AP & Tintas</p>
                 </div>
                 <div class="champ-select-btn" data-champ="borboleta">
-                    <h3 style="color: var(--theme-borboleta);">BORBOLETA</h3>
-                    <p style="font-size: 0.8rem; color: #cbd5e1;">Suporte & Controle</p>
+                    <strong style="color:var(--theme-borboleta)">Borboleta</strong>
+                    <p style="font-size: 0.65rem; color:#94a3b8; margin-top:4px;">Drenagem & Caos</p>
                 </div>
             </div>
 
-            <button id="btn-join-game" class="btn btn-cyan" style="width: 100%; font-size: 1.3rem; padding: 15px;">
-                ENTRAR NA ARENA
-            </button>
+            <button id="btn-join-game" class="btn btn-cyan" style="width: 100%; margin-top: 10px; padding: 14px;">ENTRAR NA ARENA</button>
         </div>
     </div>
 
     <div id="game-screen" class="hidden">
         
         <div class="players-bar" id="players-bar">
-            </div>
+            <span style="color:#94a3b8; font-weight:bold;">SALA: CARREGANDO...</span>
+            <div class="players-list" id="plist"></div>
+        </div>
 
         <div class="game-layout">
             
             <div class="nexus-hud">
-                
                 <div class="nexus-card">
                     <div class="nexus-header">
-                        <span class="nexus-title" style="color: var(--cyan-glow);">Seu Nexus</span>
-                        <span class="nexus-hp-value" id="my-hp-text">5000 HP</span>
+                        <span>MEU NEXUS</span>
+                        <span id="my-hp-text" style="color:var(--success)">5000 HP</span>
                     </div>
                     <div class="hp-bar-outer">
-                        <div class="hp-bar-inner" id="my-hp-bar" style="width: 100%;"></div>
-                    </div>
-                    <div style="display: flex; gap: 12px; margin-top: 12px; font-size: 0.85rem; color: #94a3b8; justify-content: space-between;">
-                        <span>AD: <b id="stat-ad" style="color:#fff;">15</b></span>
-                        <span>AP: <b id="stat-ap" style="color:#fff;">15</b></span>
-                        <span>DEF: <b id="stat-armor" style="color:#fff;">10</b></span>
-                        <span>MR: <b id="stat-mr" style="color:#fff;">10</b></span>
-                        <span>Crit: <b id="stat-crit" style="color:var(--gold);">0%</b></span>
-                        <span>Vamp: <b id="stat-vamp" style="color:var(--danger);">0%</b></span>
+                        <div id="my-hp-bar" class="hp-bar-inner"></div>
                     </div>
                 </div>
 
                 <div class="nexus-card enemy">
                     <div class="nexus-header">
-                        <span class="nexus-title" style="color: var(--danger);">Nexus Inimigo</span>
-                        <span class="nexus-hp-value" id="enemy-hp-text">5000 HP</span>
+                        <span>NEXUS INIMIGO</span>
+                        <span id="enemy-hp-text" style="color:var(--danger)">5000 HP</span>
                     </div>
                     <div class="hp-bar-outer">
-                        <div class="hp-bar-inner" id="enemy-hp-bar" style="width: 100%;"></div>
+                        <div id="enemy-hp-bar" class="hp-bar-inner"></div>
                     </div>
                 </div>
 
+                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px;">
+                    <strong style="color: var(--cyan-glow); margin-bottom: 2px;">ATRIBUTOS</strong>
+                    <div style="display:flex; justify-content:space-between;"><span>AD (Dano Físico):</span> <strong id="stat-ad">15</strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>AP (Poder Mágico):</span> <strong id="stat-ap">15</strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Armadura:</span> <strong id="stat-armor">10</strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Res. Mágica:</span> <strong id="stat-mr">10</strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Chance Crítico:</span> <strong id="stat-crit">0%</strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Vampirismo:</span> <strong id="stat-vamp">0%</strong></div>
+                </div>
             </div>
 
             <div class="battlefield">
-                <span class="lane-title" style="top: 10px;">Tropa Inimiga</span>
+                <span class="lane-title">Lane Inimiga (Farm de Tropas)</span>
                 <div class="lane" id="enemy-minions-lane">
                     </div>
-                
+
                 <div class="drop-zone" id="drop-zone">
-                    ARRASTE SUAS CARTAS AQUI PARA INVOCAR
+                    📥 ARRASTE SUA CARTA AQUI PARA JOGAR
                 </div>
-                
-                <span class="lane-title" style="bottom: 10px;">Sua Tropa</span>
+
+                <span class="lane-title" style="bottom: 75px;">Min minions / Defesas</span>
                 <div class="lane" id="my-minions-lane">
                     </div>
             </div>
 
-            <div class="bottom-controls">
-                
-                <div class="resource-panel">
-                    <div class="resource-item">
-                        <span>Ouro:</span>
-                        <span class="gold-val" id="gold-text">200 G</span>
-                    </div>
-                    <div class="resource-item" style="font-size: 0.8rem; color: #94a3b8;">
-                        <span>Farm Passivo:</span>
-                        <span id="gps-text">10 G/s</span>
-                    </div>
-                    <div class="resource-item">
-                        <span>Energia:</span>
-                        <span class="energy-val" id="energy-text">3/3</span>
-                    </div>
-                    <button class="btn btn-cyan" style="margin-top: 8px; font-size: 0.75rem;" onclick="buyMinion('m_lvl1')">
-                        Comprar Minion (40G)
-                    </button>
-                </div>
+        </div>
 
-                <div class="hand-wrapper">
-                    <div class="hand-limit-bar">
-                        <span>Cartas na Mão</span>
-                        <span id="hand-limit-text">0/7</span>
-                    </div>
-                    <div class="hand-container" id="hand-container">
-                        </div>
+        <div class="bottom-controls">
+            
+            <div class="resource-panel">
+                <div class="resource-item">
+                    <span>Ouro:</span>
+                    <strong id="gold-text" style="color:var(--gold);">500 G</strong>
                 </div>
-
-                <div class="deck-container">
-                    <div class="deck-pile" id="deck-pile" onclick="drawCard()">
-                        <span class="deck-pile-count" id="deck-count">15</span>
-                        <span style="font-size: 0.75rem; color: var(--gold); font-weight: 700; letter-spacing: 1px;">MONTE</span>
-                    </div>
-                    <button class="btn btn-gold" style="font-size: 0.7rem; width: 100%;" onclick="buyDeckReload()">
-                        Recarregar (100G)
-                    </button>
+                <div class="resource-item">
+                    <span>GPS (Gold/s):</span>
+                    <strong id="gps-text" style="color:var(--gold);">5 G/s</strong>
                 </div>
+                <div class="resource-item">
+                    <span>Energia:</span>
+                    <strong id="energy-text" style="color:var(--cyan-glow);">5/5</strong>
+                </div>
+                <div id="cabra-panel" class="hidden"></div>
+                <button class="btn btn-gold" onclick="toggleShop()" style="font-size:0.75rem; padding:8px;">🛒 LOJA (TECLA B)</button>
+            </div>
 
+            <div class="hand-wrapper">
+                <div class="hand-limit-bar">
+                    <span>SUA MÃO DE CARTAS</span>
+                    <span id="hand-limit-text">0/7</span>
+                </div>
+                <div class="hand-container" id="hand-container">
+                    </div>
+            </div>
+
+            <div class="deck-container">
+                <div class="deck-pile" onclick="drawCard()">
+                    <span style="font-size: 0.65rem; color:#93c5fd; font-weight:700;">COMPRAR</span>
+                    <span class="deck-pile-count" id="deck-count">20</span>
+                </div>
+                <button class="btn btn-cyan" onclick="buyDeckReload()" style="font-size: 0.6rem; padding: 4px 8px;">Novo Deck (100G)</button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="shop-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:99999; justify-content:center; align-items:center; padding:20px;">
+        <div style="background:var(--bg-panel); border:2px solid var(--gold); width:100%; max-width:900px; height:80vh; border-radius:20px; display:flex; flex-direction:column; padding:20px; box-shadow: 0 0 40px rgba(245, 158, 11, 0.3);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+                <h2 style="color:var(--gold);">🛒 LOJA SECRETA DO NEXUS</h2>
+                <button class="btn btn-danger" onclick="toggleShop()" style="padding: 6px 12px; font-size:0.8rem;">FECHAR [X]</button>
+            </div>
+            <div style="display:flex; gap:20px; height:100%; overflow:hidden;">
+                <div id="shop-grid" style="flex:2; display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px; overflow-y:auto; padding-right:10px;"></div>
+                <div style="flex:1; background:rgba(0,0,0,0.5); padding:15px; border-radius:10px; overflow-y:auto; border: 1px solid #1e293b;">
+                    <h3 style="color:var(--cyan-glow); margin-bottom:10px; font-size: 0.95rem;">SEU INVENTÁRIO</h3>
+                    <div id="inventory-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <script type="module" src="firebase.js"></script>
     <script type="module" src="game.js"></script>
 </body>
 </html>
