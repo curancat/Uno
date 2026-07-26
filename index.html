@@ -16,8 +16,10 @@
             font-family: 'Rajdhani', sans-serif; 
         }
         
+        /* Fundo Lofi aplicado no Body */
         body { 
-            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%); 
+            background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(2, 6, 23, 0.95)), 
+                        url('https://images.unsplash.com/photo-1519681393784-d120267933ba?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') center/cover no-repeat fixed;
             color: #f8fafc; 
             min-height: 100vh; 
             display: flex; 
@@ -144,15 +146,15 @@
 </head>
 <body>
 
-    <!-- EFEITOS SONOROS (Áudio Lofi / SFX Integrados) -->
     <audio id="sfx-draw" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
     <audio id="sfx-play" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
     <audio id="sfx-hit" src="https://assets.mixkit.co/active_storage/sfx/2771/2771-preview.mp3"></audio>
+    <audio id="sfx-atk" src="https://assets.mixkit.co/active_storage/sfx/2143/2143-preview.mp3"></audio>
+    <audio id="sfx-magic" src="https://assets.mixkit.co/active_storage/sfx/2012/2012-preview.mp3"></audio>
     <audio id="sfx-buy" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
     <audio id="sfx-galo" src="https://assets.mixkit.co/active_storage/sfx/1234/1234-preview.mp3"></audio>
 
-    <!-- TELA DE LOBBY -->
-    <div id="lobby-screen" class="flex-1 flex items-center justify-center p-4 z-50 absolute inset-0 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
+    <div id="lobby-screen" class="flex-1 flex items-center justify-center p-4 z-50 absolute inset-0 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h1 class="text-3xl md:text-4xl font-orbitron text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-rose-500 mb-2">Aurore boreale</h1>
             <p class="text-center text-slate-400 text-xs mb-6 font-bold uppercase tracking-widest">O inicio</p>
@@ -188,7 +190,6 @@
         </div>
     </div>
 
-    <!-- TELA DE JOGO -->
     <div id="game-screen" class="hidden flex-1 flex flex-col w-full h-full relative">
         
         <div class="bg-slate-900/90 border-b border-slate-800 p-2 flex flex-col md:flex-row justify-between items-center z-10 gap-2 shrink-0">
@@ -232,22 +233,20 @@
             <div id="effects-layer" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
         </div>
 
-        <!-- MENU ESPECÍFICO DA CABRA -->
         <div id="cabra-ui" class="hidden bg-slate-900 border-t border-slate-800 p-2 flex flex-col items-center z-10 shrink-0">
-            <div class="text-[10px] text-purple-300 font-bold mb-1 uppercase tracking-widest">🎨 Oficina</div>
+            <div class="text-[10px] text-purple-300 font-bold mb-1 uppercase tracking-widest">🎨 Oficina de Tintas</div>
             <div class="flex space-x-2 mb-1">
                 <button onclick="usePaint('red')" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-[10px] font-bold text-white border border-red-800">Vermelho (<span id="paint-red">5</span>)</button>
                 <button onclick="usePaint('blue')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-[10px] font-bold text-white border border-blue-800">Azul (<span id="paint-blue">5</span>)</button>
                 <button onclick="usePaint('yellow')" class="bg-yellow-500 hover:bg-yellow-400 px-3 py-1 rounded text-[10px] font-bold text-black border border-yellow-700">Amarelo (<span id="paint-yellow">5</span>)</button>
-                <button onclick="usePaint('uti')" class="bg-purple-700 hover:bg-purple-600 px-3 py-1 rounded text-[10px] font-bold text-white border border-purple-900">🔄 Renovar Tintas</button>
+                <button onclick="usePaint('uti')" class="bg-purple-700 hover:bg-purple-600 px-3 py-1 rounded text-[10px] font-bold text-white border border-purple-900"> (UTI - Renovar Tintas)</button>
             </div>
             <div class="flex items-center space-x-2">
-                <span class="text-[10px] text-slate-300 font-bold bg-slate-950 px-2 py-1 rounded border border-slate-800">Mistura Atual: <span id="paint-mix">Nenhuma</span></span>
-                <button onclick="craftCabraCard()" class="bg-purple-600 hover:bg-purple-500 border border-purple-400 px-3 py-1 rounded text-[10px] font-bold text-white">GERAR CARTA</button>
+                <span class="text-[10px] text-slate-300 font-bold bg-slate-950 px-2 py-1 rounded border border-slate-800">Tinta Selecionada: <span id="paint-mix">Nenhuma</span></span>
+                <button onclick="craftCabraCard()" class="bg-purple-600 hover:bg-purple-500 border border-purple-400 px-3 py-1 rounded text-[10px] font-bold text-white">CRIAR CARTA</button>
             </div>
         </div>
 
-        <!-- UI DO JOGADOR -->
         <div id="player-ui" class="bg-slate-950 border-t-2 border-slate-800 p-2 md:p-4 flex flex-col z-20 shrink-0 transition-colors duration-300">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-2 gap-2">
                 <div class="w-full md:w-1/3 order-2 md:order-1">
@@ -297,7 +296,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE LOJA -->
     <div id="shop-modal" class="fixed inset-0 bg-slate-950/95 z-50 hidden flex-col p-4 items-center justify-center backdrop-blur-sm">
         <div class="w-full max-w-5xl bg-slate-900 border border-slate-700 rounded-xl flex flex-col h-[90vh] shadow-2xl">
             <div class="flex justify-between items-center p-4 border-b border-slate-800 shrink-0">
@@ -318,6 +316,7 @@
     </div>
 
     <script>
+        // CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = {
           apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
           authDomain: "uno3-17cc6.firebaseapp.com",
@@ -337,6 +336,7 @@
         
         const db = firebase.database ? firebase.database() : null;
 
+        // ESTADO GLOBAL DO JOGADOR
         let S = {
             name: '', 
             room: '', 
@@ -359,25 +359,40 @@
             currentTurnId: null, 
             lastPlayedCard: null,
             shopPool: [],
-            pseudoCritChance: 0,
-            marolaStacks: 0, 
+            
+            // Variáveis de Heróis
+            pseudoCritChance: 0, 
+            marolaStacks: {}, 
             cabraPaints: { red: 5, blue: 5, yellow: 5 }, 
-            cabraMix: [],
-            borboletaStolenStats: { hp: 0, ap: 0, ad: 0, mr: 0, arm: 0 },
+            cabraCurrentPaint: null,
+            borboletaDrains: {},
+            
             flags: { 
                 reviveCount: 0, 
                 donoDoInfernoCD: 0, 
                 delayedDamageQueue: [], 
-                javaScriptShieldTimer: 0
+                javaScriptShieldTimer: 0,
+                beijoSalienteTimer: 0
             }
         };
 
+        // DADOS DOS HERÓIS INICIAIS
         const CHAMPS_DATA = {
-            'galo': { desc: '"Queridinha! Vá para o quinto dos infernos!"', ad: 50, crit: 10 },
-            'cabra': { desc: '"Em terra de orelhudo, qualquer sussurro é fofoca"', ap: 60, mana: 400, maxMana: 400 },
-            'borboleta': { desc: '"Me xinga!!"', ap: 40, ad: 20, mr: 20, arm: 20 }
+            'galo': { 
+                desc: '"Queridinha! Vá para o quinto dos infernos!" ', 
+                ad: 50, crit: 10 
+            },
+            'cabra': { 
+                desc: '"Em terra de orelhudo, qualquer sussurro é fofoca" ', 
+                ap: 60, mana: 400, maxMana: 400 
+            },
+            'borboleta': { 
+                desc: '"Me xinga!!"', 
+                ap: 40, ad: 20, mr: 20, arm: 20 
+            }
         };
 
+        // CARTAS BÁSICAS DO JOGO
         const BASE_DECK = [
             { id: 'b_atk', name: 'Ataque Básico', type: 'atk', color: 'card-red', desc: 'Dano Físico dependente de AD e Crítico.' },
             { id: 'b_shield', name: 'Defesa Básica', type: 'def', color: 'card-blue', desc: 'Concede 100 de Escudo temporário.' },
@@ -385,49 +400,56 @@
             { id: 'b_mana', name: 'Poção de Mana', type: 'heal', color: 'card-blue', desc: 'Recupera 100 pontos de Mana.' }
         ];
 
+        // DECKS ESPECÍFICOS DOS CAMPEÕES
         const CHAMP_DECKS = {
             galo: [
-                { id: 'g_marola', name: 'Marola', type: 'skill', color: 'card-green', desc: 'Pena venenosa. 3 Acertos = 10% Vida Atual em Dano Verdadeiro.' },
-                { id: 'g_copia', name: 'Dessa Cor Não', type: 'skill', color: 'card-white', desc: 'Copia a última carta jogada na mesa (Custo 50 Mana).' },
-                { id: 'g_aiin', name: 'Aiin', type: 'def', color: 'card-yellow', desc: 'Escudo massivo sobre sua vida (Custo 40 Mana).' },
-                { id: 'g_ult', name: 'BOTE PEITO E SUSTENTE', type: 'ult', color: 'card-dark', desc: 'Ganha bônus massivo de Crítico e AD proporcional (Custo 100 Mana).' }
+                { id: 'g_marola', name: 'Marola', type: 'skill', color: 'card-green', desc: 'Pena venenosa contínua. 3 Acertos = 10% Vida Atual em Dano Verdadeiro.' },
+                { id: 'g_copia', name: 'Dessa Cor Não', type: 'skill', color: 'card-white', desc: 'Copia a última carta jogada (menos cartas de Borboleta/Joaninha/Gato) (Custo 50).' },
+                { id: 'g_aiin', name: 'Aiin', type: 'def', color: 'card-yellow', desc: 'Escudo que cobre toda sua vida atual, decai com o tempo (Custo 40).' },
+                { id: 'g_ult', name: 'UTI', type: 'ult', color: 'card-dark', desc: 'Ganha bônus massivo de Crítico e AD proporcional (Custo 100).' }
             ],
             cabra: [
-                { id: 'b_atk', name: 'Ataque Básico', type: 'atk', color: 'card-red', desc: 'Ataque fraco. Você precisa das tintas.' }
+                // Deck base da cabra é em branco, ela cria pelas tintas.
+                { id: 'c_blank', name: 'Carta em Branco', type: 'def', color: 'card-white', desc: 'Você precisa de tintas para dar sentido a isso.' }
             ],
             borboleta: [
-                { id: 'b_akuma', name: 'Akuma', type: 'skill', color: 'card-purple', desc: 'Infecta o monte. Reduz ataque do alvo por 2 turnos (Custo 40 Mana).' },
-                { id: 'b_beijo', name: 'Beijo Saliente', type: 'skill', color: 'card-red', desc: 'Drena 5% de HP máximo do alvo por 10s (Custo 60 Mana).' },
-                { id: 'b_desejo', name: 'Desejo do Pecado', type: 'skill', color: 'card-dark', desc: 'Rouba as passivas dos itens do alvo temporariamente (Custo 50 Mana).' },
-                { id: 'b_ult', name: 'Caos e Explosão', type: 'ult', color: 'card-dark', desc: 'Drena todas as cartas inimigas para o monte e embaralha (Custo 150 Mana).' }
+                { id: 'b_akuma', name: 'Akuma', type: 'skill', color: 'card-purple', desc: 'Carrega borboleta negativa e nerfa as cartas do inimigo, drenando para você (Custo 40).' },
+                { id: 'b_beijo', name: 'Beijo Saliente', type: 'skill', color: 'card-red', desc: 'Infecta e drena 5% da vida máxima do alvo por 10s (Custo 60).' },
+                { id: 'b_desejo', name: 'Desejo do Pecado', type: 'skill', color: 'card-dark', desc: 'Manda borboleta para o inimigo roubando os poderes do campeão temporariamente (Custo 50).' },
+                { id: 'b_ult', name: 'Caos e Explosão', type: 'ult', color: 'card-dark', desc: 'Exploda a energia na mesa, drene o monte e embaralhe o caos (Custo 150).' }
             ]
         };
 
+        // ITENS DA LOJA COMPLETOS E FIÉIS
         const SHOP_ITEMS = [
             { id: 'deck', name: 'Comprar Deck', cost: 100, req: 'all', desc: 'Compra 5 cartas aleatórias.', onBuy: () => { for(let i=0;i<5;i++) drawToHand(true); } },
             
+            // Itens do Galo
             { id: 'lacre', name: 'Lacre 3000G', cost: 3000, req: 'galo', desc: '+10% Crit, +100 AD. Coleta almas com <90% vida atual.', stats: { crit: 10, ad: 100 } },
-            { id: 'skate', name: 'E esse shake?', cost: 2900, req: 'galo', desc: '+5% Crit, +60 AD, +40 Arm, +30 MR. Causa paralisia por 3s.', stats: { crit: 5, ad: 60, arm: 40, mr: 30 } },
-            { id: 'mandrakit', name: 'Mandrakit', cost: 2400, req: 'galo', desc: '+30% Crit, +30 AD/AP/MR/Vida. Renasce com 15% vida ao morrer.', stats: { crit: 30, ad: 30, ap: 30, mr: 30, maxHp: 30 } },
-            { id: 'alma', name: 'Alma Sebosa', cost: 3000, req: 'galo', desc: '+15% Crit, +20 AP. Bloqueia Controle de Grupo por 10s.', stats: { crit: 15, ap: 20 } },
-            { id: 'pate', name: 'E o Patê?', cost: 2000, req: 'galo', desc: '+5% Crit, +40 Arm, +30 MR. Atrasa o dano sofrido em 5 segundos.', stats: { crit: 5, arm: 40, mr: 30 } },
+            { id: 'skate', name: 'E esse skate?', cost: 2900, req: 'galo', desc: '+5% Crit, +60 AD, +40 Arm, +30 MR. Causa paralisia por 3s.', stats: { crit: 5, ad: 60, arm: 40, mr: 30 } },
+            { id: 'mandrakit', name: 'Mandrakit', cost: 2400, req: 'galo', desc: '+30% Crit, +30 AD/AP/MR/Vida. Renasce com 15% vida ao morrer (Uma vez).', stats: { crit: 30, ad: 30, ap: 30, mr: 30, maxHp: 30 } },
+            { id: 'alma', name: 'Alma Sebosa', cost: 3000, req: 'galo', desc: '+15% Crit, +20 AP. Ganhe escudo que bloqueia CC por 10s.', stats: { crit: 15, ap: 20 } },
+            { id: 'pate', name: 'E o Patê?', cost: 2000, req: 'galo', desc: '+5% Crit, +40 Arm, +30 MR. Atrasa o dano sofrido em 5s. Anula se matar.', stats: { crit: 5, arm: 40, mr: 30 } },
             { id: 'sapatona', name: 'Bota (Sapatona)', cost: 1000, req: 'galo', desc: '+30 Vel. Compra, +2 Crit, +3 Pen, +5 AD.', stats: { crit: 2, ad: 5 } },
 
-            { id: 'pyton', name: 'Pyton', cost: 2000, req: 'cabra', desc: '+20 AD, +100 AP, +3% Crit. Seu dano dá efeito contínuo por 5s.', stats: { ad: 20, ap: 100, crit: 3 } },
-            { id: 'javascript', name: 'Java Script', cost: 2800, req: 'cabra', desc: '+80 AP, +20 MR. Ganha escudo ao sofrer dano (4s CD).', stats: { ap: 80, mr: 20 } },
+            // Itens da Cabra
+            { id: 'pyton', name: 'Pyton', cost: 2000, req: 'cabra', desc: '+20 AD, +100 AP, +3% Crit. Seu veneno dá dano contínuo por 5s.', stats: { ad: 20, ap: 100, crit: 3 } },
+            { id: 'javascript', name: 'Java Script', cost: 2800, req: 'cabra', desc: '+80 AP, +20 MR. Ganha escudo ao ser atingido (4s CD).', stats: { ap: 80, mr: 20 } },
             { id: 'java', name: 'Java', cost: 1900, req: 'cabra', desc: '+50% Crit, +50 AP, +50 AD. Cura 5 de vida a cada 20s.', stats: { crit: 50, ap: 50, ad: 50 } },
-            { id: 'bf', name: 'BF', cost: 2300, req: 'cabra', desc: '+200 Vida, +20 AD, +40 AP, +50 Arm. +1 AP pra cada 1 Armadura.', stats: { maxHp: 200, ad: 20, ap: 40, arm: 50 } },
-            { id: 'cadelagem', name: 'Passiva', cost: 2000, req: 'cabra', desc: '+80 AD, +50 AP. Recebe +4 de Gold a cada segundo passivamente.', stats: { ad: 80, ap: 50 } },
+            { id: 'bf', name: 'BF', cost: 2300, req: 'cabra', desc: '+200 Vida, +20 AD, +40 AP, +50 Arm. +1 AP pra cada 1 Resistência Atual.', stats: { maxHp: 200, ad: 20, ap: 40, arm: 50 } },
+            { id: 'cadelagem', name: 'Cadelagem', cost: 2000, req: 'cabra', desc: '+80 AD, +50 AP. Tome +4 de Gold a cada segundo.', stats: { ad: 80, ap: 50 } },
             { id: 'bota_cabra', name: 'Bota (Cadelagem)', cost: 1000, req: 'cabra', desc: '+20 Vel. Compra, +3 AP, +4 AD, +5% Crit.', stats: { ap: 3, ad: 4, crit: 5 } },
 
-            { id: 'incubus', name: 'Incubus', cost: 3000, req: 'borboleta', desc: '+80 AP, +50 AD, +30 Arm. Vampirismo em ataques básicos.', stats: { ap: 80, ad: 50, arm: 30, vamp: 20 } },
+            // Itens da Borboleta
+            { id: 'incubus', name: 'Incubus', cost: 3000, req: 'borboleta', desc: '+80 AP, +50 AD, +30 Arm. Recupere vida atacando com suas curvas.', stats: { ap: 80, ad: 50, arm: 30, vamp: 15 } },
             { id: 'inferno', name: 'Dono do Inferno', cost: 4000, req: 'borboleta', desc: '+20 AD, +80 AP, +300 Vida, +90 Arm. Renasce (CD 10 min).', stats: { ad: 20, ap: 80, maxHp: 300, arm: 90 } },
             { id: 'fome', name: 'Fome de Luxúria', cost: 3500, req: 'borboleta', desc: '+110 AP, +40% Crit, +300 Mana, +40 MR, +100 Vida.', stats: { ap: 110, crit: 40, mr: 40, maxHp: 100, maxMana: 300 } },
-            { id: 'bibi', name: 'Bibi Fogosa', cost: 4000, req: 'borboleta', desc: '+90 AP, +80 AD. Nocauteia e dá dano por 6s.', stats: { ap: 90, ad: 80 } },
+            { id: 'bibi', name: 'Bibi Fogosa', cost: 4000, req: 'borboleta', desc: '+90 AP, +80 AD. Nocauteia e dá dano contínuo por 6s.', stats: { ap: 90, ad: 80 } },
             { id: 'vem', name: 'Vem com Tudo', cost: 3900, req: 'borboleta', desc: '+100 Arm, +100 MR. Reduz dano em 40% se vida < 60%.', stats: { arm: 100, mr: 100 } },
             { id: 'bota_funk', name: 'Bota (Funk)', cost: 1000, req: 'borboleta', desc: '+30 Vel. Compra, +3 AP, +4 Vida.', stats: { ap: 3, maxHp: 4 } }
         ];
 
+        // ÁUDIO
         function playSfx(id) {
             const el = document.getElementById(`sfx-${id}`);
             if(el) { 
@@ -436,6 +458,7 @@
             }
         }
 
+        // LOBBY & INÍCIO
         function selectHero(h) {
             S.champ = h;
             document.querySelectorAll('.hero-btn').forEach(b => {
@@ -443,6 +466,7 @@
             });
             document.getElementById(`btn-${h}`).classList.replace('border-transparent', 'border-amber-500');
             document.getElementById('hero-desc').innerText = CHAMPS_DATA[h].desc;
+            
             if (h === 'galo') playSfx('galo');
         }
 
@@ -488,7 +512,8 @@
                     S.currentTurnId = data.turn;
                     S.lastPlayedCard = data.lastCard;
 
-                    const aliveIds = Object.keys(S.playersData).filter(k => S.playersData[k].stats.nexusHp > 0);
+                    // CORREÇÃO DO BUG DE TURNO: Ordenando as chaves para que a ordem seja igual em todos os clientes
+                    const aliveIds = Object.keys(S.playersData).filter(k => S.playersData[k].stats.nexusHp > 0).sort();
                     
                     if(!S.currentTurnId && aliveIds.length > 0 && aliveIds[0] === S.myId) {
                         S.roomRef.update({ 
@@ -499,6 +524,7 @@
 
                     if(S.playersData[S.myId]) {
                         const srvStats = S.playersData[S.myId].stats;
+                        
                         if(srvStats.hp < S.stats.hp || srvStats.nexusHp < S.stats.nexusHp) {
                             showFloatText('DANO SOFRIDO!', 'text-rose-500');
                             playSfx('hit');
@@ -512,7 +538,7 @@
                                 showFloatText('MANDRAKIT: RENASCIDO!', 'text-emerald-400 text-2xl');
                             } else if (hasItem('inferno') && S.flags.donoDoInfernoCD <= 0) {
                                 S.stats.hp = S.stats.maxHp; 
-                                S.flags.donoDoInfernoCD = 600;
+                                S.flags.donoDoInfernoCD = 600; 
                                 showFloatText('INFERNO: RETORNANDO DAS TREVAS!', 'text-purple-500 text-3xl');
                             } else {
                                 S.dead = true;
@@ -538,9 +564,11 @@
             }
 
             setInterval(gameTick, 1000);
+            
             for(let i=0; i<5; i++) drawToHand(true);
         }
 
+        // TURNOS
         function isMyTurn() { 
             return S.currentTurnId === S.myId && !S.dead; 
         }
@@ -549,7 +577,8 @@
             if(!isMyTurn()) return;
             if(!db) return;
             
-            const pKeys = Object.keys(S.playersData).filter(k => S.playersData[k].stats.nexusHp > 0);
+            // Ordenação para garantir o sincronismo cross-client
+            const pKeys = Object.keys(S.playersData).filter(k => S.playersData[k].stats.nexusHp > 0).sort();
             if(pKeys.length <= 1) return;
             
             let idx = pKeys.indexOf(S.myId);
@@ -567,6 +596,7 @@
             }
         }
 
+        // GAME LOOP (Ticks passivos: ouro, cura, cooldowns)
         let tickCount = 0;
         function gameTick() {
             if(S.stats.nexusHp <= 0) return;
@@ -596,11 +626,25 @@
                     showFloatText('+5 HP (Java)', 'text-emerald-300');
                 }
 
+                // Passiva do Galo: Vampirismo proporcional ao Crítico
                 if(S.champ === 'galo') {
-                    S.stats.vamp = Math.floor(S.stats.crit * 0.5);
+                    S.stats.vamp = Math.floor(S.stats.crit * 1);
+                }
+                
+                // Passiva Borboleta Beijo Saliente
+                if(S.flags.beijoSalienteTimer > 0 && S.targetId) {
+                    S.flags.beijoSalienteTimer--;
+                    if(S.playersData[S.targetId]) {
+                        let targetMaxHp = S.playersData[S.targetId].stats.maxHp || 500;
+                        let drain = targetMaxHp * 0.05;
+                        sendDamage(S.targetId, drain, 'magic');
+                        S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + drain);
+                        showFloatText('💋 Drenando...', 'text-rose-400');
+                    }
                 }
 
                 if(S.stats.shield > 0) {
+                    // Escudo da Galo "Aiin" decai
                     S.stats.shield = Math.max(0, S.stats.shield - 5);
                 }
 
@@ -611,7 +655,7 @@
                         dmgInst.timer--;
                         if(dmgInst.timer <= 0) {
                             S.stats.hp -= dmgInst.amount;
-                            showFloatText('Dano Atrasado!', 'text-red-600');
+                            showFloatText('Dano Atrasado (Patê)!', 'text-red-600');
                             S.flags.delayedDamageQueue.splice(i, 1);
                         }
                     });
@@ -621,6 +665,7 @@
             renderUI();
         }
 
+        // COMPRAR CARTAS
         function drawToHand(free = false) {
             if(!free) {
                 if(!isMyTurn()) return alert("Aguarde seu turno!");
@@ -634,15 +679,21 @@
             }
 
             playSfx('draw');
+            
             let pool = BASE_DECK.concat(CHAMP_DECKS[S.champ]);
-            if(S.champ === 'cabra') pool = BASE_DECK; 
+            if(S.champ === 'cabra') pool = CHAMP_DECKS.cabra; 
             
             const randomCard = pool[Math.floor(Math.random() * pool.length)];
-            S.hand.push({ ...randomCard, uid: Math.random().toString(36).substr(2,9) });
+            
+            S.hand.push({ 
+                ...randomCard, 
+                uid: Math.random().toString(36).substr(2,9) 
+            });
             renderUI();
         }
         window.drawCard = () => drawToHand(false);
 
+        // JOGAR CARTA
         window.playCard = function(uid) {
             if(!isMyTurn()) return alert("Não é sua vez!");
             
@@ -650,17 +701,18 @@
             if(idx === -1) return;
             const c = S.hand[idx];
 
-            if((c.type === 'atk' || c.type === 'skill') && !S.targetId && c.id !== 'b_ult' && c.id !== 'g_ult' && c.id !== 'g_aiin') {
+            if((c.type === 'atk' || c.type === 'skill') && !S.targetId && !['b_ult', 'g_ult', 'g_aiin', 'c_blank'].includes(c.id) && !c.id.startsWith('c_craft')) {
                 return alert("Por favor, selecione um alvo no topo direito da tela.");
             }
 
-            if(c.type === 'skill' && S.stats.mana < 40) return alert("Falta de Mana!");
+            if(c.type === 'skill' && S.stats.mana < 40 && S.champ !== 'cabra') return alert("Falta de Mana!");
             
             playSfx('play');
             S.hand.splice(idx, 1);
+            
             executeCardEffect(c);
             
-            if(db) {
+            if(db && c.id !== 'c_blank') {
                 S.roomRef.update({ lastCard: { name: c.name, author: S.name, color: c.color } });
             }
             
@@ -668,103 +720,118 @@
             renderUI();
         }
 
+        // LÓGICAS E EFEITOS DAS CARTAS
         function executeCardEffect(c) {
-            if(c.id === 'b_shield') S.stats.shield += 100;
-            if(c.id === 'b_heal') S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + 150);
-            if(c.id === 'b_mana') S.stats.mana = Math.min(S.stats.maxMana, S.stats.mana + 100);
             
+            if(c.id === 'b_shield') { S.stats.shield += 100; playSfx('magic'); }
+            if(c.id === 'b_heal') { S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + 150); playSfx('magic'); }
+            if(c.id === 'b_mana') { S.stats.mana = Math.min(S.stats.maxMana, S.stats.mana + 100); playSfx('magic'); }
+            
+            // ============== GALO ==============
             if(c.id === 'g_aiin') {
                 S.stats.mana -= 40;
-                S.stats.shield += (S.stats.maxHp * 0.8);
-                showFloatText('AIIN: Escudo Formado!', 'text-amber-300');
+                S.stats.shield = S.stats.hp; 
+                showFloatText('AIIN: Escudo de Vida!', 'text-amber-300');
+                playSfx('magic');
             }
             
             if(c.id === 'g_marola') {
                 S.stats.mana -= 30;
-                S.marolaStacks++;
-                showFloatText(`Marola: ${S.marolaStacks}/3`, 'text-emerald-400');
+                if(!S.marolaStacks[S.targetId]) S.marolaStacks[S.targetId] = 0;
+                S.marolaStacks[S.targetId]++;
+                showFloatText(`Marola: ${S.marolaStacks[S.targetId]}/3`, 'text-emerald-400');
+                playSfx('atk');
                 
-                if(S.marolaStacks >= 3) {
-                    S.marolaStacks = 0;
-                    if(db && S.targetId && S.playersData[S.targetId]) {
+                if(S.marolaStacks[S.targetId] >= 3) {
+                    S.marolaStacks[S.targetId] = 0;
+                    if(db && S.playersData[S.targetId]) {
                         let targetHp = S.playersData[S.targetId].stats.hp;
                         let trueDmg = targetHp * 0.10;
                         sendDamage(S.targetId, trueDmg, 'true');
                         showFloatText('10% DANO VERDADEIRO!', 'text-rose-500 text-2xl');
                     }
                 } else {
-                    sendDamage(S.targetId, S.stats.ad * 0.8, 'physical');
+                    sendDamage(S.targetId, S.stats.ad * 0.5, 'physical');
                 }
             }
             
             if(c.id === 'g_copia') {
                 S.stats.mana -= 50;
-                if(S.lastPlayedCard && !['Akuma', 'Caos e Explosão'].includes(S.lastPlayedCard.name)) {
+                if(S.lastPlayedCard && !['Akuma', 'Caos e Explosão', 'Desejo do Pecado'].includes(S.lastPlayedCard.name)) {
                     showFloatText(`Copiado: ${S.lastPlayedCard.name}`, 'text-cyan-400');
                     S.hand.push({
                         uid: Math.random().toString(36).substr(2,9),
                         id: 'copied', name: `Cópia: ${S.lastPlayedCard.name}`,
-                        type: 'skill', color: S.lastPlayedCard.color, desc: 'Efeito embutido da cópia.'
+                        type: 'skill', color: S.lastPlayedCard.color, desc: 'Poder copiado com sucesso.'
                     });
                 } else {
-                    showFloatText('Não conseguiu copiar!', 'text-slate-400');
+                    showFloatText('Dessa cor não! (Falha)', 'text-slate-400');
                 }
             }
             
             if(c.id === 'g_ult') {
                 S.stats.mana -= 100;
-                let bonusCrit = S.stats.crit * 0.5;
                 let bonusAd = S.stats.crit * 2;
-                S.stats.crit += bonusCrit;
+                S.stats.crit += 10; 
                 S.stats.ad += bonusAd;
-                showFloatText('UTI GALO: Modo Crítico!', 'text-amber-500 text-2xl');
+                showFloatText('UTI GALO!', 'text-amber-500 text-2xl');
+                playSfx('magic');
             }
 
+            // ============== BORBOLETA ==============
             if(c.id === 'b_akuma') {
                 S.stats.mana -= 40;
-                showFloatText('Mão inimiga infectada!', 'text-purple-400');
+                showFloatText('Cartas Infectadas!', 'text-purple-400');
                 stealStats(S.targetId, 5); 
+                playSfx('magic');
             }
             
             if(c.id === 'b_beijo') {
                 S.stats.mana -= 60;
-                showFloatText('Beijo: Drenando HP!', 'text-rose-400');
-                if(db && S.targetId) {
-                    let targetMaxHp = S.playersData[S.targetId].stats.maxHp || 500;
-                    let drain = targetMaxHp * 0.05 * 5;
-                    sendDamage(S.targetId, drain, 'magic');
-                    S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + drain);
-                }
+                S.flags.beijoSalienteTimer = 10;
+                showFloatText('Beijo Saliente Aplicado!', 'text-rose-400');
+                playSfx('magic');
             }
             
             if(c.id === 'b_desejo') {
                 S.stats.mana -= 50;
-                showFloatText('Passivas Copiadas!', 'text-purple-300');
+                showFloatText('Poderes Drenados!', 'text-purple-300');
                 stealStats(S.targetId, 10);
+                playSfx('magic');
             }
             
             if(c.id === 'b_ult') {
                 S.stats.mana -= 150;
-                showFloatText('CAOS: Explosão Negativa!', 'text-purple-600 text-3xl');
+                showFloatText('CAOS E EXPLOSÃO!', 'text-purple-600 text-3xl');
+                playSfx('hit');
                 Object.keys(S.playersData).forEach(k => { 
                     if(k !== S.myId) sendDamage(k, S.stats.ap * 3, 'magic'); 
                 });
             }
 
-            if(c.id.startsWith('c_craft')) {
-                let magDmg = S.stats.ap * 2;
-                if(c.color === 'card-red') {
-                    sendDamage(S.targetId, magDmg * 1.5, 'magic');
-                    showFloatText('Bola de Fogo!', 'text-rose-500 text-xl');
-                } else if(c.color === 'card-yellow') {
-                    S.stats.shield += S.stats.ap * 3;
-                    showFloatText('Escudo Divino!', 'text-amber-400');
-                } else {
-                    S.stats.hp += S.stats.ap * 1.5;
-                    sendDamage(S.targetId, magDmg, 'magic');
-                }
+            // ============== CABRA (TINTAS) ==============
+            if(c.id === 'c_craft_red_1') {
+                sendDamage(S.targetId, S.stats.ap * 1.5, 'magic');
+                showFloatText('Bola de Fogo!', 'text-rose-500');
             }
+            if(c.id === 'c_craft_red_2') {
+                sendDamage(S.targetId, S.stats.ap * 2.5, 'magic');
+                showFloatText('Laser Queimante!', 'text-rose-400');
+            }
+            if(c.id === 'c_craft_red_3') {
+                Object.keys(S.playersData).forEach(k => { if(k !== S.myId) sendDamage(k, S.stats.ap, 'magic'); });
+                showFloatText('Lança Chamas!', 'text-rose-600');
+            }
+            
+            if(c.id === 'c_craft_yellow_1') { S.stats.shield += S.stats.ap * 2; showFloatText('Lanterna: Escudo!', 'text-yellow-400'); }
+            if(c.id === 'c_craft_yellow_2') { S.stats.nexusHp = Math.min(S.stats.maxNexus, S.stats.nexusHp + S.stats.ap * 3); showFloatText('Lâmpada: Nexus Protegido!', 'text-yellow-500'); }
+            if(c.id === 'c_craft_yellow_3') { drawToHand(true); drawToHand(true); showFloatText('Sol: Cartas Extras!', 'text-amber-300'); }
 
+            if(c.id === 'c_craft_blue_1') { sendDamage(S.targetId, S.stats.ap * 1.2, 'physical'); showFloatText('Pedrada!', 'text-blue-300'); }
+            if(c.id === 'c_craft_blue_2') { drawToHand(true); sendDamage(S.targetId, S.stats.ap, 'physical'); showFloatText('Chicote!', 'text-blue-500'); }
+            if(c.id === 'c_craft_blue_3') { S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + S.stats.ap * 2); showFloatText('Água: Hidratação!', 'text-blue-400'); }
+
+            // Combate Geral
             if(c.type === 'atk' || c.type === 'skill') {
                 let dmg = 0;
                 let dmgType = 'physical';
@@ -782,7 +849,7 @@
                 if(c.type === 'atk' && roll < actualCritChance) {
                     isCrit = true;
                     dmg *= 2; 
-                    S.pseudoCritChance = 0;
+                    S.pseudoCritChance = 0; 
                     showFloatText('CRÍTICO!', 'text-amber-400 text-2xl');
                 } else {
                     S.pseudoCritChance += (S.stats.crit * 0.15);
@@ -793,10 +860,14 @@
                 }
 
                 if(hasItem('skate') && c.type === 'atk') {
-                    showFloatText('Paralisado por Nojo!', 'text-cyan-400');
+                    showFloatText('Nojo: Paralisado!', 'text-cyan-400');
+                }
+                if(hasItem('pyton') && c.type === 'skill') {
+                    showFloatText('Veneno Contínuo!', 'text-purple-400');
                 }
 
                 if(dmg > 0 && c.id !== 'g_marola') {
+                    playSfx('atk');
                     sendDamage(S.targetId, dmg, dmgType, isCrit);
                 }
             }
@@ -808,7 +879,8 @@
             if(!db || !S.playersData[targetId]) return;
             S.stats.ap += amount;
             S.stats.ad += amount;
-            showFloatText('Status Drenados!', 'text-purple-500');
+            S.stats.arm += amount;
+            S.stats.mr += amount;
         }
 
         function sendDamage(targetId, amount, type, isCrit = false) {
@@ -816,6 +888,7 @@
             
             const t = S.playersData[targetId].stats;
             const tDead = S.playersData[targetId].dead;
+            
             let finalDmg = amount;
             
             if(type === 'physical') {
@@ -825,6 +898,7 @@
             }
             
             if(S.playersData[targetId].champ === 'borboleta' && (t.hp / t.maxHp) < 0.6) {
+                // Passiva Vem com Tudo
                 finalDmg *= 0.6; 
             }
 
@@ -849,7 +923,12 @@
                 S.gold += 350;
                 S.xp += 150;
                 checkLevelUp();
-                if(hasItem('lacre')) S.stats.ad += 10;
+                
+                if(hasItem('lacre')) S.stats.ad += 10; // Coleta almas
+                
+                // Se o inimigo morreu em 5s e eu tinha "Patê", anula a queue
+                if(hasItem('pate')) S.flags.delayedDamageQueue = [];
+                
                 showFloatText('+350G (Abate)', 'text-amber-400');
             } else if (tDead && t.nexusHp <= 0) {
                 S.gold += 1200;
@@ -862,6 +941,7 @@
             if(S.xp >= req && S.level < 18) {
                 S.level++; 
                 S.xp -= req;
+                
                 S.stats.maxHp += 80; 
                 S.stats.hp += 80;
                 S.stats.maxMana += 20;
@@ -869,63 +949,76 @@
                 S.stats.ap += 8; 
                 S.stats.arm += 5; 
                 S.stats.mr += 5;
+                
                 showFloatText(`LEVEL UP! Nível ${S.level}`, 'text-cyan-400 text-2xl');
                 updateMyDbStats();
             }
         }
 
+        // ============== SISTEMA DA CABRA ==============
         window.usePaint = function(color) {
             if(S.champ !== 'cabra') return;
             
             if(color === 'uti') {
                 S.cabraPaints = { red: 5, blue: 5, yellow: 5 };
-                showFloatText('Tintas Renascidas!', 'text-purple-400');
-                endTurn();
+                showFloatText('UTI: Tintas Trocadas!', 'text-purple-400');
+                endTurn(); 
                 renderUI();
                 return;
             }
 
-            if(S.cabraMix.length >= 2) return alert("Sua paleta está cheia (2 cores máximas)!");
-            if(S.cabraPaints[color] <= 0) return alert("Pote Vazio! Use a UTI.");
+            if(S.cabraCurrentPaint) return alert("Você só pode usar uma tinta por carta!");
+            if(S.cabraPaints[color] <= 0) return alert("Pote Vazio! Use a UTI para renovar (perde a vez).");
             
             S.cabraPaints[color]--;
-            S.cabraMix.push(color);
+            S.cabraCurrentPaint = color;
             
-            document.getElementById('paint-mix').innerText = S.cabraMix.join(' + ');
+            let colorName = color === 'red' ? 'Vermelho' : (color === 'blue' ? 'Azul' : 'Amarelo');
+            document.getElementById('paint-mix').innerText = colorName;
             renderUI();
         }
 
         window.craftCabraCard = function() {
-            if(S.cabraMix.length === 0) return alert("Misture ao menos uma tinta!");
+            if(!S.cabraCurrentPaint) return alert("Selecione uma tinta primeiro!");
             if(!isMyTurn()) return alert("Aguarde seu turno!");
 
-            let name = "Magia", cardColor = "card-dark", desc = "Feitiço Pintado.";
-            
-            if(S.cabraMix.includes('red') && S.cabraMix.includes('blue')) {
-                name = "Laser / Fogo Frio"; cardColor = "card-red"; desc = "Queima intensamente (Dano).";
-            } else if(S.cabraMix.includes('yellow')) {
-                name = "Lâmpada / Escudo"; cardColor = "card-yellow"; desc = "Proteção extra para o Herói.";
-            } else if(S.cabraMix.includes('red')) {
-                name = "Lança Chamas"; cardColor = "card-red"; desc = "Onda de fogo mágica.";
-            } else if(S.cabraMix.includes('blue')) {
-                name = "Água / Cura"; cardColor = "card-blue"; desc = "Restaura Vida.";
+            let options = [];
+            if(S.cabraCurrentPaint === 'red') {
+                options = [
+                    { id: 'c_craft_red_1', name: 'Bola de Fogo', type: 'skill', color: 'card-red', desc: 'Dano Contínuo de Fogo.' },
+                    { id: 'c_craft_red_2', name: 'Laser', type: 'skill', color: 'card-red', desc: 'Tiro potente queimante.' },
+                    { id: 'c_craft_red_3', name: 'Lança Chamas', type: 'skill', color: 'card-red', desc: 'Dano em todos os inimigos.' }
+                ];
+            } else if (S.cabraCurrentPaint === 'yellow') {
+                options = [
+                    { id: 'c_craft_yellow_1', name: 'Lanterna', type: 'skill', color: 'card-yellow', desc: 'Cria escudo no Herói.' },
+                    { id: 'c_craft_yellow_2', name: 'Lâmpada', type: 'skill', color: 'card-yellow', desc: 'Protege o Nexus.' },
+                    { id: 'c_craft_yellow_3', name: 'Sol', type: 'skill', color: 'card-yellow', desc: 'Escudo e compra 2 cartas.' }
+                ];
+            } else if (S.cabraCurrentPaint === 'blue') {
+                options = [
+                    { id: 'c_craft_blue_1', name: 'Pedra', type: 'skill', color: 'card-blue', desc: 'Joga uma pedra, dano leve.' },
+                    { id: 'c_craft_blue_2', name: 'Chicote', type: 'skill', color: 'card-blue', desc: 'Rouba uma carta e dá dano.' },
+                    { id: 'c_craft_blue_3', name: 'Água', type: 'skill', color: 'card-blue', desc: 'Hidrate-se! Recupera HP.' }
+                ];
             }
 
+            let chosen = options[Math.floor(Math.random() * options.length)];
+            
             S.hand.push({
                 uid: Math.random().toString(36).substr(2,9),
-                id: 'c_craft', 
-                name: name, 
-                type: 'skill', 
-                color: cardColor, 
-                desc: desc
+                ...chosen
             });
 
-            S.cabraMix = []; 
+            S.cabraCurrentPaint = null; 
             document.getElementById('paint-mix').innerText = "Nenhuma";
+            
+            playSfx('draw');
             endTurn();
             renderUI();
         }
 
+        // LOJA
         window.toggleShop = () => {
             const el = document.getElementById('shop-modal');
             el.classList.toggle('hidden');
@@ -983,6 +1076,7 @@
             
             if(S.gold >= item.cost) {
                 S.gold -= item.cost;
+                
                 if(item.onBuy) {
                     item.onBuy();
                 } else {
@@ -1004,8 +1098,10 @@
         window.sellItem = function(idx) {
             const item = S.inventory[idx];
             S.gold += Math.floor(item.cost * 0.7);
+            
             applyItemStats(item, -1);
             S.inventory.splice(idx, 1);
+            
             playSfx('buy');
             renderShop(); 
             renderUI();
@@ -1013,6 +1109,7 @@
 
         function applyItemStats(item, multiplier) {
             if(!item.stats) return;
+            
             Object.keys(item.stats).forEach(k => {
                 if(S.stats[k] !== undefined) {
                     S.stats[k] += (item.stats[k] * multiplier);
@@ -1022,9 +1119,11 @@
             if(item.id === 'bf' && multiplier > 0) {
                 S.stats.ap += (S.stats.arm + S.stats.mr);
             }
+
             updateMyDbStats();
         }
 
+        // INTERFACE VISUAL
         window.changeTarget = (val) => { 
             S.targetId = val; 
         };
@@ -1113,7 +1212,7 @@
             });
             
             targetSelect.innerHTML = selectOpts;
-            enemyContainer.innerHTML = enemyHtml || '<span class="text-xs text-slate-500 italic flex items-center h-full">Aguardando outros jogadores entrarem na sala...</span>';
+            enemyContainer.innerHTML = enemyHtml || '<span class="text-xs text-slate-500 italic flex items-center h-full">Aguardando...</span>';
 
             if(S.lastPlayedCard) {
                 document.getElementById('played-card-title').innerText = S.lastPlayedCard.name;
@@ -1132,8 +1231,10 @@
             const el = document.createElement('div');
             el.className = `float-text ${colorClass}`;
             el.innerText = text;
+            
             el.style.left = (Math.random() * 40 + 30) + '%';
             el.style.top = (Math.random() * 20 + 40) + '%';
+            
             document.getElementById('effects-layer').appendChild(el);
             setTimeout(() => el.remove(), 1000);
         }
