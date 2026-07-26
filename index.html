@@ -248,7 +248,6 @@
             
             roomRef: null, playersData: {}, currentTurnId: null, targetId: null,
             
-            // Passivas e Efeitos Específicos
             critCredit: 0, marolaStacks: {}, lastGlobalCard: null,
             inkPots: { vermelho: 3, azul: 3, amarelo: 3 }, currentMix: [],
             dots: [],
@@ -420,7 +419,7 @@
                 pool.push({ id: 'b2', name: 'Beijo Saliente', type: 'skill', color: 'card-red', desc: 'Drena 5% HP máximo por 10s' });
                 pool.push({ id: 'b3', name: 'Desejo Pecado', type: 'skill', color: 'card-purple', desc: 'Rouba AP do alvo temporariamente' });
                 pool.push({ id: 'bUlt', name: 'Caos Total', type: 'ult', color: 'card-dark', desc: 'Drena mãos e causa dano em massa' });
-            } // Cabra usa o painel de tintas para criar suas cartas
+            }
 
             let c = pool[Math.floor(Math.random()*pool.length)];
             S.hand.push({ ...c, uid: Math.random().toString(36).substr(2,9) });
@@ -482,7 +481,7 @@
                 let dmg = S.stats.ad || S.stats.ap;
                 let dmgType = S.stats.ad >= S.stats.ap ? 'physical' : 'magic';
                 
-                // CRÍTICO DETERMINÍSTICO ESTILO LOL (Evita pura aleatoriedade)
+                // CRÍTICO DETERMINÍSTICO ESTILO LOL
                 let isCrit = false;
                 let critChance = S.stats.crit / 100;
                 if((critChance + S.critCredit) >= 1.0) {
