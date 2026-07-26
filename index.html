@@ -144,9 +144,6 @@
 </head>
 <body>
 
-    <!-- Áudio LOFI de Fundo -->
-    <audio id="bg-lofi" src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf7f6.mp3?filename=lofi-study-112191.mp3" preload="auto" loop></audio>
-
     <!-- Efeitos Sonoros -->
     <audio id="sfx-draw" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
     <audio id="sfx-play" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
@@ -320,18 +317,8 @@
         </div>
     </div>
 
-    <!-- MODAL DE DERROTA / VITÓRIA -->
-    <div id="endgame-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex flex-col items-center justify-center p-4 backdrop-blur-md">
-        <div class="bg-slate-900 border-2 border-slate-700 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-            <div id="endgame-icon" class="text-6xl mb-4">🏆</div>
-            <h2 id="endgame-title" class="text-3xl font-orbitron font-black text-amber-400 mb-2 uppercase">Fim de Jogo</h2>
-            <p id="endgame-desc" class="text-xs text-slate-300 mb-6 font-bold uppercase tracking-wider">A batalha chegou ao fim.</p>
-            <button onclick="location.reload()" class="w-full bg-gradient-to-r from-purple-600 to-rose-600 hover:opacity-90 text-white font-black py-3 rounded-lg text-sm tracking-widest uppercase transition">Jogar Novamente</button>
-        </div>
-    </div>
-
     <script>
-        // CONFIGURAÇÃO DO FIREBASE
+        // CONFIGURAÇÃO DO FIREBASE (Mantido o original providenciado pelo usuário)
         const firebaseConfig = {
           apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
           authDomain: "uno3-17cc6.firebaseapp.com",
@@ -366,7 +353,6 @@
             xp: 0, 
             gold: 1000, 
             dead: false, 
-            spectating: false, // Modo espectador para quem morreu em salas com 3+ pessoas
             respawnTimer: 0,
             hand: [], 
             inventory: [],
@@ -376,7 +362,8 @@
             lastPlayedCard: null,
             shopPool: [],
             
-            pseudoCritChance: 0, 
+            // Variáveis complexas de Heróis e Combate
+            pseudoCritChance: 0, // PRNG para críticos
             marolaStacks: 0, 
             cabraPaints: { red: 5, blue: 5, yellow: 5 }, 
             cabraMix: [],
@@ -384,18 +371,29 @@
             
             flags: { 
                 reviveCount: 0, 
-                donoDoInfernoCD: 0, 
-                delayedDamageQueue: [], 
+                donoDoInfernoCD: 0, // Tempo de recarga do renascimento
+                delayedDamageQueue: [], // Para o item 'E o Patê?'
                 javaScriptShieldTimer: 0
             }
         };
 
+        // DADOS DOS HERÓIS INICIAIS
         const CHAMPS_DATA = {
-            'galo': { desc: '"Queridinha! Vá para o quinto dos infernos!" - Focado em Crítico e Auto-ataque.', ad: 50, crit: 10 },
-            'cabra': { desc: '"Em terra de orelhudo, qualquer sussurro é fofoca" - Usa tintas para criar habilidades (AP).', ap: 60, mana: 400, maxMana: 400 },
-            'borboleta': { desc: '"Me xinga!!" - Drena status dos inimigos permanentemente.', ap: 40, ad: 20, mr: 20, arm: 20 }
+            'galo': { 
+                desc: '"Queridinha! Vá para o quinto dos infernos!" - Focado em Crítico e Auto-ataque.', 
+                ad: 50, crit: 10 
+            },
+            'cabra': { 
+                desc: '"Em terra de orelhudo, qualquer sussurro é fofoca" - Usa tintas para criar habilidades (AP).', 
+                ap: 60, mana: 400, maxMana: 400 
+            },
+            'borboleta': { 
+                desc: '"Me xinga!!" - Drena status dos inimigos permanentemente.', 
+                ap: 40, ad: 20, mr: 20, arm: 20 
+            }
         };
 
+        // CARTAS BÁSICAS DO JOGO
         const BASE_DECK = [
             { id: 'b_atk', name: 'Ataque Básico', type: 'atk', color: 'card-red', desc: 'Dano Físico dependente de AD e Crítico.' },
             { id: 'b_shield', name: 'Defesa Básica', type: 'def', color: 'card-blue', desc: 'Concede 100 de Escudo temporário.' },
@@ -403,6 +401,7 @@
             { id: 'b_mana', name: 'Poção de Mana', type: 'heal', color: 'card-blue', desc: 'Recupera 100 pontos de Mana.' }
         ];
 
+        // DECKS ESPECÍFICOS DOS CAMPEÕES
         const CHAMP_DECKS = {
             galo: [
                 { id: 'g_marola', name: 'Marola', type: 'skill', color: 'card-green', desc: 'Pena venenosa. 3 Acertos = 10% Vida Atual em Dano Verdadeiro.' },
@@ -411,6 +410,7 @@
                 { id: 'g_ult', name: 'UTI do Galo', type: 'ult', color: 'card-dark', desc: 'Ganha bônus massivo de Crítico e AD proporcional (Custo 100 Mana).' }
             ],
             cabra: [
+                // Cabra não tem deck base de skill, precisa criar pelas tintas.
                 { id: 'b_atk', name: 'Ataque Básico', type: 'atk', color: 'card-red', desc: 'Ataque fraco. Você precisa das tintas.' }
             ],
             borboleta: [
@@ -421,20 +421,28 @@
             ]
         };
 
+        // ITENS DA LOJA COMPLETOS
         const SHOP_ITEMS = [
+            // Universais
             { id: 'deck', name: 'Comprar Deck', cost: 100, req: 'all', desc: 'Compra 5 cartas aleatórias.', onBuy: () => { for(let i=0;i<5;i++) drawToHand(true); } },
+            
+            // Itens do Galo
             { id: 'lacre', name: 'Lacre 3000G', cost: 3000, req: 'galo', desc: '+10% Crit, +100 AD. Coleta almas com <90% vida atual.', stats: { crit: 10, ad: 100 } },
             { id: 'skate', name: 'Skate', cost: 2900, req: 'galo', desc: '+5% Crit, +60 AD, +40 Arm, +30 MR. Causa paralisia por 3s.', stats: { crit: 5, ad: 60, arm: 40, mr: 30 } },
             { id: 'mandrakit', name: 'Mandrakit', cost: 2400, req: 'galo', desc: '+30% Crit, +30 AD/AP/MR/Vida. Renasce com 15% vida ao morrer (Uma vez).', stats: { crit: 30, ad: 30, ap: 30, mr: 30, maxHp: 30 } },
             { id: 'alma', name: 'Alma Sebosa', cost: 3000, req: 'galo', desc: '+15% Crit, +20 AP. Bloqueia Controle de Grupo por 10s.', stats: { crit: 15, ap: 20 } },
             { id: 'pate', name: 'E o Patê?', cost: 2000, req: 'galo', desc: '+5% Crit, +40 Arm, +30 MR. Atrasa o dano sofrido em 5 segundos.', stats: { crit: 5, arm: 40, mr: 30 } },
             { id: 'sapatona', name: 'Bota (Sapatona)', cost: 1000, req: 'galo', desc: '+30 Vel. Compra, +2 Crit, +3 Pen, +5 AD.', stats: { crit: 2, ad: 5 } },
+
+            // Itens da Cabra
             { id: 'pyton', name: 'Pyton', cost: 2000, req: 'cabra', desc: '+20 AD, +100 AP, +3% Crit. Seu dano dá efeito contínuo por 5s.', stats: { ad: 20, ap: 100, crit: 3 } },
             { id: 'javascript', name: 'Java Script', cost: 2800, req: 'cabra', desc: '+80 AP, +20 MR. Ganha escudo ao sofrer dano (4s CD).', stats: { ap: 80, mr: 20 } },
             { id: 'java', name: 'Java', cost: 1900, req: 'cabra', desc: '+50% Crit, +50 AP, +50 AD. Cura 5 de vida a cada 20s.', stats: { crit: 50, ap: 50, ad: 50 } },
             { id: 'bf', name: 'BF', cost: 2300, req: 'cabra', desc: '+200 Vida, +20 AD, +40 AP, +50 Arm. +1 AP pra cada 1 Armadura.', stats: { maxHp: 200, ad: 20, ap: 40, arm: 50 } },
             { id: 'cadelagem', name: 'Cadelagem', cost: 2000, req: 'cabra', desc: '+80 AD, +50 AP. Recebe +4 de Gold a cada segundo passivamente.', stats: { ad: 80, ap: 50 } },
             { id: 'bota_cabra', name: 'Bota (Cadelagem)', cost: 1000, req: 'cabra', desc: '+20 Vel. Compra, +3 AP, +4 AD, +5% Crit.', stats: { ap: 3, ad: 4, crit: 5 } },
+
+            // Itens da Borboleta
             { id: 'incubus', name: 'Incubus', cost: 3000, req: 'borboleta', desc: '+80 AP, +50 AD, +30 Arm. Vampirismo em ataques básicos.', stats: { ap: 80, ad: 50, arm: 30, vamp: 20 } },
             { id: 'inferno', name: 'Dono do Inferno', cost: 4000, req: 'borboleta', desc: '+20 AD, +80 AP, +300 Vida, +90 Arm. Renasce (CD 10 min).', stats: { ad: 20, ap: 80, maxHp: 300, arm: 90 } },
             { id: 'fome', name: 'Fome de Luxúria', cost: 3500, req: 'borboleta', desc: '+110 AP, +40% Crit, +300 Mana, +40 MR, +100 Vida.', stats: { ap: 110, crit: 40, mr: 40, maxHp: 100, maxMana: 300 } },
@@ -443,6 +451,7 @@
             { id: 'bota_funk', name: 'Bota (Funk)', cost: 1000, req: 'borboleta', desc: '+30 Vel. Compra, +3 AP, +4 Vida.', stats: { ap: 3, maxHp: 4 } }
         ];
 
+        // ÁUDIO
         function playSfx(id) {
             const el = document.getElementById(`sfx-${id}`);
             if(el) { 
@@ -451,6 +460,7 @@
             }
         }
 
+        // LOBBY & INÍCIO
         function selectHero(h) {
             S.champ = h;
             document.querySelectorAll('.hero-btn').forEach(b => {
@@ -458,26 +468,24 @@
             });
             document.getElementById(`btn-${h}`).classList.replace('border-transparent', 'border-amber-500');
             document.getElementById('hero-desc').innerText = CHAMPS_DATA[h].desc;
+            
             if (h === 'galo') playSfx('galo');
         }
 
         async function joinGame() {
-            // Toca a música Lo-Fi de fundo assim que entra no jogo
-            const lofi = document.getElementById('bg-lofi');
-            if(lofi) {
-                lofi.volume = 0.4;
-                lofi.play().catch(() => {});
-            }
-
             S.name = document.getElementById('input-name').value || 'Jogador';
             S.room = document.getElementById('input-room').value.toUpperCase() || 'SALA1';
             
+            // Atribuir atributos base do herói escolhido
             const cData = CHAMPS_DATA[S.champ];
             Object.keys(cData).forEach(k => { 
-                if(S.stats[k] !== undefined) S.stats[k] = cData[k]; 
+                if(S.stats[k] !== undefined) {
+                    S.stats[k] = cData[k]; 
+                }
             });
             S.stats.hp = S.stats.maxHp; 
             
+            // Transição de tela
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             
@@ -485,6 +493,7 @@
                 document.getElementById('cabra-ui').classList.remove('hidden');
             }
 
+            // Lógica do Banco de Dados / Firebase
             if(db) {
                 S.roomRef = db.ref(`rooms/${S.room}`);
                 const myNode = S.roomRef.child('players').push();
@@ -508,15 +517,9 @@
                     S.currentTurnId = data.turn;
                     S.lastPlayedCard = data.lastCard;
 
-                    const allPlayers = Object.keys(S.playersData);
-                    const alivePlayers = allPlayers.filter(k => S.playersData[k].stats.nexusHp > 0);
+                    const aliveIds = Object.keys(S.playersData).filter(k => S.playersData[k].stats.nexusHp > 0);
                     
-                    // Condição de Fim de Jogo (Vitória/Derrota)
-                    if(allPlayers.length >= 1 && alivePlayers.length <= 1) {
-                        triggerEndGame(alivePlayers.includes(S.myId));
-                    }
-
-                    if(!S.currentTurnId && alivePlayers.length > 0 && alivePlayers[0] === S.myId) {
+                    if(!S.currentTurnId && aliveIds.length > 0 && aliveIds[0] === S.myId) {
                         S.roomRef.update({ 
                             turn: S.myId, 
                             lastCard: { name: 'Partida Iniciada', author: 'Sistema', color: 'card-dark' }
@@ -526,24 +529,35 @@
                     if(S.playersData[S.myId]) {
                         const srvStats = S.playersData[S.myId].stats;
                         
+                        // Detectar se tomou dano real
                         if(srvStats.hp < S.stats.hp || srvStats.nexusHp < S.stats.nexusHp) {
                             showFloatText('DANO SOFRIDO!', 'text-rose-500');
                             playSfx('hit');
                         }
                         S.stats = srvStats;
                         
-                        // Sistema Bedwars / Morte Definitiva / Modo Espectador
-                        if(S.stats.nexusHp <= 0 && !S.dead) {
-                            S.dead = true;
+                        // Sistema Bedwars & Renascimento (Itens Mandrakit / Dono do Inferno)
+                        if(S.stats.hp <= 0 && !S.dead && S.stats.nexusHp > 0) {
                             
-                            // Se houver 3 ou mais pessoas na sala, o jogador que morreu não joga mais, vira espectador
-                            if(allPlayers.length >= 3) {
-                                S.spectating = true;
-                                showFloatText('NEXUS DESTRUÍDO! MODO ESPECTADOR', 'text-rose-600 text-2xl');
+                            if(hasItem('mandrakit') && S.flags.reviveCount === 0) {
+                                S.stats.hp = S.stats.maxHp * 0.15; 
+                                S.flags.reviveCount++; 
+                                showFloatText('MANDRAKIT: RENASCIDO!', 'text-emerald-400 text-2xl');
+                            
+                            } else if (hasItem('inferno') && S.flags.donoDoInfernoCD <= 0) {
+                                S.stats.hp = S.stats.maxHp; 
+                                S.flags.donoDoInfernoCD = 600; // 10 minutos (600s)
+                                showFloatText('INFERNO: RETORNANDO DAS TREVAS!', 'text-purple-500 text-3xl');
+                            
                             } else {
-                                triggerEndGame(false);
+                                S.dead = true;
+                                S.respawnTimer = 15;
+                                showFloatText('VOCÊ MORREU!', 'text-red-600 text-3xl');
                             }
                             updateMyDbStats();
+                        } else if (S.stats.nexusHp <= 0) {
+                            S.dead = true;
+                            showFloatText('NEXUS QUEBRADO! FIM DE JOGO.', 'text-red-600 text-4xl');
                         }
                     }
 
@@ -551,6 +565,7 @@
                     renderUI();
                 });
             } else {
+                // Modo offline (Fallback para não quebrar a tela)
                 S.myId = 'player1';
                 S.playersData = { 'player1': { name: S.name, champ: S.champ, stats: S.stats, dead: false, level: 1 } };
                 S.currentTurnId = 'player1';
@@ -558,32 +573,16 @@
                 renderUI();
             }
 
+            // Inicia os ciclos de atualização (1 por segundo)
             setInterval(gameTick, 1000);
+            
+            // Compra deck inicial
             for(let i=0; i<5; i++) drawToHand(true);
         }
 
-        function triggerEndGame(isVictory) {
-            const modal = document.getElementById('endgame-modal');
-            const icon = document.getElementById('endgame-icon');
-            const title = document.getElementById('endgame-title');
-            const desc = document.getElementById('endgame-desc');
-
-            modal.classList.remove('hidden');
-            if(isVictory) {
-                icon.innerText = "👑";
-                title.innerText = "VITÓRIA!";
-                title.className = "text-3xl font-orbitron font-black text-emerald-400 mb-2 uppercase";
-                desc.innerText = "Você eliminou todos os oponentes e protegeu seu Nexus!";
-            } else {
-                icon.innerText = "💀";
-                title.innerText = "DERROTA";
-                title.className = "text-3xl font-orbitron font-black text-rose-500 mb-2 uppercase";
-                desc.innerText = "Seu Nexus foi completamente destruído.";
-            }
-        }
-
+        // TURNOS
         function isMyTurn() { 
-            return S.currentTurnId === S.myId && !S.dead && !S.spectating; 
+            return S.currentTurnId === S.myId && !S.dead; 
         }
 
         function endTurn() {
@@ -591,7 +590,7 @@
             if(!db) return;
             
             const pKeys = Object.keys(S.playersData).filter(k => S.playersData[k].stats.nexusHp > 0);
-            if(pKeys.length <= 1) return;
+            if(pKeys.length <= 1) return; // Só existe 1 jogador vivo (ou nenhum)
             
             let idx = pKeys.indexOf(S.myId);
             let nextIdx = (idx + 1) % pKeys.length;
@@ -608,9 +607,10 @@
             }
         }
 
+        // GAME LOOP (Ticks passivos: ouro, cura, cooldowns)
         let tickCount = 0;
         function gameTick() {
-            if(S.stats.nexusHp <= 0 || S.spectating) return;
+            if(S.stats.nexusHp <= 0) return;
             tickCount++;
 
             if(S.dead && S.stats.nexusHp > 0) {
@@ -624,38 +624,56 @@
             }
 
             if(!S.dead) {
+                // Ganho base de ouro
                 let goldGain = 5;
                 if(hasItem('cadelagem')) goldGain += 4;
                 S.gold += goldGain;
 
+                // Regeneração de Mana
                 if(S.stats.mana < S.stats.maxMana) {
                     S.stats.mana = Math.min(S.stats.maxMana, S.stats.mana + 5);
                 }
                 
+                // Item Java (Cura 5 HP a cada 20s)
                 if(hasItem('java') && tickCount % 20 === 0) {
                     S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + 5);
                     showFloatText('+5 HP (Java)', 'text-emerald-300');
                 }
 
+                // Passiva do Galo: Vampirismo proporcional ao Crítico
                 if(S.champ === 'galo') {
                     S.stats.vamp = Math.floor(S.stats.crit * 0.5);
                 }
 
+                // Escudos temporários decaindo
                 if(S.stats.shield > 0) {
                     S.stats.shield = Math.max(0, S.stats.shield - 5);
                 }
 
                 if(S.flags.donoDoInfernoCD > 0) S.flags.donoDoInfernoCD--;
+                
+                // Dano atrasado (Patê)
+                if(S.flags.delayedDamageQueue.length > 0) {
+                    S.flags.delayedDamageQueue.forEach((dmgInst, i) => {
+                        dmgInst.timer--;
+                        if(dmgInst.timer <= 0) {
+                            S.stats.hp -= dmgInst.amount;
+                            showFloatText('Dano Atrasado!', 'text-red-600');
+                            S.flags.delayedDamageQueue.splice(i, 1);
+                        }
+                    });
+                }
             }
 
             renderUI();
         }
 
+        // COMPRAR CARTAS (DECK)
         function drawToHand(free = false) {
-            if(S.spectating || S.dead) return;
             if(!free) {
                 if(!isMyTurn()) return alert("Aguarde seu turno!");
                 if(!hasItem('sapatona') && !hasItem('bota_cabra') && !hasItem('bota_funk')) {
+                    // Sem botas específicas, comprar carta perde a vez
                     setTimeout(endTurn, 500);
                 }
             }
@@ -679,14 +697,15 @@
         }
         window.drawCard = () => drawToHand(false);
 
+        // JOGAR CARTA DA MÃO
         window.playCard = function(uid) {
-            if(S.spectating || S.dead) return;
             if(!isMyTurn()) return alert("Não é sua vez!");
             
             const idx = S.hand.findIndex(c => c.uid === uid);
             if(idx === -1) return;
             const c = S.hand[idx];
 
+            // Requerimento de Alvo (menos para ultimates em área)
             if((c.type === 'atk' || c.type === 'skill') && !S.targetId && c.id !== 'b_ult' && c.id !== 'g_ult' && c.id !== 'g_aiin') {
                 return alert("Por favor, selecione um alvo no topo direito da tela.");
             }
@@ -706,14 +725,18 @@
             renderUI();
         }
 
+        // LÓGICAS E EFEITOS DAS CARTAS E PASSIVAS
         function executeCardEffect(c) {
+            
+            // CURA / BUFFS BÁSICOS
             if(c.id === 'b_shield') S.stats.shield += 100;
             if(c.id === 'b_heal') S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + 150);
             if(c.id === 'b_mana') S.stats.mana = Math.min(S.stats.maxMana, S.stats.mana + 100);
             
+            // ============== HABILIDADES DO GALO ==============
             if(c.id === 'g_aiin') {
                 S.stats.mana -= 40;
-                S.stats.shield += (S.stats.maxHp * 0.8);
+                S.stats.shield += (S.stats.maxHp * 0.8); // Cobre a vida
                 showFloatText('AIIN: Escudo Formado!', 'text-amber-300');
             }
             
@@ -758,9 +781,11 @@
                 showFloatText('UTI GALO: Modo Crítico!', 'text-amber-500 text-2xl');
             }
 
+            // ============== HABILIDADES DA BORBOLETA ==============
             if(c.id === 'b_akuma') {
                 S.stats.mana -= 40;
                 showFloatText('Mão inimiga infectada!', 'text-purple-400');
+                // Reduz MR e Armor do alvo permanentemente para si
                 stealStats(S.targetId, 5); 
             }
             
@@ -769,7 +794,7 @@
                 showFloatText('Beijo: Drenando HP!', 'text-rose-400');
                 if(db && S.targetId) {
                     let targetMaxHp = S.playersData[S.targetId].stats.maxHp || 500;
-                    let drain = targetMaxHp * 0.05 * 5;
+                    let drain = targetMaxHp * 0.05 * 5; // Simulado
                     sendDamage(S.targetId, drain, 'magic');
                     S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + drain);
                 }
@@ -789,8 +814,11 @@
                 });
             }
 
+            // ============== HABILIDADES DA CABRA (MISTURA DE TINTAS) ==============
             if(c.id.startsWith('c_craft')) {
                 let magDmg = S.stats.ap * 2;
+                
+                // Exemplo: se vermelho foi misturado, causa dano
                 if(c.color === 'card-red') {
                     sendDamage(S.targetId, magDmg * 1.5, 'magic');
                     showFloatText('Bola de Fogo!', 'text-rose-500 text-xl');
@@ -803,6 +831,7 @@
                 }
             }
 
+            // ============== MECÂNICA DE COMBATE E CRÍTICO (ESTILO LOL) ==============
             if(c.type === 'atk' || c.type === 'skill') {
                 let dmg = 0;
                 let dmgType = 'physical';
@@ -813,6 +842,7 @@
                     dmgType = 'magic'; 
                 }
 
+                // PRNG (Pseudo-Random Number Generator)
                 let isCrit = false;
                 let roll = Math.random() * 100;
                 let actualCritChance = S.stats.crit + S.pseudoCritChance;
@@ -820,20 +850,24 @@
                 if(c.type === 'atk' && roll < actualCritChance) {
                     isCrit = true;
                     dmg *= 2; 
-                    S.pseudoCritChance = 0;
+                    S.pseudoCritChance = 0; // Reseta após o acerto
                     showFloatText('CRÍTICO!', 'text-amber-400 text-2xl');
                 } else {
+                    // Aumenta a chance discretamente se não critou (para normalizar)
                     S.pseudoCritChance += (S.stats.crit * 0.15);
                 }
 
+                // Vampirismo (Cura no dano causado)
                 if(S.stats.vamp > 0 && dmg > 0) {
                     S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + (dmg * (S.stats.vamp / 100)));
                 }
 
+                // Efeito do Item Skate (Paralisia)
                 if(hasItem('skate') && c.type === 'atk') {
                     showFloatText('Paralisado por Nojo!', 'text-cyan-400');
                 }
 
+                // Aplica o dano no alvo se houver
                 if(dmg > 0 && c.id !== 'g_marola') {
                     sendDamage(S.targetId, dmg, dmgType, isCrit);
                 }
@@ -844,11 +878,13 @@
 
         function stealStats(targetId, amount) {
             if(!db || !S.playersData[targetId]) return;
+            // Drena permanentemente para os Bots/Corpo da Borboleta
             S.stats.ap += amount;
             S.stats.ad += amount;
             showFloatText('Status Drenados!', 'text-purple-500');
         }
 
+        // ENVIO DE DANO PELO FIREBASE
         function sendDamage(targetId, amount, type, isCrit = false) {
             if(!db || !S.playersData[targetId]) return;
             
@@ -857,19 +893,25 @@
             
             let finalDmg = amount;
             
+            // Fórmula padrão de redução (Armor / Magic Resist)
             if(type === 'physical') {
                 finalDmg *= (100 / (100 + (t.arm || 10)));
             } else if(type === 'magic') {
                 finalDmg *= (100 / (100 + (t.mr || 10)));
             }
+            // Dano verdadeiro ignora redução
             
+            // Item Vem Com Tudo (Borboleta) - Reduz dano em 40% se vida < 60%
             if(S.playersData[targetId].champ === 'borboleta' && (t.hp / t.maxHp) < 0.6) {
                 finalDmg *= 0.6; 
             }
 
+            // Onde o Dano será aplicado
             if(tDead) {
+                // Se herói morto, vai pro Nexus
                 t.nexusHp -= finalDmg;
             } else {
+                // Escudo primeiro
                 if(t.shield >= finalDmg) { 
                     t.shield -= finalDmg; 
                     finalDmg = 0; 
@@ -880,16 +922,20 @@
                 }
             }
 
+            // Envia pro banco
             S.roomRef.child(`players/${targetId}/stats`).update({ 
                 hp: t.hp, shield: t.shield, nexusHp: t.nexusHp 
             });
 
+            // Recompensa Abate
             if(!tDead && t.hp <= 0) {
                 S.gold += 350;
                 S.xp += 150;
                 checkLevelUp();
                 
+                // Item Lacre 3000g (Galo): Ganha status extras ao abater com < 90%
                 if(hasItem('lacre')) S.stats.ad += 10;
+                
                 showFloatText('+350G (Abate)', 'text-amber-400');
             } else if (tDead && t.nexusHp <= 0) {
                 S.gold += 1200;
@@ -897,11 +943,14 @@
             }
         }
 
+        // SISTEMA DE LEVEL ATÉ O 18
         function checkLevelUp() {
             const req = S.level * 100;
             if(S.xp >= req && S.level < 18) {
                 S.level++; 
                 S.xp -= req;
+                
+                // Atributos base distribuídos uniformemente
                 S.stats.maxHp += 80; 
                 S.stats.hp += 80;
                 S.stats.maxMana += 20;
@@ -915,14 +964,14 @@
             }
         }
 
+        // SISTEMA DA CABRA (TINTAS)
         window.usePaint = function(color) {
-            if(S.spectating || S.dead) return;
             if(S.champ !== 'cabra') return;
             
             if(color === 'uti') {
                 S.cabraPaints = { red: 5, blue: 5, yellow: 5 };
                 showFloatText('Tintas Renascidas!', 'text-purple-400');
-                endTurn();
+                endTurn(); // Trocar perde turno
                 renderUI();
                 return;
             }
@@ -938,7 +987,6 @@
         }
 
         window.craftCabraCard = function() {
-            if(S.spectating || S.dead) return;
             if(S.cabraMix.length === 0) return alert("Misture ao menos uma tinta!");
             if(!isMyTurn()) return alert("Aguarde seu turno!");
 
@@ -970,6 +1018,7 @@
             renderUI();
         }
 
+        // LOJA UNIVERSAL / COMPARTILHADA
         window.toggleShop = () => {
             const el = document.getElementById('shop-modal');
             el.classList.toggle('hidden');
@@ -1067,6 +1116,7 @@
                 }
             });
             
+            // Passiva do Item BF da Cabra (Ganha AP baseado na armadura atual)
             if(item.id === 'bf' && multiplier > 0) {
                 S.stats.ap += (S.stats.arm + S.stats.mr);
             }
@@ -1074,6 +1124,7 @@
             updateMyDbStats();
         }
 
+        // GERENCIAMENTO DA INTERFACE VISUAL
         window.changeTarget = (val) => { 
             S.targetId = val; 
         };
@@ -1082,10 +1133,7 @@
             const turnAlert = document.getElementById('turn-alert');
             const playerUi = document.getElementById('player-ui');
             
-            if(S.spectating) {
-                turnAlert.innerText = "MODO ESPECTADOR (VOCÊ FOI ELIMINADO)";
-                turnAlert.className = "absolute top-4 text-center text-sm font-black tracking-widest uppercase bg-rose-950 px-4 py-1 rounded-full text-rose-400 border border-rose-600 z-20";
-            } else if(isMyTurn()) {
+            if(isMyTurn()) {
                 turnAlert.innerText = "SEU TURNO"; 
                 turnAlert.className = "absolute top-4 text-center text-sm font-black tracking-widest uppercase bg-emerald-600 px-4 py-1 rounded-full text-white shadow-[0_0_15px_#10b981] z-20";
                 playerUi.classList.add('glow-turn');
@@ -1097,7 +1145,7 @@
             }
 
             document.getElementById('ui-gold').innerText = Math.floor(S.gold);
-            document.getElementById('ui-my-name').innerText = S.name + (S.spectating ? " [ESPECTADOR]" : "");
+            document.getElementById('ui-my-name').innerText = S.name;
             document.getElementById('ui-level').innerText = S.level;
             
             const renderBar = (id, val, max) => {
@@ -1119,11 +1167,12 @@
                 document.getElementById(`stat-${s}`).innerText = Math.floor(S.stats[s]);
             });
 
+            // Preenche as cartas na mão do jogador
             const handContainer = document.getElementById('hand-container');
             handContainer.innerHTML = '';
             
             S.hand.forEach(c => {
-                const disabled = (!isMyTurn() || S.spectating) ? 'disabled' : '';
+                const disabled = !isMyTurn() ? 'disabled' : '';
                 handContainer.innerHTML += `
                     <div onclick="playCard('${c.uid}')" class="uno-card ${c.color} ${disabled}">
                         <div class="card-title">${c.name}</div>
@@ -1132,6 +1181,7 @@
                 `;
             });
 
+            // Preenche a lista de inimigos
             const enemyContainer = document.getElementById('enemies-container');
             const targetSelect = document.getElementById('target-select');
             
@@ -1167,12 +1217,14 @@
             targetSelect.innerHTML = selectOpts;
             enemyContainer.innerHTML = enemyHtml || '<span class="text-xs text-slate-500 italic flex items-center h-full">Aguardando outros jogadores entrarem na sala...</span>';
 
+            // Última carta jogada (Monte)
             if(S.lastPlayedCard) {
                 document.getElementById('played-card-title').innerText = S.lastPlayedCard.name;
                 document.getElementById('played-card-author').innerText = S.lastPlayedCard.author;
                 document.getElementById('played-card').className = `uno-card ${S.lastPlayedCard.color || 'card-dark'}`;
             }
 
+            // Exibição da UI do Cabra
             if(S.champ === 'cabra') {
                 ['red', 'blue', 'yellow'].forEach(c => {
                     document.getElementById(`paint-${c}`).innerText = S.cabraPaints[c];
@@ -1180,16 +1232,23 @@
             }
         }
 
+        // Animação visual de Texto (Críticos, Danos, etc)
         function showFloatText(text, colorClass) {
             const el = document.createElement('div');
             el.className = `float-text ${colorClass}`;
             el.innerText = text;
+            
+            // Posição levemente aleatória
             el.style.left = (Math.random() * 40 + 30) + '%';
             el.style.top = (Math.random() * 20 + 40) + '%';
+            
             document.getElementById('effects-layer').appendChild(el);
+            
+            // Remove o texto após animação
             setTimeout(() => el.remove(), 1000);
         }
 
+        // Expor funções globalmente para acesso via HTML onclick
         window.selectHero = selectHero;
         window.joinGame = joinGame;
         window.endTurn = endTurn;
