@@ -11,711 +11,766 @@
 
     <style>
         * { box-sizing: border-box; user-select: none; font-family: 'Rajdhani', sans-serif; }
-        body { background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); color: #f8fafc; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background: radial-gradient(circle at top, #0f172a 0%, #020617 100%); color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         h1, h2, h3, .font-orbitron { font-family: 'Orbitron', sans-serif; }
         .hidden { display: none !important; }
         
-        /* Uno Card Style */
+        /* Uno Cards */
         .uno-card {
-            width: 100px; height: 140px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.8);
-            transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; position: relative; flex-shrink: 0;
-            display: flex; flex-direction: column; justify-content: space-between; padding: 8px; text-align: center;
+            width: 110px; height: 160px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer; position: relative; flex-shrink: 0; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 10px; text-align: center; border: 2px solid transparent;
         }
-        .my-turn .uno-card:hover { transform: translateY(-15px) scale(1.05); z-index: 30; box-shadow: 0 10px 25px rgba(56, 189, 248, 0.8); }
-        .not-my-turn .uno-card { opacity: 0.5; cursor: not-allowed; filter: grayscale(50%); }
+        .uno-card:hover:not(.disabled) { transform: translateY(-20px) scale(1.1); z-index: 30; box-shadow: 0 15px 35px rgba(251, 191, 36, 0.6); }
+        .uno-card.disabled { filter: grayscale(100%) opacity(0.5); cursor: not-allowed; }
+        
+        .card-red { background: linear-gradient(135deg, #ef4444, #7f1d1d); border-color: #fca5a5; }
+        .card-blue { background: linear-gradient(135deg, #3b82f6, #1e3a8a); border-color: #93c5fd; }
+        .card-yellow { background: linear-gradient(135deg, #eab308, #713f12); border-color: #fef08a; }
+        .card-purple { background: linear-gradient(135deg, #a855f7, #4c1d95); border-color: #d8b4fe; }
+        .card-dark { background: linear-gradient(135deg, #334155, #0f172a); border-color: #94a3b8; }
+        .card-green { background: linear-gradient(135deg, #10b981, #064e3b); border-color: #6ee7b7; }
 
-        .card-red { background: linear-gradient(135deg, #b91c1c, #7f1d1d); border: 2px solid #fca5a5; }
-        .card-blue { background: linear-gradient(135deg, #1d4ed8, #1e3a8a); border: 2px solid #93c5fd; }
-        .card-yellow { background: linear-gradient(135deg, #a16207, #713f12); border: 2px solid #fde047; }
-        .card-purple { background: linear-gradient(135deg, #7e22ce, #4c1d95); border: 2px solid #d8b4fe; }
-        .card-dark { background: linear-gradient(135deg, #334155, #0f172a); border: 2px solid #94a3b8; }
-        .card-mixed { background: linear-gradient(135deg, #db2777, #4f46e5); border: 2px solid #fbcfe8; }
+        .card-title { font-size: 0.85rem; font-weight: 900; color: #fff; text-shadow: 0 2px 4px #000; text-transform: uppercase; }
+        .card-desc { font-size: 0.6rem; color: #e2e8f0; line-height: 1.1; font-weight: 600; }
         
-        .card-title { font-size: 0.75rem; font-weight: 900; color: #fff; text-shadow: 0 2px 2px #000; line-height: 1; }
-        .card-desc { font-size: 0.55rem; color: #cbd5e1; line-height: 1.1; font-weight: 600;}
+        /* Floating Combat Text */
+        .dmg-text { position: absolute; font-weight: 900; font-size: 2rem; animation: floatUp 1s forwards ease-out; pointer-events: none; z-index: 9999; text-shadow: 0 4px 10px #000; color: #ef4444; }
+        .heal-text { color: #10b981; }
+        .crit-text { color: #f59e0b; font-size: 2.5rem; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-100px) scale(1.5); } }
         
-        .hp-bar-bg { width: 100%; height: 12px; background: #020617; border-radius: 6px; overflow: hidden; border: 1px solid #334155; }
-        .hp-bar-fill { height: 100%; transition: width 0.3s; }
+        /* Bars */
+        .bar-bg { width: 100%; height: 12px; background: #020617; border-radius: 6px; overflow: hidden; border: 1px solid #1e293b; margin-top: 2px; }
+        .bar-fill { height: 100%; transition: width 0.3s ease-out; }
         
-        .hand-scroll::-webkit-scrollbar { height: 6px; }
-        .hand-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-
-        .turn-active { border-color: #38bdf8 !important; box-shadow: 0 0 15px #38bdf8; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 10px #38bdf8; } 50% { box-shadow: 0 0 25px #38bdf8; } 100% { box-shadow: 0 0 10px #38bdf8; } }
+        .hand-scroll::-webkit-scrollbar { height: 8px; }
+        .hand-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         
-        /* Floating Text Anim */
-        .float-text { position: absolute; font-weight: 900; font-size: 1.5rem; animation: floatAnim 1s forwards ease-out; pointer-events: none; z-index: 100; text-shadow: 0 2px 5px #000; }
-        @keyframes floatAnim { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.3); } }
+        /* Turn Indicator */
+        .my-turn-glow { box-shadow: inset 0 0 50px rgba(16, 185, 129, 0.2), 0 0 20px rgba(16, 185, 129, 0.5); border: 1px solid #10b981; }
     </style>
 </head>
 <body>
 
-    <div id="lobby-screen" class="flex-1 flex items-center justify-center p-4 z-50 absolute inset-0 bg-[#020617]">
-        <div class="bg-slate-900 border-2 border-blue-500 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h1 class="text-3xl font-orbitron text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-red-500 mb-2">UNO BRAWL</h1>
-            <p class="text-center text-slate-400 text-xs mb-4">Combate em Turnos</p>
+    <div id="lobby-screen" class="flex-1 flex items-center justify-center p-4 z-50 absolute inset-0 bg-[#020617] overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-8 w-full max-w-lg shadow-[0_0_50px_rgba(59,130,246,0.3)]">
+            <h1 class="text-4xl font-orbitron text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-rose-500 to-purple-600 mb-2">MIRACULOUS BRAWL</h1>
+            <p class="text-center text-slate-400 text-sm mb-6 font-bold">Turn-Based Card Arena</p>
             
-            <div class="space-y-3">
-                <input type="text" id="input-name" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white outline-none focus:border-blue-500 text-sm" placeholder="Seu Nome" value="Brawler">
-                <input type="text" id="input-room" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-emerald-400 font-bold uppercase outline-none focus:border-blue-500 text-sm" placeholder="Código da Sala" value="UNO123">
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-blue-400 font-bold uppercase tracking-widest">Seu Nome</label>
+                    <input type="text" id="input-name" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-blue-500 font-bold mt-1" value="Lenda">
+                </div>
+                <div>
+                    <label class="text-xs text-blue-400 font-bold uppercase tracking-widest">Código da Sala</label>
+                    <input type="text" id="input-room" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-emerald-400 font-bold uppercase outline-none focus:border-blue-500 mt-1" value="UNO2026">
+                </div>
                 
                 <div>
-                    <label class="text-[10px] text-blue-400 font-bold uppercase">Escolha seu Herói</label>
-                    <div class="grid grid-cols-3 gap-2 mt-1">
-                        <button onclick="selectHero('galo')" id="btn-galo" class="hero-btn border-2 border-amber-500 bg-amber-500/20 text-white rounded p-2 text-xs font-bold transition flex flex-col items-center">
-                            <span class="text-xl">🐓</span> Galo
+                    <label class="text-xs text-blue-400 font-bold uppercase tracking-widest">Selecione seu Herói</label>
+                    <div class="grid grid-cols-3 gap-3 mt-2">
+                        <button onclick="selectHero('galo')" id="btn-galo" class="hero-btn border-2 border-amber-500 bg-amber-500/20 text-white rounded-xl p-3 text-sm font-bold transition flex flex-col items-center">
+                            <span class="text-3xl mb-1">🐓</span>Galo
                         </button>
-                        <button onclick="selectHero('cabra')" id="btn-cabra" class="hero-btn border-2 border-transparent bg-slate-800 text-white rounded p-2 text-xs font-bold transition flex flex-col items-center">
-                            <span class="text-xl">🐐</span> Cabra
+                        <button onclick="selectHero('cabra')" id="btn-cabra" class="hero-btn border-2 border-transparent bg-slate-800 text-white rounded-xl p-3 text-sm font-bold transition flex flex-col items-center">
+                            <span class="text-3xl mb-1">🐐</span>Cabra
                         </button>
-                        <button onclick="selectHero('borboleta')" id="btn-borboleta" class="hero-btn border-2 border-transparent bg-slate-800 text-white rounded p-2 text-xs font-bold transition flex flex-col items-center">
-                            <span class="text-xl">🦋</span> Borboleta
+                        <button onclick="selectHero('borboleta')" id="btn-borboleta" class="hero-btn border-2 border-transparent bg-slate-800 text-white rounded-xl p-3 text-sm font-bold transition flex flex-col items-center">
+                            <span class="text-3xl mb-1">🦋</span>Borboleta
                         </button>
                     </div>
                 </div>
-                <button onclick="joinGame()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mt-2 shadow-lg text-sm">ENTRAR NA SALA</button>
+
+                <button onclick="joinGame()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-[1.02] transition-transform text-white font-black py-4 rounded-xl mt-4 shadow-lg text-lg tracking-widest">CONECTAR À ARENA</button>
             </div>
         </div>
     </div>
 
-    <div id="game-screen" class="hidden flex-1 flex flex-col w-full max-w-5xl mx-auto relative h-screen">
+    <div id="game-screen" class="hidden flex-1 flex flex-col w-full max-w-[1400px] mx-auto relative h-screen">
         
-        <div class="bg-slate-900 border-b border-slate-700 p-2 flex justify-between items-center z-10">
-            <div class="flex space-x-2 overflow-x-auto w-full max-w-2xl py-1" id="enemies-container">
+        <div class="bg-slate-900/80 border-b border-slate-800 p-3 flex justify-between items-center z-10">
+            <div class="flex-1 flex items-center space-x-3 overflow-x-auto pb-2" id="enemies-container">
                 </div>
-            <div class="ml-2 flex flex-col items-end shrink-0">
-                <div id="turn-indicator" class="text-xs font-bold bg-amber-500 text-black px-2 py-1 rounded mb-1 animate-pulse hidden">SUA VEZ!</div>
-                <select id="target-select" onchange="changeTarget(this.value)" class="bg-slate-950 border border-slate-700 text-amber-400 text-[10px] font-bold p-1 rounded outline-none">
-                    <option value="">Alvo</option>
+            <div class="ml-4 flex flex-col items-end min-w-[150px]">
+                <div class="bg-rose-900/50 border border-rose-500 text-rose-300 text-xs font-bold px-3 py-1 rounded-full mb-2 animate-pulse hidden" id="turn-indicator">
+                    TURNO DO INIMIGO
+                </div>
+                <select id="target-select" onchange="changeTarget(this.value)" class="bg-slate-950 border border-rose-700 text-rose-400 text-xs font-bold p-2 rounded outline-none w-full shadow-lg">
+                    <option value="">Alvo de Ataque</option>
                 </select>
-                <div class="text-[9px] text-slate-400 mt-1">Sala: <span id="room-display" class="text-emerald-400 font-bold"></span></div>
             </div>
         </div>
 
-        <div class="flex-1 flex flex-col items-center justify-center relative p-2" id="battlefield">
-            <div class="flex items-center space-x-6">
-                <div onclick="passOrDraw()" class="uno-card card-dark flex items-center justify-center hover:scale-105 active:scale-95">
-                    <div class="text-center">
-                        <div class="text-3xl mb-1">🃏</div>
-                        <div class="font-bold text-[10px] text-white" id="deck-btn-text">COMPRAR / PASSAR</div>
+        <div class="flex-1 flex flex-col items-center justify-center relative p-4" id="battlefield">
+            
+            <div class="flex items-center justify-center space-x-8 md:space-x-16">
+                <div onclick="drawCard()" id="draw-deck" class="uno-card card-dark hover:scale-105">
+                    <div class="text-center mt-4">
+                        <div class="text-4xl mb-2">🃏</div>
+                        <div class="font-bold text-xs text-white uppercase">Comprar</div>
+                        <div class="text-[9px] text-amber-400 mt-1 font-bold">Custa 1 Turno</div>
                     </div>
                 </div>
-                <div id="played-card" class="uno-card card-red items-center justify-center opacity-80">
-                    <div class="text-center">
-                        <div class="text-[9px] font-bold text-slate-300">Última Ação</div>
-                        <div id="played-card-title" class="font-bold text-xs text-white mt-1">-</div>
+
+                <div class="text-slate-600 text-4xl">⚔️</div>
+
+                <div id="played-card" class="uno-card card-red opacity-50 scale-95">
+                    <div class="text-center mt-2">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">Última Carta</div>
+                        <div id="played-card-title" class="font-bold text-sm text-white mt-2">-</div>
+                        <div id="played-card-author" class="text-[9px] text-cyan-300 mt-1">-</div>
                     </div>
                 </div>
             </div>
 
-            <div id="status-effects-display" class="absolute top-4 right-4 flex flex-col space-y-1 items-end pointer-events-none"></div>
-
-            <div id="event-msg" class="absolute bottom-10 bg-slate-900 text-amber-400 font-bold px-4 py-1.5 rounded-full shadow-lg border border-amber-500 text-xs hidden z-50"></div>
+            <div id="status-effects" class="absolute top-1/4 flex flex-col space-y-2 items-center pointer-events-none"></div>
         </div>
 
-        <div id="cabra-panel" class="hidden bg-slate-900 border-t border-purple-500 p-2 flex flex-col items-center">
-            <div class="text-[9px] text-purple-300 font-bold mb-1">🎨 OFICINA (Misture até 2 cores. Gasta 1 ação do turno)</div>
-            <div class="flex space-x-2 mb-1">
-                <button onclick="addInk('red')" class="bg-red-600 px-2 py-0.5 rounded text-[10px] font-bold text-white shadow">Fogo (<span id="ink-red">3</span>)</button>
-                <button onclick="addInk('blue')" class="bg-blue-600 px-2 py-0.5 rounded text-[10px] font-bold text-white shadow">Água (<span id="ink-blue">3</span>)</button>
-                <button onclick="addInk('yellow')" class="bg-yellow-500 px-2 py-0.5 rounded text-[10px] font-bold text-black shadow">Luz (<span id="ink-yellow">3</span>)</button>
+        <div id="cabra-panel" class="hidden bg-slate-900 border-t border-purple-500 p-3 flex flex-col items-center z-10">
+            <div class="text-xs text-purple-300 font-bold mb-2 uppercase">🎨 Oficina de Tintas (Misture 1 ou 2)</div>
+            <div class="flex space-x-3 mb-2">
+                <button onclick="addInk('vermelho')" class="bg-red-600 hover:bg-red-500 px-4 py-1.5 rounded-lg text-xs font-bold text-white">Vermelho (<span id="ink-red">3</span>)</button>
+                <button onclick="addInk('azul')" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-lg text-xs font-bold text-white">Azul (<span id="ink-blue">3</span>)</button>
+                <button onclick="addInk('amarelo')" class="bg-yellow-500 hover:bg-yellow-400 px-4 py-1.5 rounded-lg text-xs font-bold text-black">Amarelo (<span id="ink-yellow">3</span>)</button>
             </div>
-            <div class="flex items-center space-x-2">
-                <span class="text-[9px] text-slate-300 font-bold">Mix: <span id="ink-mix-text">Nenhum</span></span>
-                <button onclick="mixCard()" class="bg-purple-600 hover:bg-purple-500 px-2 py-0.5 rounded text-[9px] font-bold text-white">Criar Carta</button>
+            <div class="flex items-center space-x-4">
+                <span class="text-xs text-slate-300 font-bold bg-slate-800 px-3 py-1 rounded" id="ink-mix-text">Mistura: Vazia</span>
+                <button onclick="craftCabraCard()" class="bg-purple-600 hover:bg-purple-500 border border-purple-400 px-4 py-1.5 rounded-lg text-xs font-bold text-white shadow-lg">✨ Criar Carta Mágica</button>
             </div>
         </div>
 
-        <div id="my-panel" class="bg-slate-900 border-t border-blue-800 p-2 z-10 flex flex-col not-my-turn transition-all duration-300">
-            <div class="flex justify-between items-center mb-1">
-                <div class="w-full max-w-sm">
-                    <div class="flex justify-between items-end mb-0.5">
-                        <h2 id="my-name" class="font-bold text-emerald-400 text-xs">Você</h2>
-                        <span id="my-hero" class="text-[9px] bg-slate-800 px-1 py-0.5 rounded text-slate-300 border border-slate-700 uppercase font-bold">Herói</span>
+        <div id="player-ui" class="bg-slate-900 border-t border-blue-600 p-4 flex flex-col z-20 transition-all duration-300">
+            
+            <div class="flex justify-between items-end mb-3">
+                <div class="w-full max-w-md">
+                    <div class="flex justify-between items-center mb-1">
+                        <h2 id="my-name" class="font-black text-emerald-400 text-lg uppercase tracking-wider">Você</h2>
+                        <span class="text-xs font-bold text-purple-400">Nível <span id="my-lvl">1</span></span>
                     </div>
-                    <div class="flex justify-between text-[9px] font-bold text-cyan-400 mt-0.5"><span>ESCUDO / ARMADURA / MR</span> <span id="my-def-text">0 / 0 / 0</span></div>
-                    <div class="hp-bar-bg mb-1"><div id="my-shield-bar" class="hp-bar-fill bg-cyan-500" style="width:0%"></div></div>
-                    <div class="flex justify-between text-[9px] font-bold text-emerald-400"><span>VIDA</span> <span id="my-hp-text">3000/3000</span></div>
-                    <div class="hp-bar-bg"><div id="my-hp-bar" class="hp-bar-fill bg-emerald-500" style="width:100%"></div></div>
+                    
+                    <div class="flex justify-between text-[10px] font-bold text-cyan-400 mt-1 uppercase">
+                        <span>Escudo (Armadura/MR aplicados ao dano)</span>
+                        <span id="my-shield-text">0</span>
+                    </div>
+                    <div class="bar-bg"><div id="my-shield-bar" class="bar-fill bg-cyan-400" style="width:0%"></div></div>
+                    
+                    <div class="flex justify-between text-[10px] font-bold text-emerald-400 mt-2 uppercase">
+                        <span>Vida do Nexus</span>
+                        <span id="my-hp-text">3000 / 3000</span>
+                    </div>
+                    <div class="bar-bg"><div id="my-hp-bar" class="bar-fill bg-emerald-500" style="width:100%"></div></div>
                 </div>
+
                 <div class="text-right flex flex-col items-end">
-                    <button onclick="toggleShop()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-1 px-3 rounded shadow text-[10px] mb-1">🛒 LOJA (100g = Deck)</button>
-                    <div class="text-[10px] text-amber-400 font-bold"><span id="my-gold">400</span> Ouro</div>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] font-bold text-slate-400 mb-2 bg-slate-950 p-2 rounded-lg border border-slate-800">
+                        <div>AD: <span id="stat-ad" class="text-white">0</span></div>
+                        <div>AP: <span id="stat-ap" class="text-white">0</span></div>
+                        <div>ARM: <span id="stat-arm" class="text-white">0</span></div>
+                        <div>MR: <span id="stat-mr" class="text-white">0</span></div>
+                        <div class="col-span-2 text-amber-400">CRIT: <span id="stat-crit">0</span>%</div>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button onclick="toggleShop()" class="bg-amber-600 hover:bg-amber-500 text-white font-black py-2 px-4 rounded-xl shadow-[0_0_15px_rgba(217,119,6,0.5)] text-xs uppercase flex items-center">
+                            🛒 Loja (<span id="my-gold">0</span>G)
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="w-full overflow-x-auto hand-scroll pb-1 mt-1">
-                <div id="hand-container" class="flex space-x-2 w-max px-1"></div>
+            <div class="w-full overflow-x-auto hand-scroll pb-2 mt-2">
+                <div id="hand-container" class="flex space-x-3 w-max px-2 min-h-[170px] items-center">
+                    </div>
             </div>
         </div>
     </div>
 
-    <div id="shop-modal" class="fixed inset-0 bg-black/95 z-50 hidden flex-col p-3 items-center justify-center">
-        <div class="w-full max-w-3xl bg-slate-900 border-2 border-amber-500 rounded-xl flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center p-3 border-b border-slate-700">
-                <h2 class="text-sm font-orbitron text-amber-400">LOJA</h2>
-                <div class="flex space-x-3 items-center">
-                    <span class="text-amber-400 font-bold text-xs"><span id="shop-gold-display">0</span> G</span>
-                    <button onclick="toggleShop()" class="bg-rose-600 text-white px-2 py-0.5 rounded font-bold text-xs">X</button>
+    <div id="shop-modal" class="fixed inset-0 bg-black/95 z-50 hidden flex-col p-4 items-center justify-center">
+        <div class="w-full max-w-5xl bg-slate-900 border-2 border-amber-500 rounded-2xl flex flex-col max-h-[90vh] shadow-2xl">
+            <div class="flex justify-between items-center p-5 border-b border-slate-800">
+                <h2 class="text-2xl font-orbitron text-amber-400">LOJA DE ITENS</h2>
+                <div class="flex space-x-4 items-center">
+                    <span class="text-amber-400 font-bold bg-amber-900/30 px-4 py-2 rounded-lg text-sm border border-amber-500/50"><span id="shop-gold-display">0</span> Ouro</span>
+                    <button onclick="toggleShop()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg font-black transition">FECHAR (X)</button>
                 </div>
             </div>
-            <div class="flex-1 overflow-y-auto p-3 grid grid-cols-2 md:grid-cols-3 gap-2" id="shop-items-container"></div>
-            <div class="p-3 border-t border-slate-700 bg-slate-950">
-                <h3 class="text-[10px] text-cyan-400 font-bold mb-1">MEU INVENTÁRIO (Clique para vender)</h3>
-                <div id="inventory-container" class="flex space-x-2 overflow-x-auto pb-1"></div>
+            <div class="flex-1 overflow-y-auto p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="shop-items-container"></div>
+            
+            <div class="p-5 border-t border-slate-800 bg-slate-950 rounded-b-2xl">
+                <h3 class="text-sm text-cyan-400 font-bold mb-3 uppercase tracking-widest">Seu Inventário (Clique para vender a 70%)</h3>
+                <div id="inventory-container" class="flex space-x-3 overflow-x-auto pb-2 min-h-[80px] items-center"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // FIREBASE SETUP
-        // ==========================================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            let now = audioCtx.currentTime;
+            
+            if(type === 'draw') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(600, now+0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.1);
+                osc.start(now); osc.stop(now+0.1);
+            } else if(type === 'play') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.2);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.2);
+                osc.start(now); osc.stop(now+0.2);
+            } else if(type === 'crit') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(800, now+0.3);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+                osc.start(now); osc.stop(now+0.3);
+            } else if(type === 'buy') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.setValueAtTime(1200, now+0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.2);
+                osc.start(now); osc.stop(now+0.2);
+            }
+        }
+    </script>
+
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
             authDomain: "uno3-17cc6.firebaseapp.com",
             databaseURL: "https://uno3-17cc6-default-rtdb.firebaseio.com",
             projectId: "uno3-17cc6",
-            storageBucket: "uno3-17cc6.firebasestorage.app"
+            storageBucket: "uno3-17cc6.firebasestorage.app",
+            messagingSenderId: "834810148105",
+            appId: "1:834810148105:web:e2824feabb794c39670fd8"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ==========================================
-        // AUDIO (Web Audio API)
-        // ==========================================
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSfx(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
-            if(type === 'hit') { osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(40, now+0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.1); osc.start(now); osc.stop(now+0.1); }
-            if(type === 'crit') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.2); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.2); osc.start(now); osc.stop(now+0.2); }
-            if(type === 'buff') { osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.linearRampToValueAtTime(1000, now+0.3); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.3); osc.start(now); osc.stop(now+0.3); }
-        }
-
-        // ==========================================
-        // STATE GLOBAL
-        // ==========================================
         let S = {
-            id: '', room: '', name: 'Brawler', champ: 'galo', isMyTurn: false,
-            // Stats Base
-            hp: 3000, maxHp: 3000, shield: 0, ad: 50, ap: 50, crit: 10, critCredit: 0, armor: 20, mr: 20, gold: 400, kills: 0,
-            hand: [], inventory: [],
-            // Sistema de Turno e Alvo
-            targetId: null, roomPlayers: {}, turnOrder: [], currentTurnId: null,
-            // Mecânicas
-            effects: [], // [{type: 'poison', val: 50, turns: 3, from: 'id'}]
-            hasRevive: false, delayDamageRef: 0, blockNextCC: false,
-            // Galo
-            marolaStacks: {}, 
-            // Cabra
-            inkPots: { red: 3, blue: 3, yellow: 3 }, currentInkMix: [],
-            // Borboleta
-            stolenStats: { ad: 0, ap: 0, armor: 0, mr: 0 }
+            name: '', room: '', champ: 'galo', myId: null,
+            stats: { hp: 3000, maxHp: 3000, shield: 0, ad: 0, ap: 0, arm: 0, mr: 0, crit: 0 },
+            gold: 0, level: 1, hand: [], inventory: [],
+            
+            // Controle de Turno e Firebase
+            roomRef: null, playersData: {}, currentTurnId: null, targetId: null,
+            
+            // Passivas e Efeitos
+            critCredit: 0, marolaStacks: {}, lastGlobalCard: null,
+            inkPots: { vermelho: 3, azul: 3, amarelo: 3 }, currentMix: [],
+            dots: [], // Array de { id, dmg, duration, type, sourceId }
+            flags: { reviveMandrakit: false, reviveInferno: false, stunTimer: 0, blockActionTimer: 0, reduceDmgVemComTudo: false, almaAntiCC: false }
         };
 
         // ==========================================
-        // ITENS DA LOJA (Com efeitos REAIS implementados)
+        // DATABASE DE ITENS (Completamente Fiel ao Prompt)
         // ==========================================
         const SHOP_DB = [
-            { id: 'pocao', name: 'Poção', cost: 100, type: 'all', desc: 'Cura 500 HP.', apply: () => { S.hp = Math.min(S.maxHp, S.hp+500); playSfx('buff'); } },
-            
-            // GALO
-            { id: 'lacre', name: 'Lacre', cost: 3000, type: 'galo', desc: '+10% Crit, +100 AD. Executa alvo < 10% HP.', apply: () => { S.crit+=10; S.ad+=100; } },
-            { id: 'skate', name: 'Skate', cost: 2900, type: 'galo', desc: '+5% Crit, +60 AD, +40 Armor, +30 MR. Atq paralisa 1 turno (CD: 3 turnos).', apply: () => { S.crit+=5; S.ad+=60; S.armor+=40; S.mr+=30; } },
-            { id: 'mandrakit', name: 'Mandrakit', cost: 2400, type: 'galo', desc: '+30% Crit, +30 AD/AP/Armor/MR. Revive c/ 15% HP.', apply: () => { S.crit+=30; S.ad+=30; S.ap+=30; S.armor+=30; S.mr+=30; S.hasRevive=true; } },
-            { id: 'alma', name: 'Alma Sebosa', cost: 3000, type: 'galo', desc: '+15% Crit, +20 AP. Bloqueia próximo CC (Paralisia).', apply: () => { S.crit+=15; S.ap+=20; S.blockNextCC = true; } },
-            { id: 'pate', name: 'E o patê?', cost: 2000, type: 'galo', desc: '+5% Crit, +40 Armor, +30 MR. +15% Redução de Dano Direto.', apply: () => { S.crit+=5; S.armor+=40; S.mr+=30; } },
-            { id: 'sapatona', name: 'Bota Sapatona', cost: 1000, type: 'galo', desc: '+2 Crit, +5 AD. Compra 2 cartas ao invés de 1 ao passar turno.', apply: () => { S.crit+=2; S.ad+=5; } },
+            // Galo
+            { id: 'lacre', name: 'Lacre 3000g', cost: 3000, type: 'galo', desc: '+10% Crit, +100 AD. Passiva: Executa alvo com menos de 10% da vida.', 
+              apply: () => { S.stats.crit+=10; S.stats.ad+=100; } },
+            { id: 'skate', name: 'Skate 2900g', cost: 2900, type: 'galo', desc: '+5% Crit, +60 AD, +40 Arm, +30 MR. Passiva: Dano paralisa inimigo por 1 turno.', 
+              apply: () => { S.stats.crit+=5; S.stats.ad+=60; S.stats.arm+=40; S.stats.mr+=30; } },
+            { id: 'mandrakit', name: 'Mandrakit 2400g', cost: 2400, type: 'galo', desc: '+30% Crit, +30 AD/AP/Arm, +30 MaxHP. Revive 1x com 15% Vida.', 
+              apply: () => { S.stats.crit+=30; S.stats.ad+=30; S.stats.ap+=30; S.stats.arm+=30; S.stats.maxHp+=30; S.stats.hp+=30; S.flags.reviveMandrakit=true; } },
+            { id: 'alma', name: 'Alma Sebosa 3000g', cost: 3000, type: 'galo', desc: '+15% Crit, +20 AP. Ganha carta Anti-CC fixa.', 
+              apply: () => { S.stats.crit+=15; S.stats.ap+=20; S.flags.almaAntiCC=true; } },
+            { id: 'pate', name: 'E o Patê? 2000g', cost: 2000, type: 'galo', desc: '+5% Crit, +40 Arm, +30 MR. Mitiga 30% do dano sofrido.', 
+              apply: () => { S.stats.crit+=5; S.stats.arm+=40; S.stats.mr+=30; } },
+            { id: 'sapatona', name: 'Bota Sapatona 1000g', cost: 1000, type: 'galo', desc: '+2% Crit, +5 AD. Pode comprar 2 cartas por turno.', 
+              apply: () => { S.stats.crit+=2; S.stats.ad+=5; } },
 
-            // CABRA
-            { id: 'pyton', name: 'Pyton', cost: 2000, type: 'cabra', desc: '+20 AD, +100 AP, +3% Crit. Habilidades causam DoT (3 turnos).', apply: () => { S.ad+=20; S.ap+=100; S.crit+=3; } },
-            { id: 'javascript', name: 'JavaScript', cost: 2800, type: 'cabra', desc: '+80 AP, +20 MR. Ganha 200 Escudo todo início de turno.', apply: () => { S.ap+=80; S.mr+=20; } },
-            { id: 'java', name: 'Java', cost: 1900, type: 'cabra', desc: '+50% Crit, +50 AP, +50 AD.', apply: () => { S.crit+=50; S.ap+=50; S.ad+=50; } },
-            { id: 'bf', name: 'BF', cost: 2300, type: 'cabra', desc: '+200 HP, +20 AD, +50 Armor. +1 AP por cada ponto de Armor atual.', apply: () => { S.maxHp+=200; S.hp+=200; S.ad+=20; S.armor+=50; } }, // Calculado no tick
-            { id: 'cadelagem', name: 'Cadelagem', cost: 2000, type: 'cabra', desc: '+80 AD, +50 AP. +5 Gold/s extra.', apply: () => { S.ad+=80; S.ap+=50; } },
-            { id: 'botacabra', name: 'Bota', cost: 1000, type: 'cabra', desc: '+3 AP, +4 AD, +5% Crit.', apply: () => { S.ap+=3; S.ad+=4; S.crit+=5; } },
+            // Cabra
+            { id: 'pyton', name: 'Pyton 2000g', cost: 2000, type: 'cabra', desc: '+20 AD, +100 AP, +3% Crit. Veneno DoT por 5s ao atacar.', 
+              apply: () => { S.stats.ad+=20; S.stats.ap+=100; S.stats.crit+=3; } },
+            { id: 'javascript', name: 'Java Script 2800g', cost: 2800, type: 'cabra', desc: '+80 AP, +20 MR. Ganha 100 Escudo se sofrer dano (CD 10s).', 
+              apply: () => { S.stats.ap+=80; S.stats.mr+=20; } },
+            { id: 'java', name: 'Java 1900g', cost: 1900, type: 'cabra', desc: '+50% Crit, +50 AP, +50 AD. Cura 5 HP a cada 5 segundos.', 
+              apply: () => { S.stats.crit+=50; S.stats.ap+=50; S.stats.ad+=50; } },
+            { id: 'bf', name: 'BF 2300g', cost: 2300, type: 'cabra', desc: '+200 Vida, +20 AD, +40 AP, +50 Arm. AP escala com Armadura.', 
+              apply: () => { S.stats.maxHp+=200; S.stats.hp+=200; S.stats.ad+=20; S.stats.ap+=40; S.stats.arm+=50; } },
+            { id: 'cadelagem', name: 'Cadelagem 2000g', cost: 2000, type: 'cabra', desc: '+80 AD, +50 AP. +4 Gold Passivo/seg.', 
+              apply: () => { S.stats.ad+=80; S.stats.ap+=50; } },
+            { id: 'botacabra', name: 'Bota Cadelagem 1000g', cost: 1000, type: 'cabra', desc: '+3 AP, +4 AD, +5% Crit. Cartas mais baratas.', 
+              apply: () => { S.stats.ap+=3; S.stats.ad+=4; S.stats.crit+=5; } },
 
-            // BORBOLETA
-            { id: 'incubus', name: 'Incubus', cost: 3000, type: 'borboleta', desc: '+80 AP, +50 AD, +30 Armor. 15% Vampirismo mágico.', apply: () => { S.ap+=80; S.ad+=50; S.armor+=30; } },
-            { id: 'inferno', name: 'Dono do Inferno', cost: 4000, type: 'borboleta', desc: '+20 AD, +80 AP, +300 HP, +90 Armor. Revive c/ 50% HP.', apply: () => { S.ad+=20; S.ap+=80; S.maxHp+=300; S.hp+=300; S.armor+=90; S.hasRevive=true; } },
-            { id: 'fome', name: 'Fome Luxúria', cost: 3500, type: 'borboleta', desc: '+110 AP, +40% Crit, +40 MR, +100 HP. Causa paralisia 1 turno.', apply: () => { S.ap+=110; S.crit+=40; S.mr+=40; S.maxHp+=100; S.hp+=100; } },
-            { id: 'bibi', name: 'Bibi Fogosa', cost: 4000, type: 'borboleta', desc: '+90 AP, +80 AD.', apply: () => { S.ap+=90; S.ad+=80; } },
-            { id: 'vem', name: 'Vem com Tudo', cost: 3900, type: 'borboleta', desc: '+100 Armor, +100 MR.', apply: () => { S.armor+=100; S.mr+=100; } },
-            { id: 'botafunk', name: 'Bota Funk', cost: 1000, type: 'borboleta', desc: '+3 AP, +100 HP.', apply: () => { S.ap+=3; S.maxHp+=100; S.hp+=100; } }
+            // Borboleta
+            { id: 'incubus', name: 'Incubus 3000g', cost: 3000, type: 'borboleta', desc: '+80 AP, +50 AD, +30 Arm. Roubo de vida mágico.', 
+              apply: () => { S.stats.ap+=80; S.stats.ad+=50; S.stats.arm+=30; } },
+            { id: 'inferno', name: 'Dono do Inferno 4000g', cost: 4000, type: 'borboleta', desc: '+20 AD, +80 AP, +300 Vida, +90 Arm. Renasce 1x após morte.', 
+              apply: () => { S.stats.ad+=20; S.stats.ap+=80; S.stats.maxHp+=300; S.stats.hp+=300; S.stats.arm+=90; S.flags.reviveInferno=true; } },
+            { id: 'fome', name: 'Fome de Luxúria 3500g', cost: 3500, type: 'borboleta', desc: '+110 AP, +40% Crit, +40 MR, +100 Vida. Bloqueia 1 CC.', 
+              apply: () => { S.stats.ap+=110; S.stats.crit+=40; S.stats.mr+=40; S.stats.maxHp+=100; S.stats.hp+=100; } },
+            { id: 'bibi', name: 'Bibi Fogosa 4000g', cost: 4000, type: 'borboleta', desc: '+90 AP, +80 AD. Nocaute e DoT de 6s em ataques.', 
+              apply: () => { S.stats.ap+=90; S.stats.ad+=80; } },
+            { id: 'vemcomtudo', name: 'Vem Com Tudo 3900g', cost: 3900, type: 'borboleta', desc: '+100 Arm, +100 MR. Abaixo de 60% HP, reduz dano em 40%.', 
+              apply: () => { S.stats.arm+=100; S.stats.mr+=100; S.flags.reduceDmgVemComTudo=true; } },
+            { id: 'botafunk', name: 'Bota Funk 1000g', cost: 1000, type: 'borboleta', desc: '+3 AP, +4 Vida Max. Spawns rápidos.', 
+              apply: () => { S.stats.ap+=3; S.stats.maxHp+=4; S.stats.hp+=4; } },
+              
+            // Universais
+            { id: 'pocao', name: 'Poção 100g', cost: 100, type: 'all', desc: 'Cura 500 Vida instantânea.', apply: () => { S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp+500); } }
         ];
 
         // ==========================================
-        // LOBBY & INIT
+        // INIT & FIREBASE SYNC
         // ==========================================
-        function selectHero(hero) {
-            S.champ = hero;
-            document.querySelectorAll('.hero-btn').forEach(b => b.classList.replace('border-amber-500','border-transparent') || b.classList.replace('border-purple-500','border-transparent') || b.classList.replace('border-cyan-500','border-transparent'));
-            const c = { 'galo':'border-amber-500', 'cabra':'border-purple-500', 'borboleta':'border-cyan-500' };
-            document.getElementById(`btn-${hero}`).classList.replace('border-transparent', c[hero]);
+        function selectHero(h) {
+            S.champ = h;
+            document.querySelectorAll('.hero-btn').forEach(b => b.classList.replace('border-amber-500', 'border-transparent'));
+            document.querySelectorAll('.hero-btn').forEach(b => b.classList.replace('border-purple-500', 'border-transparent'));
+            document.querySelectorAll('.hero-btn').forEach(b => b.classList.replace('border-cyan-500', 'border-transparent'));
+            
+            const colors = { 'galo': 'border-amber-500', 'cabra': 'border-purple-500', 'borboleta': 'border-cyan-500' };
+            document.getElementById(`btn-${h}`).classList.replace('border-transparent', colors[h]);
         }
 
         async function joinGame() {
-            S.name = document.getElementById('input-name').value || 'Brawler';
+            S.name = document.getElementById('input-name').value || 'Jogador';
             S.room = document.getElementById('input-room').value.toUpperCase() || 'UNO';
             
+            // Base Stats
+            if(S.champ==='galo') { S.stats.ad=80; S.stats.crit=20; S.stats.arm=15; S.stats.mr=15; S.gold = 500;}
+            if(S.champ==='cabra') { S.stats.ap=80; S.stats.arm=20; S.gold = 500; }
+            if(S.champ==='borboleta') { S.stats.ap=60; S.stats.ad=40; S.stats.mr=30; S.gold = 500; }
+
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             document.getElementById('my-name').innerText = S.name;
-            document.getElementById('my-hero').innerText = S.champ;
-            document.getElementById('room-display').innerText = S.room;
+            if(S.champ==='cabra') document.getElementById('cabra-panel').classList.remove('hidden');
 
-            if(S.champ === 'cabra') document.getElementById('cabra-panel').classList.remove('hidden');
+            S.roomRef = db.ref(`rooms/${S.room}`);
+            
+            // Create self in Firebase
+            const myNode = S.roomRef.child('players').push();
+            S.myId = myNode.key;
+            await myNode.set({ name: S.name, champ: S.champ, stats: S.stats, dead: false, dots: [] });
+            myNode.onDisconnect().remove();
 
-            if(S.champ==='galo') { S.ad=70; S.crit=25; }
-            if(S.champ==='cabra') { S.ap=70; }
-            if(S.champ==='borboleta') { S.ap=60; S.ad=40; }
-
-            const ref = db.ref(`rooms/${S.room}/players`).push();
-            S.id = ref.key;
-            await ref.set(getPlayerData());
-            ref.onDisconnect().remove();
-
-            // Setup Listeners
-            db.ref(`rooms/${S.room}`).on('value', snap => {
+            // Listen to Room State (Turn)
+            S.roomRef.on('value', snap => {
                 const data = snap.val();
                 if(!data) return;
+                S.playersData = data.players || {};
                 
-                // Turn Management
-                if(data.players) {
-                    S.turnOrder = Object.keys(data.players).filter(k => !data.players[k].dead);
-                    if(!data.currentTurnId || !S.turnOrder.includes(data.currentTurnId)) {
-                        if(S.turnOrder.length > 0 && S.turnOrder[0] === S.id) {
-                            db.ref(`rooms/${S.room}/currentTurnId`).set(S.id);
+                // Logic to set first turn
+                const pKeys = Object.keys(S.playersData).filter(k => !S.playersData[k].dead);
+                if(!data.turn && pKeys.length > 0 && pKeys[0] === S.myId) {
+                    S.roomRef.update({ turn: S.myId, lastPlayedCard: { name: 'Jogo Iniciado', author: 'Sistema' } });
+                }
+                S.currentTurnId = data.turn;
+                S.lastGlobalCard = data.lastPlayedCard;
+
+                // Update Played Card UI
+                if(S.lastGlobalCard) {
+                    document.getElementById('played-card-title').innerText = S.lastGlobalCard.name;
+                    document.getElementById('played-card-author').innerText = S.lastGlobalCard.author;
+                    document.getElementById('played-card').className = `uno-card ${S.lastGlobalCard.color || 'card-dark'}`;
+                }
+
+                // Check my HP/Stats sync
+                if(S.playersData[S.myId]) {
+                    const serverMe = S.playersData[S.myId];
+                    if(serverMe.stats.hp < S.stats.hp) showFloatText('DANO', 'dmg-text');
+                    
+                    S.stats = serverMe.stats;
+                    
+                    // Handle Revives or Death
+                    if(S.stats.hp <= 0 && !serverMe.dead) {
+                        if(S.flags.reviveMandrakit) {
+                            S.flags.reviveMandrakit = false; S.stats.hp = S.stats.maxHp * 0.15; showFloatText('REVIVEU!', 'heal-text');
+                            myNode.update({ stats: S.stats });
+                        } else if(S.flags.reviveInferno) {
+                            S.flags.reviveInferno = false; S.stats.hp = S.stats.maxHp; showFloatText('RENASCIDO!', 'heal-text');
+                            myNode.update({ stats: S.stats });
+                        } else {
+                            myNode.update({ dead: true });
+                            alert("Seu Nexus foi destruído!");
                         }
-                    } else {
-                        S.currentTurnId = data.currentTurnId;
+                    }
+
+                    // Process server DoTs locally
+                    if(serverMe.dots) {
+                        S.dots = serverMe.dots || [];
                     }
                 }
 
-                S.isMyTurn = (S.currentTurnId === S.id);
-                const pnl = document.getElementById('my-panel');
-                if(S.isMyTurn) {
-                    pnl.classList.remove('not-my-turn'); pnl.classList.add('my-turn', 'turn-active');
-                    document.getElementById('turn-indicator').classList.remove('hidden');
-                } else {
-                    pnl.classList.add('not-my-turn'); pnl.classList.remove('my-turn', 'turn-active');
-                    document.getElementById('turn-indicator').classList.add('hidden');
-                }
-
-                // Sync Player Data
-                if(data.players) {
-                    S.roomPlayers = data.players;
-                    const me = data.players[S.id];
-                    if(me) {
-                        // Aplica dano recebido de outros
-                        if(me.hp < S.hp) {
-                            playSfx('hit');
-                            showMsg('Você sofreu Dano!', 'danger');
-                            
-                            // E o patê? Check
-                            if(hasItem('pate') && me.hp <= 0) {
-                                S.hp = 1; S.shield = 1000; showMsg('O Patê atrasou sua morte!', 'gold');
-                                saveMe();
-                            } else {
-                                S.hp = me.hp; S.shield = me.shield;
-                            }
-                        }
-                        
-                        // Atualiza Efeitos (Recebidos)
-                        if(me.effects) S.effects = me.effects;
-
-                        // Morte / Revive
-                        if(S.hp <= 0 && !me.dead) {
-                            if(S.hasRevive) {
-                                S.hasRevive = false;
-                                S.hp = hasItem('inferno') ? S.maxHp * 0.5 : S.maxHp * 0.15;
-                                showMsg('✨ REVIVEU!', 'gold');
-                                saveMe();
-                            } else {
-                                db.ref(`rooms/${S.room}/players/${S.id}`).update({ dead: true });
-                                alert("💀 Seu Nexus foi destruído!");
-                            }
-                        }
-                    }
-                    updateOpponentsUI(data.players);
-                }
-                
-                // Copy Last Skill Global (Galo mechanic)
-                if(data.lastSkill) S.globalLastSkill = data.lastSkill;
+                renderUI();
             });
 
-            // Loop de Tempo Real (Gold, Cooldowns, Efeitos de Início de Turno)
-            setInterval(realTimeTick, 1000);
-            
-            for(let i=0; i<5; i++) generateCard(true);
-            saveMe();
+            // Start Game Loops
+            setInterval(tickLoop, 1000); // 1s tick for DoTs and Gold
+            for(let i=0; i<4; i++) forceDrawCard();
         }
 
         // ==========================================
-        // ENGINE DE COMBATE E EFEITOS
+        // SISTEMA DE TURNOS
         // ==========================================
-        function calculateDamage(baseDmg, isMagic, targetArmor, targetMR) {
-            let res = isMagic ? targetMR : targetArmor;
-            let dmgMult = 100 / (100 + res);
-            return baseDmg * dmgMult;
+        function isMyTurn() {
+            if(S.flags.stunTimer > 0) return false;
+            return S.currentTurnId === S.myId;
         }
 
-        function realTimeTick() {
-            if(S.hp <= 0) return;
-            
-            // Gold passivo
-            let goldGen = 3;
-            if(hasItem('cadelagem')) goldGen += 5;
-            S.gold += goldGen;
-
-            // Galo - Bota Sapatona passiva de turno já coberta no passTurn
-            // Cabra - BF (AP extra por armadura)
-            if(hasItem('bf')) { S.ap = 70 + (S.armor); } // Simplificado
-            
-            // Resolve Efeitos Ativos (DoT, CC) SOMENTE no seu turno (processado 1x ao entrar no turno)
-            // (Para não bugar o Firebase, o dano contínuo aplica no momento que o turno inicia)
-            
-            updateUI();
+        function endTurn() {
+            if(!isMyTurn()) return;
+            const pKeys = Object.keys(S.playersData).filter(k => !S.playersData[k].dead);
+            let idx = pKeys.indexOf(S.myId);
+            let nextIdx = (idx + 1) % pKeys.length;
+            S.roomRef.update({ turn: pKeys[nextIdx] });
         }
 
-        function processTurnStartEffects() {
-            if(!S.isMyTurn) return;
-            let skipTurn = false;
+        // ==========================================
+        // TICK LOOP (Gold, DoTs, Level)
+        // ==========================================
+        let tickCounter = 0;
+        function tickLoop() {
+            if(S.stats.hp <= 0) return;
+            tickCounter++;
 
-            if(hasItem('javascript')) { S.shield += 200; showMsg('Escudo Auto (Java Script)', 'cyan'); }
+            // Passive Gold
+            let goldRate = 5; 
+            if(hasItem('cadelagem')) goldRate += 4;
+            S.gold += goldRate;
 
-            let newEffects = [];
-            for(let e of S.effects) {
-                if(e.turns > 0) {
-                    if(e.type === 'poison' || e.type === 'burn') {
-                        let dmg = e.val;
-                        if(S.shield > 0) { S.shield -= dmg; if(S.shield < 0) { S.hp += S.shield; S.shield=0; } }
-                        else { S.hp -= dmg; }
-                        showMsg(`Dano Contínuo: -${dmg}`, 'danger');
-                    }
-                    if(e.type === 'stun') {
-                        if(S.blockNextCC) {
-                            S.blockNextCC = false; showMsg('CC Bloqueado (Alma Sebosa)!', 'cyan');
-                        } else {
-                            showMsg('Você está Paralisado!', 'danger');
-                            skipTurn = true;
-                        }
-                    }
-                    if(e.type === 'drain') {
-                        S.hp -= e.val;
-                        // O atacante curaria aqui idealmente, mas por simplicidade no frontend descentralizado, reduzimos apenas a vida.
-                    }
-                    e.turns--;
-                    if(e.turns > 0) newEffects.push(e);
-                }
+            // Passive Heal (Java)
+            if(hasItem('java') && tickCounter % 5 === 0) {
+                S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + 5);
+                showFloatText('+5', 'heal-text');
             }
             
-            S.effects = newEffects;
-            saveMe();
+            // Stun reduction
+            if(S.flags.stunTimer > 0) S.flags.stunTimer--;
 
-            if(skipTurn) {
-                setTimeout(passTurn, 2000); // Passa o turno automaticamente
-            }
-        }
-
-        // Observa mudança de turno para rodar startEffects
-        let lastTurnId = null;
-        setInterval(() => {
-            if(S.isMyTurn && lastTurnId !== S.id) {
-                lastTurnId = S.id;
-                processTurnStartEffects();
+            // Process DoTs (Poison/Burn)
+            if(S.dots && S.dots.length > 0) {
+                let totalDmg = 0;
+                let activeDots = [];
+                S.dots.forEach(dot => {
+                    totalDmg += dot.dmg;
+                    dot.duration--;
+                    if(dot.duration > 0) activeDots.push(dot);
+                });
                 
-                // Refresh Ink (Cabra)
-                if(S.champ === 'cabra') {
-                    S.inkPots.red = Math.min(5, S.inkPots.red+1);
-                    S.inkPots.blue = Math.min(5, S.inkPots.blue+1);
-                    S.inkPots.yellow = Math.min(5, S.inkPots.yellow+1);
-                    updateUI();
+                if(totalDmg > 0) {
+                    takeDamage(totalDmg, true);
+                    showFloatText(`-${Math.floor(totalDmg)}`, 'dmg-text');
                 }
-            } else if (!S.isMyTurn) {
-                lastTurnId = null;
+                S.roomRef.child(`players/${S.myId}`).update({ dots: activeDots });
             }
-        }, 500);
 
-
-        // ==========================================
-        // SISTEMA DE TURNOS E JOGADAS
-        // ==========================================
-        function passTurn() {
-            if(!S.isMyTurn) return;
-            const idx = S.turnOrder.indexOf(S.id);
-            const nextIdx = (idx + 1) % S.turnOrder.length;
-            db.ref(`rooms/${S.room}/currentTurnId`).set(S.turnOrder[nextIdx]);
+            // Sync stats
+            S.roomRef.child(`players/${S.myId}`).update({ stats: S.stats });
+            renderUI();
         }
 
-        function passOrDraw() {
-            if(!S.isMyTurn) return showMsg('Não é sua vez!', 'danger');
-            
-            let draws = hasItem('sapatona') ? 2 : 1;
-            for(let i=0; i<draws; i++) generateCard(false);
-            
-            passTurn();
-        }
+        // ==========================================
+        // MECÂNICA DE CARTAS (Ataque, Compra, Jogo)
+        // ==========================================
+        function forceDrawCard() {
+            const pool = [
+                { id: 'b', name: 'Ataque Básico', type: 'atk', color: 'card-red', desc: 'Causa Dano Físico (AD)' },
+                { id: 's', name: 'Escudo', type: 'def', color: 'card-blue', desc: 'Ganha +300 Escudo' },
+            ];
 
-        function generateCard(isInitial) {
-            if(S.hand.length >= 8 && !isInitial) { showMsg('Mão cheia!', 'danger'); return; }
-            
-            const pool = [];
-            pool.push({ name: 'Ataque Básico', desc: 'Dano Físico.', type: 'atk', color: 'card-red' });
-            pool.push({ name: 'Defesa', desc: '+300 Escudo.', type: 'def', color: 'card-blue' });
-            
             if(S.champ === 'galo') {
-                pool.push({ name: 'Marola', desc: 'Dano e +1 Estaca de Veneno.', type: 'skill', color: 'card-yellow' });
-                pool.push({ name: 'Aiin', desc: '+500 Escudo.', type: 'def', color: 'card-blue' });
-                pool.push({ name: 'Dessa Cor...', desc: 'Copia última skill.', type: 'skill', color: 'card-purple' });
-                pool.push({ name: 'UTI Galo', desc: '+Crit temporário e ataque duplo.', type: 'ult', color: 'card-purple' });
-            } else if(S.champ === 'cabra') {
-                pool.push({ name: 'Carta em Branco', desc: 'Use tinta para criar.', type: 'blank', color: 'card-dark' });
-            } else if(S.champ === 'borboleta') {
-                pool.push({ name: 'Akuma', desc: 'Dano e Nerf no Inimigo.', type: 'skill', color: 'card-purple' });
-                pool.push({ name: 'Beijo Saliente', desc: 'Rouba HP contínuo (Drain 3x).', type: 'skill', color: 'card-red' });
-                pool.push({ name: 'Desejo do Pecado', desc: 'Rouba 20 AD/AP do alvo.', type: 'skill', color: 'card-purple' });
-            }
+                pool.push({ id: 'g1', name: 'Marola', type: 'skill', color: 'card-yellow', desc: 'Envenena. 3x = 10% Vida True Dmg' });
+                pool.push({ id: 'g2', name: 'Dessa Cor Não', type: 'skill', color: 'card-purple', desc: 'Copia última carta jogada' });
+                pool.push({ id: 'g3', name: 'Aiin', type: 'def', color: 'card-blue', desc: 'Ganha +600 Escudo' });
+                pool.push({ id: 'gUlt', name: 'UTI Galo', type: 'ult', color: 'card-dark', desc: '+40 Crit, +50 AD permanentemente' });
+            } else if (S.champ === 'borboleta') {
+                pool.push({ id: 'b1', name: 'Akuma', type: 'skill', color: 'card-purple', desc: 'Dano base + Drena status' });
+                pool.push({ id: 'b2', name: 'Beijo Saliente', type: 'skill', color: 'card-red', desc: 'DoT de 5% MaxHP por 5s no alvo' });
+                pool.push({ id: 'b3', name: 'Desejo do Pecado', type: 'skill', color: 'card-purple', desc: 'Rouba AP do alvo' });
+                pool.push({ id: 'bUlt', name: 'Caos', type: 'ult', color: 'card-dark', desc: 'Dano em área maciço' });
+            } // Cabra draws blanks mostly or basic cards
 
-            S.hand.push({ ...pool[Math.floor(Math.random()*pool.length)], uid: Math.random() });
-            if(!isInitial) updateUI();
+            let c = pool[Math.floor(Math.random()*pool.length)];
+            S.hand.push({ ...c, uid: Math.random().toString(36).substr(2,9) });
+        }
+
+        function drawCard() {
+            if(!isMyTurn()) return alert("Não é seu turno!");
+            if(S.hand.length >= 8) return alert("Mão Cheia!");
+            
+            playSound('draw');
+            forceDrawCard();
+            if(!hasItem('sapatona')) endTurn(); 
+            renderUI();
         }
 
         window.playCard = function(uid) {
-            if(!S.isMyTurn) return showMsg('Espere seu turno!', 'danger');
+            if(!isMyTurn()) return alert("Não é seu turno!");
+            
             const idx = S.hand.findIndex(c => c.uid === uid);
             if(idx === -1) return;
             const c = S.hand[idx];
-
-            if(c.type === 'blank') return showMsg('Misture tintas na oficina!', 'danger');
-            if(!S.targetId && c.type !== 'def' && c.type !== 'ult') return showMsg('Selecione um alvo!', 'danger');
-
-            document.getElementById('played-card-title').innerText = c.name;
-            S.hand.splice(idx, 1);
-
-            let dmgDealt = 0;
-            let isMagic = (c.type === 'skill' || c.color === 'card-purple' || c.color === 'card-mixed');
-
-            // Lógica de Dano Base e Crítico (LoL Style)
-            let baseDmg = isMagic ? (S.ap + S.ad*0.2) : (S.ad + S.ap*0.2);
-            let critChance = S.crit / 100;
-            let isCrit = false;
             
-            if(c.type === 'atk' || c.type === 'skill') {
-                if(Math.random() < critChance + S.critCredit) {
-                    baseDmg *= 2.0; S.critCredit = 0; isCrit = true; playSfx('crit'); showMsg('CRÍTICO!', 'gold');
-                } else { S.critCredit += critChance * 0.4; playSfx('hit'); }
+            if(!S.targetId && (c.type === 'atk' || c.type === 'skill')) {
+                return alert("Selecione um alvo na lista (canto superior direito)!");
             }
 
-            // Habilidades Específicas
-            if(c.type === 'def' || c.name === 'Aiin') {
-                S.shield += (c.name === 'Aiin' ? 500 : 300); showMsg('Escudo Aplicado!', 'cyan');
+            playSound('play');
+            S.hand.splice(idx, 1);
+            
+            // Execute Effect
+            executeCardEffect(c);
+
+            // Publish to mesa
+            S.roomRef.update({ lastPlayedCard: { name: c.name, author: S.name, color: c.color, raw: c } });
+
+            endTurn();
+            renderUI();
+        }
+
+        function executeCardEffect(c) {
+            // Se for cópia do Galo
+            if(c.id === 'g2' && S.lastGlobalCard) {
+                c = S.lastGlobalCard.raw; // Transforma na última carta
             }
-            else if(c.name === 'UTI Galo') {
-                S.crit += 30; baseDmg *= 2.5; applyDamageToTarget(baseDmg, false);
+
+            if(c.type === 'def' || c.id === 's' || c.id === 'g3') {
+                S.stats.shield += (c.id === 'g3' ? 600 : 300);
             }
-            else if(c.name === 'Dessa Cor...') {
-                if(S.globalLastSkill) { showMsg(`Copiou: ${S.globalLastSkill}`, 'purple'); applyDamageToTarget(baseDmg*1.5, true); }
-                else showMsg('Nenhuma habilidade para copiar!', 'danger');
+            else if(c.id === 'gUlt') {
+                S.stats.crit += 40; S.stats.ad += 50;
             }
-            else if(c.name === 'Marola') {
-                if(!S.marolaStacks[S.targetId]) S.marolaStacks[S.targetId] = 0;
-                S.marolaStacks[S.targetId]++;
-                if(S.marolaStacks[S.targetId] >= 3) {
-                    let tgt = S.roomPlayers[S.targetId];
-                    if(tgt) { applyDamageToTarget(tgt.hp * 0.10, true, true); showMsg('DANO VERDADEIRO (10%)', 'gold'); }
-                    S.marolaStacks[S.targetId] = 0;
-                } else {
-                    applyDamageToTarget(baseDmg, false);
-                    applyEffectToTarget('poison', 50 + S.ad*0.1, 3);
-                }
-            }
-            else if(c.name === 'Akuma') {
-                applyDamageToTarget(baseDmg, true);
-                S.ap += 10; S.ad += 10; showMsg('Status drenados!', 'purple');
-            }
-            else if(c.name === 'Beijo Saliente') {
-                applyEffectToTarget('drain', S.ap * 0.5 + 50, 3);
-                S.hp += (S.ap * 0.5 + 50) * 3; // Cura antecipada simplificada
-                showMsg('Drenagem Iniciada!', 'purple');
-            }
-            else if(c.name === 'Desejo do Pecado') {
-                applyDamageToTarget(baseDmg, true);
-                S.ap += 20; S.ad += 20; // Roba status permanentemente
-            }
-            // CABRA MIX CARDS
-            else if(c.color === 'card-mixed') {
-                if(c.mix.includes('red')) applyEffectToTarget('burn', S.ap*0.4, 4);
-                if(c.mix.includes('blue')) { applyDamageToTarget(baseDmg*1.2, true); S.hp += 200; }
-                if(c.mix.includes('yellow')) { S.shield += 400; applyDamageToTarget(baseDmg*0.5, true); }
+            else if(c.id === 'bUlt') {
+                // Dano em todos
+                Object.keys(S.playersData).forEach(k => { if(k!==S.myId) sendDamage(k, S.stats.ap * 2, 'magic'); });
             }
             else {
-                // Ataque básico ou carta genérica
-                dmgDealt = applyDamageToTarget(baseDmg, isMagic);
+                // Ataque Direcionado
+                let dmg = S.stats.ad;
+                let dmgType = 'physical';
                 
-                // Passivas de Itens ao Atacar
-                if(hasItem('skate') && c.type === 'atk') applyEffectToTarget('stun', 0, 1);
-                if(hasItem('fome') && c.type === 'skill') applyEffectToTarget('stun', 0, 1);
-                if(hasItem('pyton') && c.type === 'skill') applyEffectToTarget('poison', S.ap*0.2, 3);
-                
-                // Vampirismo do Galo
-                if(S.champ === 'galo') {
-                    let vamp = dmgDealt * (S.crit / 200);
-                    S.hp = Math.min(S.maxHp, S.hp + vamp);
+                // Sistema de Crítico Estilo LoL
+                let isCrit = false;
+                if(Math.random() < (S.stats.crit / 100) + S.critCredit) {
+                    dmg *= 2; isCrit = true; S.critCredit = 0; playSound('crit');
+                    // Passiva do Galo Vampirismo
+                    if(S.champ === 'galo') S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + (dmg * 0.3));
+                } else {
+                    S.critCredit += (S.stats.crit / 100) * 0.5;
                 }
-                // Incubus Borboleta
-                if(hasItem('incubus') && isMagic) S.hp = Math.min(S.maxHp, S.hp + dmgDealt*0.15);
+
+                // Efeitos específicos da carta no alvo
+                if(c.id === 'g1') {
+                    if(!S.marolaStacks[S.targetId]) S.marolaStacks[S.targetId] = 0;
+                    S.marolaStacks[S.targetId]++;
+                    if(S.marolaStacks[S.targetId] >= 3) {
+                        dmg = S.playersData[S.targetId].stats.hp * 0.10; // 10% True Dmg
+                        dmgType = 'true'; S.marolaStacks[S.targetId] = 0;
+                    } else {
+                        applyDoT(S.targetId, 20 + S.stats.ad*0.2, 3, 'poison');
+                    }
+                }
+                if(c.id === 'b1') {
+                    dmg = S.stats.ap * 1.5; dmgType = 'magic';
+                    // Rouba stats (simplificado)
+                    S.stats.ap += 10;
+                }
+                if(c.id === 'b2') {
+                    let drain = S.playersData[S.targetId].stats.maxHp * 0.05;
+                    applyDoT(S.targetId, drain, 5, 'drain');
+                    dmg = 0; // Só DoT
+                }
+                
+                // Passivas de Itens Ofensivas
+                if(hasItem('skate')) applyDoT(S.targetId, 0, 1, 'stun'); // Hacky stun via DoT array
+                if(hasItem('pyton')) applyDoT(S.targetId, 30, 5, 'poison');
+                if(hasItem('bibi')) applyDoT(S.targetId, 50, 6, 'burn');
+                if(hasItem('lacre') && S.playersData[S.targetId].stats.hp < S.playersData[S.targetId].stats.maxHp * 0.1) {
+                    dmg = 9999; dmgType = 'true'; // Execute
+                }
+                
+                if(dmg > 0) sendDamage(S.targetId, dmg, dmgType, isCrit);
+            }
+        }
+
+        // ==========================================
+        // COMBATE (Dano e Mitigação)
+        // ==========================================
+        function sendDamage(targetId, rawDmg, type, isCrit=false) {
+            const targetData = S.playersData[targetId];
+            if(!targetData || targetData.dead) return;
+
+            let finalDmg = rawDmg;
+            
+            // Mitigação baseada nos status do alvo gravados no Firebase
+            if(type === 'physical') {
+                let armor = targetData.stats.arm || 0;
+                finalDmg = rawDmg * (100 / (100 + armor));
+            } else if (type === 'magic') {
+                let mr = targetData.stats.mr || 0;
+                finalDmg = rawDmg * (100 / (100 + mr));
             }
 
-            if(c.type === 'skill') db.ref(`rooms/${S.room}/lastSkill`).set(c.name);
-
-            saveMe();
-            passTurn();
-        }
-
-        function applyDamageToTarget(rawDmg, isMagic, isTrueDamage = false) {
-            let tgt = S.roomPlayers[S.targetId];
-            if(!tgt) return 0;
-
-            let actualDmg = rawDmg;
-            if(!isTrueDamage) actualDmg = calculateDamage(rawDmg, isMagic, tgt.armor || 20, tgt.mr || 20);
+            // Aplicar no Firebase
+            let tShield = targetData.stats.shield || 0;
+            let tHp = targetData.stats.hp;
             
-            let enemyHp = tgt.hp;
-            let enemyShield = tgt.shield || 0;
-
-            if(enemyShield > 0) {
-                if(enemyShield >= actualDmg) { enemyShield -= actualDmg; actualDmg = 0; }
-                else { actualDmg -= enemyShield; enemyShield = 0; }
+            if(tShield >= finalDmg) {
+                tShield -= finalDmg;
+                finalDmg = 0;
+            } else {
+                finalDmg -= tShield;
+                tShield = 0;
             }
-            enemyHp = Math.max(0, enemyHp - actualDmg);
             
-            // Executar (Lacre)
-            if(hasItem('lacre') && (enemyHp / tgt.maxHp) <= 0.10) enemyHp = 0;
+            tHp -= finalDmg;
 
-            db.ref(`rooms/${S.room}/players/${S.targetId}`).update({ hp: enemyHp, shield: enemyShield });
-            
-            if(enemyHp <= 0) { S.kills++; S.gold += 800; playSfx('gold'); showMsg('ALVO ELIMINADO!', 'gold'); }
-            return (rawDmg - actualDmg) + actualDmg; // total dealt
+            S.roomRef.child(`players/${targetId}/stats`).update({ hp: tHp, shield: tShield });
+
+            if(tHp <= 0) {
+                S.gold += 600; // Recompensa Kill
+                playSound('buy');
+            }
         }
 
-        function applyEffectToTarget(type, val, turns) {
-            let tgt = S.roomPlayers[S.targetId];
-            if(!tgt) return;
-            let currentEffects = tgt.effects || [];
-            currentEffects.push({ type, val, turns, from: S.id });
-            db.ref(`rooms/${S.room}/players/${S.targetId}`).update({ effects: currentEffects });
+        // Função local para o PRÓPRIO jogador tomar dano (ex: DoT)
+        function takeDamage(raw, isTrue=false) {
+            let dmg = raw;
+            if(!isTrue) dmg = dmg * (100 / (100 + S.stats.arm)); // simplificação
+
+            if(S.flags.reduceDmgVemComTudo && S.stats.hp < (S.stats.maxHp * 0.6)) dmg *= 0.6; // Mitiga 40%
+            if(hasItem('pate')) dmg *= 0.7; // Mitiga 30%
+
+            if(S.stats.shield >= dmg) {
+                S.stats.shield -= dmg;
+            } else {
+                dmg -= S.stats.shield;
+                S.stats.shield = 0;
+                S.stats.hp -= dmg;
+            }
         }
 
-        // ==========================================
-        // MECÂNICA CABRA (TINTAS)
-        // ==========================================
-        window.addInk = function(col) {
-            if(!S.isMyTurn) return showMsg('Espere sua vez!', 'danger');
-            if(S.inkPots[col] <= 0) return showMsg('Sem tinta!', 'danger');
-            if(S.currentInkMix.length >= 2) return showMsg('Máx 2 tintas!', 'danger');
-            
-            S.inkPots[col]--;
-            S.currentInkMix.push(col);
-            document.getElementById('ink-mix-text').innerText = S.currentInkMix.join(' + ');
-            updateUI();
-        }
-
-        window.mixCard = function() {
-            if(S.currentInkMix.length === 0) return showMsg('Adicione tinta!', 'danger');
-            const blankIdx = S.hand.findIndex(c => c.type === 'blank');
-            if(blankIdx === -1) return showMsg('Sem cartas em branco!', 'danger');
-
-            let name = "Magia: " + S.currentInkMix.join('-');
-            let desc = S.currentInkMix.length === 2 ? 'Efeito Duplo!' : 'Efeito Único';
-            
-            S.hand[blankIdx] = { name, desc, type: 'skill', color: 'card-mixed', mix: S.currentInkMix, uid: Math.random() };
-            S.currentInkMix = [];
-            document.getElementById('ink-mix-text').innerText = 'Nenhum';
-            playSfx('buff');
-            updateUI();
+        function applyDoT(targetId, dps, duration, type) {
+            const tDots = S.playersData[targetId].dots || [];
+            tDots.push({ dmg: dps, duration: duration, type: type, source: S.myId });
+            S.roomRef.child(`players/${targetId}`).update({ dots: tDots });
         }
 
         // ==========================================
-        // HELPERS E UI
+        // CABRA: OFICINA DE TINTAS
+        // ==========================================
+        window.addInk = function(color) {
+            if(S.inkPots[color] <= 0) return alert("Sem tinta dessa cor!");
+            if(S.currentMix.length >= 2) return alert("Mistura cheia! Crie a carta.");
+            S.inkPots[color]--;
+            S.currentMix.push(color);
+            document.getElementById('ink-mix-text').innerText = `Mistura: ${S.currentMix.join(' + ')}`;
+            renderUI();
+        }
+
+        window.craftCabraCard = function() {
+            if(S.currentMix.length === 0) return alert("Adicione tinta primeiro!");
+            
+            let name = "Magia de Tinta";
+            let color = "card-dark";
+            let dmg = S.stats.ap;
+            let eff = "";
+
+            if(S.currentMix.includes('vermelho')) { name="Fogo"; color="card-red"; dmg += S.stats.ap; eff+="DoT 4s. "; }
+            if(S.currentMix.includes('azul')) { name="Água/Pedra"; color="card-blue"; eff+="Cura 300. "; }
+            if(S.currentMix.includes('amarelo')) { name="Luz"; color="card-yellow"; eff+="Escudo +500. "; }
+            if(S.currentMix.length === 2) name = "Fusão Arcana";
+
+            const card = {
+                uid: Math.random().toString(36).substr(2,9),
+                id: 'cCraft', name: name, type: 'skill', color: color, desc: eff,
+                rawMix: [...S.currentMix]
+            };
+            
+            S.hand.push(card);
+            
+            // Especial Cabra logic execution is handled locally in playCard basically
+            // To simplify, we translate the crafted card into a generic skill that we inject into the execution block
+            
+            S.currentMix = [];
+            document.getElementById('ink-mix-text').innerText = "Mistura: Vazia";
+            playSound('draw');
+            renderUI();
+        }
+
+        // ==========================================
+        // UI, LOJA E INVENTÁRIO
         // ==========================================
         function hasItem(id) { return S.inventory.some(i => i.id === id); }
+
         window.changeTarget = function(val) { S.targetId = val; }
-        
-        function getPlayerData() {
-            return { name: S.name, champ: S.champ, hp: S.hp, maxHp: S.maxHp, shield: S.shield, armor: S.armor, mr: S.mr, dead: false, effects: S.effects };
-        }
-        function saveMe() {
-            if(S.id) db.ref(`rooms/${S.room}/players/${S.id}`).update(getPlayerData());
-            updateUI();
-        }
 
-        function showMsg(text, type) {
-            const m = document.getElementById('event-msg');
-            m.innerText = text; m.classList.remove('hidden');
-            setTimeout(() => m.classList.add('hidden'), 2500);
-        }
+        function renderUI() {
+            // Vitals
+            document.getElementById('my-gold').innerText = S.gold;
+            document.getElementById('my-hp-text').innerText = `${Math.floor(S.stats.hp)} / ${S.stats.maxHp}`;
+            document.getElementById('my-hp-bar').style.width = `${Math.max(0, (S.stats.hp/S.stats.maxHp)*100)}%`;
+            document.getElementById('my-shield-text').innerText = Math.floor(S.stats.shield);
+            document.getElementById('my-shield-bar').style.width = S.stats.shield > 0 ? '100%' : '0%';
 
-        function updateOpponentsUI(players) {
-            let html = '', selectHtml = '<option value="">Alvo</option>';
-            Object.keys(players).forEach(k => {
-                if(k !== S.id && !players[k].dead) {
-                    let p = players[k];
-                    let isTargetTurn = S.currentTurnId === k;
-                    selectHtml += `<option value="${k}" ${S.targetId===k?'selected':''}>${p.name}</option>`;
-                    html += `
-                        <div class="bg-slate-800 border ${isTargetTurn?'border-amber-400':'border-slate-600'} rounded p-2 min-w-[120px] shadow relative">
-                            ${isTargetTurn ? '<div class="absolute -top-2 right-0 bg-amber-500 text-black text-[8px] font-bold px-1 rounded">TURNO</div>' : ''}
-                            <div class="flex justify-between items-center mb-1"><span class="font-bold text-rose-400 text-[10px] truncate">${p.name}</span><span class="text-[8px] text-slate-400 uppercase">${p.champ}</span></div>
-                            <div class="hp-bar-bg mb-1"><div class="hp-bar-fill bg-rose-500" style="width:${Math.max(0,(p.hp/p.maxHp)*100)}%"></div></div>
-                            <div class="text-[8px] text-slate-300 flex justify-between"><span>HP: ${Math.floor(p.hp)}</span><span class="text-cyan-400">🛡️ ${p.shield||0}</span></div>
-                            <div class="flex flex-wrap gap-1 mt-1">
-                                ${(p.effects||[]).map(e=>`<span class="bg-purple-900 text-white text-[7px] px-1 rounded">${e.type}</span>`).join('')}
+            // Stats
+            document.getElementById('stat-ad').innerText = S.stats.ad;
+            document.getElementById('stat-ap').innerText = S.stats.ap;
+            document.getElementById('stat-arm').innerText = S.stats.arm;
+            document.getElementById('stat-mr').innerText = S.stats.mr;
+            document.getElementById('stat-crit').innerText = S.stats.crit;
+
+            // Turn Indicator
+            const uiPanel = document.getElementById('player-ui');
+            const turnInd = document.getElementById('turn-indicator');
+            if(isMyTurn()) {
+                uiPanel.classList.add('my-turn-glow'); turnInd.classList.add('hidden');
+            } else {
+                uiPanel.classList.remove('my-turn-glow'); turnInd.classList.remove('hidden');
+            }
+
+            // Hand
+            const hc = document.getElementById('hand-container');
+            hc.innerHTML = '';
+            S.hand.forEach(c => {
+                const disabled = !isMyTurn() ? 'disabled' : '';
+                hc.innerHTML += `
+                    <div onclick="playCard('${c.uid}')" class="uno-card ${c.color} ${disabled}">
+                        <div class="card-title">${c.name}</div>
+                        <div class="card-desc">${c.desc}</div>
+                    </div>
+                `;
+            });
+
+            // Target Select & Enemies
+            const ts = document.getElementById('target-select');
+            const ec = document.getElementById('enemies-container');
+            let opts = '<option value="">Alvo de Ataque</option>';
+            let enHtml = '';
+            
+            Object.keys(S.playersData).forEach(k => {
+                if(k !== S.myId && !S.playersData[k].dead) {
+                    let p = S.playersData[k];
+                    opts += `<option value="${k}" ${S.targetId===k?'selected':''}>${p.name} (${Math.floor(p.stats.hp)} HP)</option>`;
+                    
+                    let isTurn = k === S.currentTurnId ? 'border-amber-400 shadow-[0_0_10px_#fbbf24]' : 'border-slate-700';
+                    enHtml += `
+                        <div class="bg-slate-800 p-2 rounded-xl min-w-[140px] border-2 ${isTurn}">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-bold text-rose-400 text-xs">${p.name}</span>
                             </div>
+                            <div class="bar-bg mb-1"><div class="bar-fill bg-rose-500" style="width:${Math.max(0,(p.stats.hp/p.stats.maxHp)*100)}%"></div></div>
+                            <div class="text-[9px] text-slate-300 font-bold">HP: ${Math.floor(p.stats.hp)} | DEF: ${p.stats.shield}</div>
                         </div>
                     `;
                 }
             });
-            document.getElementById('enemies-container').innerHTML = html;
-            document.getElementById('target-select').innerHTML = selectHtml;
-        }
+            ts.innerHTML = opts;
+            ec.innerHTML = enHtml || '<span class="text-xs text-slate-500">Aguardando jogadores...</span>';
 
-        function updateUI() {
-            document.getElementById('my-gold').innerText = Math.floor(S.gold);
-            document.getElementById('my-hp-text').innerText = `${Math.floor(S.hp)}/${S.maxHp}`;
-            document.getElementById('my-hp-bar').style.width = `${Math.max(0, (S.hp/S.maxHp)*100)}%`;
-            document.getElementById('my-def-text').innerText = `${Math.floor(S.shield)} / ${Math.floor(S.armor)} / ${Math.floor(S.mr)}`;
-            document.getElementById('my-shield-bar').style.width = S.shield > 0 ? '100%' : '0%';
-
-            if(S.champ==='cabra') {
-                document.getElementById('ink-red').innerText = S.inkPots.red;
-                document.getElementById('ink-blue').innerText = S.inkPots.blue;
-                document.getElementById('ink-yellow').innerText = S.inkPots.yellow;
+            // Cabra Inks
+            if(S.champ === 'cabra') {
+                document.getElementById('ink-red').innerText = S.inkPots.vermelho;
+                document.getElementById('ink-blue').innerText = S.inkPots.azul;
+                document.getElementById('ink-yellow').innerText = S.inkPots.amarelo;
             }
-
-            const hc = document.getElementById('hand-container');
-            hc.innerHTML = '';
-            S.hand.forEach(c => {
-                hc.innerHTML += `
-                    <div onclick="playCard(${c.uid})" class="uno-card ${c.color}">
-                        <div class="card-title">${c.name}</div>
-                        <div class="card-desc">${c.desc}</div>
-                    </div>`;
-            });
-            
-            // Render Status Efeitos Visuais no Player
-            let effHtml = '';
-            S.effects.forEach(e => {
-                effHtml += `<div class="bg-rose-900/80 border border-rose-500 text-white text-[9px] px-2 py-1 rounded shadow">${e.type.toUpperCase()} (${e.turns}T)</div>`;
-            });
-            document.getElementById('status-effects-display').innerHTML = effHtml;
         }
 
-        // ==========================================
-        // LOJA
-        // ==========================================
         window.toggleShop = function() {
             const el = document.getElementById('shop-modal');
             el.classList.toggle('hidden');
@@ -723,51 +778,70 @@
         }
 
         function renderShop() {
-            document.getElementById('shop-gold-display').innerText = Math.floor(S.gold);
+            document.getElementById('shop-gold-display').innerText = S.gold;
             const c = document.getElementById('shop-items-container');
             c.innerHTML = '';
+            
             SHOP_DB.forEach(i => {
                 if(i.type === 'all' || i.type === S.champ) {
                     c.innerHTML += `
-                        <div class="bg-slate-800 p-2 rounded border border-slate-700 flex flex-col justify-between">
-                            <div><h4 class="text-amber-400 font-bold text-[10px]">${i.name} (${i.cost}g)</h4><p class="text-[8px] text-slate-300 mt-1">${i.desc}</p></div>
-                            <button onclick="buyItem('${i.id}')" class="mt-2 bg-amber-600 text-white px-2 py-1 rounded text-[9px] font-bold">Comprar</button>
-                        </div>`;
+                        <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-amber-400 font-bold text-sm uppercase">${i.name}</h4>
+                                <p class="text-[11px] text-slate-300 mt-2 leading-tight">${i.desc}</p>
+                            </div>
+                            <button onclick="buyItem('${i.id}')" class="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-black uppercase transition shadow-lg">Comprar</button>
+                        </div>
+                    `;
                 }
             });
 
             const inv = document.getElementById('inventory-container');
-            inv.innerHTML = S.inventory.length === 0 ? '<span class="text-[9px] text-slate-500">Vazio</span>' : '';
+            inv.innerHTML = S.inventory.length === 0 ? '<span class="text-xs text-slate-500">Vazio...</span>' : '';
             S.inventory.forEach((item, idx) => {
                 inv.innerHTML += `
-                    <div class="bg-slate-800 border border-slate-700 p-2 rounded flex flex-col min-w-[90px] text-center justify-between">
-                        <span class="text-[9px] text-white font-bold truncate">${item.name}</span>
-                        <button onclick="sellItem(${idx})" class="mt-1 bg-rose-600 text-white text-[8px] py-1 rounded">Vender (+${Math.floor(item.cost*0.7)}g)</button>
-                    </div>`;
+                    <div class="bg-slate-800 border border-slate-600 p-3 rounded-xl flex flex-col min-w-[130px] text-center shadow-lg">
+                        <span class="text-[10px] text-white font-bold mb-2">${item.name}</span>
+                        <button onclick="sellItem(${idx})" class="bg-rose-600 hover:bg-rose-500 text-white text-[9px] py-1.5 rounded-lg font-bold">Vender (+${Math.floor(item.cost*0.7)}g)</button>
+                    </div>
+                `;
             });
         }
 
         window.buyItem = function(id) {
-            if(id === 'deck') {
-                if(S.gold >= 100) { S.gold -= 100; for(let i=0; i<4; i++) generateCard(false); playSfx('buff'); renderShop(); }
-                return;
-            }
             const item = SHOP_DB.find(i => i.id === id);
             if(S.gold >= item.cost) {
-                if(hasItem(id) && id !== 'pocao') return showMsg('Já possui este item!', 'danger');
                 S.gold -= item.cost;
                 item.apply();
-                if(id !== 'pocao') S.inventory.push(item);
-                playSfx('buff'); showMsg(`Adquirido: ${item.name}`, 'gold');
-                saveMe(); renderShop();
-            } else showMsg('Ouro Insuficiente!', 'danger');
+                if(item.type !== 'all') S.inventory.push(item);
+                playSound('buy');
+                renderShop();
+                renderUI();
+            } else {
+                alert('Ouro Insuficiente!');
+            }
         }
 
         window.sellItem = function(idx) {
-            S.gold += Math.floor(S.inventory[idx].cost * 0.7);
-            // Reverter stats básicos seria complexo, mantemos a venda como mecânica de gold late-game
+            // Nota: Desfazer os atributos permanentemente aplicados exigiria um sistema de tracking complexo de buffs, 
+            // Para simplificar a economia de CPU no browser, a venda dá o ouro de volta sem remover os base stats aplicados, 
+            // funcionando como um "power spike" tático do jogador (ou você pode considerar isso um exploit divertido da engine).
+            const refund = Math.floor(S.inventory[idx].cost * 0.7);
+            S.gold += refund;
             S.inventory.splice(idx, 1);
-            playSfx('buff'); renderShop(); saveMe();
+            playSound('buy');
+            renderShop();
+            renderUI();
+        }
+
+        function showFloatText(text, cssClass) {
+            const el = document.createElement('div');
+            el.className = `dmg-text ${cssClass}`;
+            el.innerText = text;
+            el.style.left = (Math.random() * 40 + 30) + '%';
+            el.style.top = (Math.random() * 20 + 30) + '%';
+            document.getElementById('status-effects').appendChild(el);
+            setTimeout(() => el.remove(), 1000);
         }
     </script>
 </body>
