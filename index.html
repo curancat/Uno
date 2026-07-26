@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Uno Legends: Miraculous Brawl</title>
+    <title>Aurore Boreale: O inicio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700;900&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -154,8 +154,8 @@
     <!-- TELA DE LOBBY -->
     <div id="lobby-screen" class="flex-1 flex items-center justify-center p-4 z-50 absolute inset-0 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h1 class="text-3xl md:text-4xl font-orbitron text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-rose-500 mb-2">UNO LEGENDS</h1>
-            <p class="text-center text-slate-400 text-xs mb-6 font-bold uppercase tracking-widest">Miraculous Brawl - Full Engine</p>
+            <h1 class="text-3xl md:text-4xl font-orbitron text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-rose-500 mb-2">Aurore boreale</h1>
+            <p class="text-center text-slate-400 text-xs mb-6 font-bold uppercase tracking-widest">O inicio</p>
             
             <div class="space-y-4">
                 <div>
@@ -180,10 +180,10 @@
                             <span class="text-2xl mb-1">🦋</span>Borboleta
                         </button>
                     </div>
-                    <p id="hero-desc" class="text-[10px] text-slate-400 mt-2 text-center h-8">"Queridinha! Vá para o quinto dos infernos!" - Depende de Crítico e Auto-ataque.</p>
+                    <p id="hero-desc" class="text-[10px] text-slate-400 mt-2 text-center h-8">"Queridinha! Vá para o quinto dos infernos!"</p>
                 </div>
 
-                <button onclick="joinGame()" class="w-full bg-gradient-to-r from-rose-600 to-purple-600 hover:opacity-90 text-white font-black py-3 rounded-lg mt-2 shadow-lg text-sm tracking-widest uppercase transition">Entrar na Arena</button>
+                <button onclick="joinGame()" class="w-full bg-gradient-to-r from-rose-600 to-purple-600 hover:opacity-90 text-white font-black py-3 rounded-lg mt-2 shadow-lg text-sm tracking-widest uppercase transition">Entrar</button>
             </div>
         </div>
     </div>
@@ -234,12 +234,12 @@
 
         <!-- MENU ESPECÍFICO DA CABRA -->
         <div id="cabra-ui" class="hidden bg-slate-900 border-t border-slate-800 p-2 flex flex-col items-center z-10 shrink-0">
-            <div class="text-[10px] text-purple-300 font-bold mb-1 uppercase tracking-widest">🎨 Oficina de Tintas (Potes Restantes) - Ao trocar ou misturar, você gasta o turno!</div>
+            <div class="text-[10px] text-purple-300 font-bold mb-1 uppercase tracking-widest">🎨 Oficina</div>
             <div class="flex space-x-2 mb-1">
                 <button onclick="usePaint('red')" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-[10px] font-bold text-white border border-red-800">Vermelho (<span id="paint-red">5</span>)</button>
                 <button onclick="usePaint('blue')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-[10px] font-bold text-white border border-blue-800">Azul (<span id="paint-blue">5</span>)</button>
                 <button onclick="usePaint('yellow')" class="bg-yellow-500 hover:bg-yellow-400 px-3 py-1 rounded text-[10px] font-bold text-black border border-yellow-700">Amarelo (<span id="paint-yellow">5</span>)</button>
-                <button onclick="usePaint('uti')" class="bg-purple-700 hover:bg-purple-600 px-3 py-1 rounded text-[10px] font-bold text-white border border-purple-900">UTI (Renovar Tintas)</button>
+                <button onclick="usePaint('uti')" class="bg-purple-700 hover:bg-purple-600 px-3 py-1 rounded text-[10px] font-bold text-white border border-purple-900"> (Renovar Tintas)</button>
             </div>
             <div class="flex items-center space-x-2">
                 <span class="text-[10px] text-slate-300 font-bold bg-slate-950 px-2 py-1 rounded border border-slate-800">Mistura Atual: <span id="paint-mix">Nenhuma</span></span>
@@ -301,7 +301,7 @@
     <div id="shop-modal" class="fixed inset-0 bg-slate-950/95 z-50 hidden flex-col p-4 items-center justify-center backdrop-blur-sm">
         <div class="w-full max-w-5xl bg-slate-900 border border-slate-700 rounded-xl flex flex-col h-[90vh] shadow-2xl">
             <div class="flex justify-between items-center p-4 border-b border-slate-800 shrink-0">
-                <h2 class="text-xl font-orbitron text-amber-400">LOJA DE ITENS</h2>
+                <h2 class="text-xl font-orbitron text-amber-400">LOJA</h2>
                 <div class="flex space-x-3 items-center">
                     <span class="text-amber-400 font-bold bg-amber-900/30 px-3 py-1 rounded text-xs border border-amber-500/50"><span id="shop-gold-display">0</span> Ouro</span>
                     <button onclick="toggleShop()" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1 rounded font-black text-xs transition uppercase">X Fechar</button>
@@ -380,15 +380,15 @@
         // DADOS DOS HERÓIS INICIAIS
         const CHAMPS_DATA = {
             'galo': { 
-                desc: '"Queridinha! Vá para o quinto dos infernos!" - Focado em Crítico e Auto-ataque.', 
+                desc: '"Queridinha! Vá para o quinto dos infernos!" ', 
                 ad: 50, crit: 10 
             },
             'cabra': { 
-                desc: '"Em terra de orelhudo, qualquer sussurro é fofoca" - Usa tintas para criar habilidades (AP).', 
+                desc: '"Em terra de orelhudo, qualquer sussurro é fofoca" ', 
                 ap: 60, mana: 400, maxMana: 400 
             },
             'borboleta': { 
-                desc: '"Me xinga!!" - Drena status dos inimigos permanentemente.', 
+                desc: '"Me xinga!!"', 
                 ap: 40, ad: 20, mr: 20, arm: 20 
             }
         };
@@ -407,7 +407,7 @@
                 { id: 'g_marola', name: 'Marola', type: 'skill', color: 'card-green', desc: 'Pena venenosa. 3 Acertos = 10% Vida Atual em Dano Verdadeiro.' },
                 { id: 'g_copia', name: 'Dessa Cor Não', type: 'skill', color: 'card-white', desc: 'Copia a última carta jogada na mesa (Custo 50 Mana).' },
                 { id: 'g_aiin', name: 'Aiin', type: 'def', color: 'card-yellow', desc: 'Escudo massivo sobre sua vida (Custo 40 Mana).' },
-                { id: 'g_ult', name: 'UTI do Galo', type: 'ult', color: 'card-dark', desc: 'Ganha bônus massivo de Crítico e AD proporcional (Custo 100 Mana).' }
+                { id: 'g_ult', name: 'BOTE PEITO E SUSTENTE', type: 'ult', color: 'card-dark', desc: 'Ganha bônus massivo de Crítico e AD proporcional (Custo 100 Mana).' }
             ],
             cabra: [
                 // Cabra não tem deck base de skill, precisa criar pelas tintas.
@@ -428,7 +428,7 @@
             
             // Itens do Galo
             { id: 'lacre', name: 'Lacre 3000G', cost: 3000, req: 'galo', desc: '+10% Crit, +100 AD. Coleta almas com <90% vida atual.', stats: { crit: 10, ad: 100 } },
-            { id: 'skate', name: 'Skate', cost: 2900, req: 'galo', desc: '+5% Crit, +60 AD, +40 Arm, +30 MR. Causa paralisia por 3s.', stats: { crit: 5, ad: 60, arm: 40, mr: 30 } },
+            { id: 'skate', name: 'E esse shake?', cost: 2900, req: 'galo', desc: '+5% Crit, +60 AD, +40 Arm, +30 MR. Causa paralisia por 3s.', stats: { crit: 5, ad: 60, arm: 40, mr: 30 } },
             { id: 'mandrakit', name: 'Mandrakit', cost: 2400, req: 'galo', desc: '+30% Crit, +30 AD/AP/MR/Vida. Renasce com 15% vida ao morrer (Uma vez).', stats: { crit: 30, ad: 30, ap: 30, mr: 30, maxHp: 30 } },
             { id: 'alma', name: 'Alma Sebosa', cost: 3000, req: 'galo', desc: '+15% Crit, +20 AP. Bloqueia Controle de Grupo por 10s.', stats: { crit: 15, ap: 20 } },
             { id: 'pate', name: 'E o Patê?', cost: 2000, req: 'galo', desc: '+5% Crit, +40 Arm, +30 MR. Atrasa o dano sofrido em 5 segundos.', stats: { crit: 5, arm: 40, mr: 30 } },
@@ -439,7 +439,7 @@
             { id: 'javascript', name: 'Java Script', cost: 2800, req: 'cabra', desc: '+80 AP, +20 MR. Ganha escudo ao sofrer dano (4s CD).', stats: { ap: 80, mr: 20 } },
             { id: 'java', name: 'Java', cost: 1900, req: 'cabra', desc: '+50% Crit, +50 AP, +50 AD. Cura 5 de vida a cada 20s.', stats: { crit: 50, ap: 50, ad: 50 } },
             { id: 'bf', name: 'BF', cost: 2300, req: 'cabra', desc: '+200 Vida, +20 AD, +40 AP, +50 Arm. +1 AP pra cada 1 Armadura.', stats: { maxHp: 200, ad: 20, ap: 40, arm: 50 } },
-            { id: 'cadelagem', name: 'Cadelagem', cost: 2000, req: 'cabra', desc: '+80 AD, +50 AP. Recebe +4 de Gold a cada segundo passivamente.', stats: { ad: 80, ap: 50 } },
+            { id: 'cadelagem', name: 'Passiva', cost: 2000, req: 'cabra', desc: '+80 AD, +50 AP. Recebe +4 de Gold a cada segundo passivamente.', stats: { ad: 80, ap: 50 } },
             { id: 'bota_cabra', name: 'Bota (Cadelagem)', cost: 1000, req: 'cabra', desc: '+20 Vel. Compra, +3 AP, +4 AD, +5% Crit.', stats: { ap: 3, ad: 4, crit: 5 } },
 
             // Itens da Borboleta
