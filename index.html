@@ -15,20 +15,15 @@
         h1, h2, h3, .font-orbitron { font-family: 'Orbitron', sans-serif; }
         .hidden { display: none !important; }
         
-        /* Uno Cards Base */
         .uno-card {
             width: 100px; height: 140px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.8);
             transition: all 0.2s ease; cursor: pointer; position: relative; flex-shrink: 0; display: flex; flex-direction: column;
             justify-content: space-between; padding: 8px; text-align: center; border: 2px solid rgba(255,255,255,0.2);
-            background-size: cover; background-position: center;
         }
-        @media (min-width: 768px) {
-            .uno-card { width: 120px; height: 170px; padding: 12px; }
-        }
+        @media (min-width: 768px) { .uno-card { width: 120px; height: 170px; padding: 12px; } }
         .uno-card:hover:not(.disabled) { transform: translateY(-15px) scale(1.05); z-index: 30; box-shadow: 0 10px 25px rgba(255, 255, 255, 0.4); }
         .uno-card.disabled { filter: grayscale(100%) brightness(0.5); cursor: not-allowed; }
         
-        /* Card Colors */
         .card-red { background: linear-gradient(135deg, #ef4444, #7f1d1d); }
         .card-blue { background: linear-gradient(135deg, #3b82f6, #1e3a8a); }
         .card-yellow { background: linear-gradient(135deg, #eab308, #713f12); }
@@ -42,18 +37,14 @@
         .card-desc { font-size: 0.6rem; line-height: 1.1; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
         .card-white .card-desc { text-shadow: none; color: #333; }
         
-        /* Floating Texts */
         .float-text { position: absolute; font-weight: 900; font-size: 1.5rem; animation: floatUp 1s forwards ease-out; pointer-events: none; z-index: 9999; text-shadow: 0 2px 5px #000; }
         @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.3); } }
         
-        /* Custom Scrollbar */
         .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         
-        /* Animations */
         .glow-turn { box-shadow: inset 0 0 30px rgba(16, 185, 129, 0.2), 0 0 15px rgba(16, 185, 129, 0.4); border-color: #10b981 !important; }
         
-        /* Bars */
         .bar-container { width: 100%; height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; margin-top: 2px; }
         .bar-fill { height: 100%; transition: width 0.3s ease; }
     </style>
@@ -72,133 +63,88 @@
             
             <div class="space-y-4">
                 <div>
-                    <label class="text-xs text-slate-400 font-bold uppercase">Seu Nome</label>
-                    <input type="text" id="input-name" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-purple-500 font-bold mt-1" value="Jogador">
+                    <input type="text" id="input-name" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-bold" placeholder="Seu Nome" value="Jogador">
                 </div>
                 <div>
-                    <label class="text-xs text-slate-400 font-bold uppercase">Código da Sala (IP/Nome)</label>
-                    <input type="text" id="input-room" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-rose-400 font-bold uppercase outline-none focus:border-purple-500 mt-1" value="SALA1">
+                    <input type="text" id="input-room" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-rose-400 font-bold uppercase mt-1" placeholder="Código da Sala" value="SALA1">
                 </div>
                 
                 <div>
                     <label class="text-xs text-slate-400 font-bold uppercase block mb-2">Escolha seu Miraculous</label>
                     <div class="grid grid-cols-3 gap-2">
-                        <button onclick="selectHero('galo')" id="btn-galo" class="hero-btn border-2 border-amber-500 bg-amber-500/10 text-white rounded-lg p-2 text-xs font-bold transition flex flex-col items-center">
-                            <span class="text-2xl mb-1">🐓</span>Galo
-                        </button>
-                        <button onclick="selectHero('cabra')" id="btn-cabra" class="hero-btn border-2 border-transparent bg-slate-800 text-white rounded-lg p-2 text-xs font-bold transition flex flex-col items-center">
-                            <span class="text-2xl mb-1">🐐</span>Cabra
-                        </button>
-                        <button onclick="selectHero('borboleta')" id="btn-borboleta" class="hero-btn border-2 border-transparent bg-slate-800 text-white rounded-lg p-2 text-xs font-bold transition flex flex-col items-center">
-                            <span class="text-2xl mb-1">🦋</span>Borboleta
-                        </button>
+                        <button onclick="selectHero('galo')" id="btn-galo" class="hero-btn border-2 border-amber-500 bg-amber-500/10 text-white rounded-lg p-2 text-xs font-bold transition">🐓 Galo</button>
+                        <button onclick="selectHero('cabra')" id="btn-cabra" class="hero-btn border-2 border-transparent bg-slate-800 text-white rounded-lg p-2 text-xs font-bold transition">🐐 Cabra</button>
+                        <button onclick="selectHero('borboleta')" id="btn-borboleta" class="hero-btn border-2 border-transparent bg-slate-800 text-white rounded-lg p-2 text-xs font-bold transition">🦋 Borboleta</button>
                     </div>
-                    <p id="hero-desc" class="text-[10px] text-slate-400 mt-2 text-center h-8">"Queridinha! Vá para o quinto dos infernos!" - Depende de Crítico e Ataque Básico.</p>
                 </div>
 
-                <button onclick="joinGame()" class="w-full bg-gradient-to-r from-rose-600 to-purple-600 hover:opacity-90 text-white font-black py-3 rounded-lg mt-2 shadow-lg text-sm tracking-widest uppercase transition">Entrar na Arena</button>
+                <button onclick="joinGame()" class="w-full bg-gradient-to-r from-rose-600 to-purple-600 text-white font-black py-3 rounded-lg mt-2 shadow-lg">Entrar na Arena</button>
             </div>
         </div>
     </div>
 
     <div id="game-screen" class="hidden flex-1 flex flex-col w-full h-full relative">
-        
-        <div class="bg-slate-900/90 border-b border-slate-800 p-2 flex flex-col md:flex-row justify-between items-center z-10 gap-2 shrink-0">
-            <div class="flex flex-1 space-x-2 overflow-x-auto custom-scroll w-full pb-1" id="enemies-container">
-                </div>
-            <div class="flex items-center space-x-2 w-full md:w-auto shrink-0 justify-end">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">Alvo:</span>
-                <select id="target-select" onchange="changeTarget(this.value)" class="bg-slate-950 border border-slate-700 text-white text-xs font-bold p-1.5 rounded outline-none w-32 shadow-lg">
-                    <option value="">Nenhum</option>
-                </select>
-                <button onclick="toggleShop()" class="bg-amber-600 hover:bg-amber-500 text-white font-black py-1.5 px-3 rounded shadow-lg text-[10px] uppercase transition flex items-center">
-                    🛒 Loja (<span id="ui-gold">0</span>G)
-                </button>
+        <div class="bg-slate-900/90 border-b border-slate-800 p-2 flex flex-col md:flex-row justify-between items-center z-10 shrink-0 gap-2">
+            <div class="flex flex-1 space-x-2 overflow-x-auto custom-scroll w-full pb-1" id="enemies-container"></div>
+            <div class="flex items-center space-x-2 shrink-0">
+                <select id="target-select" onchange="changeTarget(this.value)" class="bg-slate-950 border border-slate-700 text-white text-xs font-bold p-1.5 rounded w-32"></select>
+                <button onclick="toggleShop()" class="bg-amber-600 text-white font-black py-1.5 px-3 rounded text-[10px] uppercase">🛒 Loja (<span id="ui-gold">0</span>G)</button>
             </div>
         </div>
 
-        <div class="flex-1 relative flex flex-col items-center justify-center p-4 overflow-hidden" id="battlefield">
-            
-            <div id="turn-alert" class="absolute top-4 text-center text-sm font-black tracking-widest uppercase bg-black/50 px-4 py-1 rounded-full text-slate-300 transition-colors">
-                Aguardando...
-            </div>
+        <div class="flex-1 relative flex flex-col items-center justify-center p-4" id="battlefield">
+            <div id="turn-alert" class="absolute top-4 text-center text-sm font-black bg-black/50 px-4 py-1 rounded-full text-slate-300">Aguardando...</div>
+            <div id="stun-alert" class="absolute top-12 text-center text-sm font-black bg-rose-600 px-4 py-1 rounded-full text-white hidden animate-pulse">VOCÊ ESTÁ ATORDOADO!</div>
 
-            <div class="flex items-center justify-center space-x-4 md:space-x-12">
-                <div onclick="drawCard()" class="uno-card card-dark flex items-center justify-center cursor-pointer hover:border-amber-400">
-                    <div class="text-center">
-                        <div class="text-3xl mb-1">🃏</div>
-                        <div class="font-bold text-[10px] text-white uppercase">Comprar</div>
-                        <div class="text-[8px] text-amber-400 mt-1">Gasta Turno</div>
-                    </div>
+            <div class="flex items-center space-x-4 md:space-x-12">
+                <div onclick="drawCard()" class="uno-card card-dark flex flex-col items-center justify-center cursor-pointer border-amber-400">
+                    <div class="text-3xl">🃏</div><div class="font-bold text-[10px] text-white mt-2 uppercase">Comprar</div>
                 </div>
-
-                <div class="text-slate-600 text-2xl md:text-4xl">⚔️</div>
-
-                <div id="played-card" class="uno-card bg-slate-800 border-slate-700 opacity-80">
-                    <div class="text-center h-full flex flex-col justify-center">
-                        <div class="text-[8px] font-bold text-slate-400 uppercase mb-1">Última Carta</div>
-                        <div id="played-card-title" class="font-bold text-xs text-white uppercase">-</div>
-                        <div id="played-card-author" class="text-[8px] text-cyan-300 mt-2">-</div>
-                    </div>
+                <div class="text-slate-600 text-4xl">⚔️</div>
+                <div id="played-card" class="uno-card bg-slate-800 opacity-80 flex flex-col items-center justify-center">
+                    <div class="text-[8px] font-bold text-slate-400 uppercase">Última Carta</div>
+                    <div id="played-card-title" class="font-bold text-xs text-white uppercase mt-2">-</div>
                 </div>
             </div>
-
             <div id="effects-layer" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
         </div>
 
-        <div id="cabra-ui" class="hidden bg-slate-900 border-t border-slate-800 p-2 flex flex-col items-center z-10 shrink-0">
-            <div class="text-[10px] text-purple-300 font-bold mb-1 uppercase tracking-widest">🎨 Oficina de Tintas (1 pote por turno)</div>
+        <div id="cabra-ui" class="hidden bg-slate-900 border-t border-slate-800 p-2 flex flex-col items-center shrink-0 z-10">
+            <div class="text-[10px] text-purple-300 font-bold mb-1 uppercase">Oficina de Tintas (1 pote por turno)</div>
             <div class="flex space-x-2 mb-1">
-                <button onclick="usePaint('red')" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-[10px] font-bold text-white border border-red-800">Vermelho (<span id="paint-red">5</span>)</button>
-                <button onclick="usePaint('blue')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-[10px] font-bold text-white border border-blue-800">Azul (<span id="paint-blue">5</span>)</button>
-                <button onclick="usePaint('yellow')" class="bg-yellow-500 hover:bg-yellow-400 px-3 py-1 rounded text-[10px] font-bold text-black border border-yellow-700">Amarelo (<span id="paint-yellow">5</span>)</button>
+                <button onclick="usePaint('red')" class="bg-red-600 px-3 py-1 rounded text-[10px] font-bold text-white">Vermelho (<span id="paint-red">10</span>)</button>
+                <button onclick="usePaint('blue')" class="bg-blue-600 px-3 py-1 rounded text-[10px] font-bold text-white">Azul (<span id="paint-blue">10</span>)</button>
+                <button onclick="usePaint('yellow')" class="bg-yellow-500 px-3 py-1 rounded text-[10px] font-bold text-black">Amarelo (<span id="paint-yellow">10</span>)</button>
             </div>
             <div class="flex items-center space-x-2">
-                <span class="text-[10px] text-slate-300 font-bold bg-slate-950 px-2 py-1 rounded border border-slate-800">Mistura: <span id="paint-mix">Vazia</span></span>
-                <button onclick="craftCabraCard()" class="bg-purple-600 hover:bg-purple-500 border border-purple-400 px-3 py-1 rounded text-[10px] font-bold text-white">CRIAR CARTA</button>
+                <span class="text-[10px] text-slate-300 font-bold border px-2 py-1 rounded">Mistura: <span id="paint-mix">Vazia</span></span>
+                <button onclick="craftCabraCard()" class="bg-purple-600 px-3 py-1 rounded text-[10px] font-bold text-white">CRIAR CARTA</button>
             </div>
         </div>
 
-        <div id="player-ui" class="bg-slate-950 border-t-2 border-slate-800 p-2 md:p-4 flex flex-col z-20 shrink-0 transition-colors duration-300">
-            
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-2 gap-2">
-                <div class="w-full md:w-1/3 order-2 md:order-1">
-                    <div class="flex justify-between items-center mb-1">
-                        <h2 id="ui-my-name" class="font-black text-white text-sm uppercase tracking-wider">Você</h2>
-                        <span class="text-[10px] font-bold text-amber-400">Nível <span id="ui-level">1</span></span>
-                    </div>
+        <div id="player-ui" class="bg-slate-950 border-t-2 border-slate-800 p-2 flex flex-col shrink-0 z-20 transition-colors duration-300">
+            <div class="flex flex-col md:flex-row gap-2">
+                <div class="w-full md:w-1/3 text-[9px] font-bold uppercase">
+                    <div class="flex justify-between text-white text-sm">Você <span class="text-amber-400">Nvl <span id="ui-level">1</span></span></div>
                     
-                    <div class="flex justify-between text-[9px] font-bold text-purple-400 uppercase mt-1">
-                        <span>Nexus HP</span>
-                        <span id="ui-nexus-text">1000 / 1000</span>
-                    </div>
-                    <div class="bar-container"><div id="ui-nexus-bar" class="bar-fill bg-purple-500" style="width:100%"></div></div>
+                    <div class="flex justify-between text-purple-400 mt-1"><span>Nexus HP</span><span id="ui-nexus-text"></span></div>
+                    <div class="bar-container"><div id="ui-nexus-bar" class="bar-fill bg-purple-500"></div></div>
 
-                    <div class="flex justify-between text-[9px] font-bold text-cyan-400 uppercase mt-1">
-                        <span>Escudo</span>
-                        <span id="ui-shield-text">0</span>
-                    </div>
-                    <div class="bar-container"><div id="ui-shield-bar" class="bar-fill bg-cyan-400" style="width:0%"></div></div>
+                    <div class="flex justify-between text-cyan-400 mt-1"><span>Escudo</span><span id="ui-shield-text"></span></div>
+                    <div class="bar-container"><div id="ui-shield-bar" class="bar-fill bg-cyan-400"></div></div>
                     
-                    <div class="flex justify-between text-[9px] font-bold text-emerald-400 uppercase mt-1">
-                        <span>Vida (Herói)</span>
-                        <span id="ui-hp-text">500 / 500</span>
-                    </div>
-                    <div class="bar-container"><div id="ui-hp-bar" class="bar-fill bg-emerald-500" style="width:100%"></div></div>
+                    <div class="flex justify-between text-emerald-400 mt-1"><span>Vida</span><span id="ui-hp-text"></span></div>
+                    <div class="bar-container"><div id="ui-hp-bar" class="bar-fill bg-emerald-500"></div></div>
                     
-                    <div class="flex justify-between text-[9px] font-bold text-blue-400 uppercase mt-1">
-                        <span>Mana</span>
-                        <span id="ui-mana-text">200 / 200</span>
-                    </div>
-                    <div class="bar-container"><div id="ui-mana-bar" class="bar-fill bg-blue-500" style="width:100%"></div></div>
+                    <div class="flex justify-between text-blue-400 mt-1"><span>Mana</span><span id="ui-mana-text"></span></div>
+                    <div class="bar-container"><div id="ui-mana-bar" class="bar-fill bg-blue-500"></div></div>
                 </div>
 
-                <div class="w-full md:flex-1 overflow-x-auto custom-scroll pb-2 order-1 md:order-2">
-                    <div id="hand-container" class="flex space-x-2 w-max px-1 items-center min-h-[150px]">
-                        </div>
+                <div class="w-full md:flex-1 overflow-x-auto custom-scroll min-h-[150px]">
+                    <div id="hand-container" class="flex space-x-2 w-max px-1 items-center h-full"></div>
                 </div>
 
-                <div class="w-full md:w-auto grid grid-cols-4 md:grid-cols-2 gap-x-3 gap-y-1 text-[9px] md:text-[10px] font-bold text-slate-400 bg-slate-900 p-2 rounded border border-slate-800 order-3 shrink-0">
+                <div class="w-full md:w-auto grid grid-cols-4 md:grid-cols-2 gap-x-3 gap-y-1 text-[9px] text-slate-400 bg-slate-900 p-2 rounded">
                     <div>AD: <span id="stat-ad" class="text-white">0</span></div>
                     <div>AP: <span id="stat-ap" class="text-white">0</span></div>
                     <div>ARM: <span id="stat-arm" class="text-white">0</span></div>
@@ -211,162 +157,111 @@
     </div>
 
     <div id="shop-modal" class="fixed inset-0 bg-slate-950/95 z-50 hidden flex-col p-4 items-center justify-center backdrop-blur-sm">
-        <div class="w-full max-w-5xl bg-slate-900 border border-slate-700 rounded-xl flex flex-col h-[90vh] shadow-2xl">
-            <div class="flex justify-between items-center p-4 border-b border-slate-800 shrink-0">
+        <div class="w-full max-w-5xl bg-slate-900 rounded-xl flex flex-col h-[90vh] shadow-2xl">
+            <div class="flex justify-between items-center p-4 border-b border-slate-800">
                 <h2 class="text-xl font-orbitron text-amber-400">LOJA DE ITENS</h2>
-                <div class="flex space-x-3 items-center">
-                    <span class="text-amber-400 font-bold bg-amber-900/30 px-3 py-1 rounded text-xs border border-amber-500/50"><span id="shop-gold-display">0</span> Ouro</span>
-                    <button onclick="toggleShop()" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1 rounded font-black text-xs transition uppercase">Fechar (X)</button>
+                <div class="flex space-x-3">
+                    <span class="text-amber-400 font-bold bg-amber-900/30 px-3 py-1 rounded text-xs"><span id="shop-gold-display">0</span> Ouro</span>
+                    <button onclick="toggleShop()" class="bg-rose-600 text-white px-3 py-1 rounded font-black text-xs">X</button>
                 </div>
             </div>
-            
-            <div class="flex-1 overflow-y-auto custom-scroll p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 content-start" id="shop-items-container">
-                </div>
-            
-            <div class="p-4 border-t border-slate-800 bg-slate-950 rounded-b-xl shrink-0">
-                <h3 class="text-[10px] text-slate-400 font-bold mb-2 uppercase tracking-widest">Seu Inventário (Clique para vender por 70%)</h3>
-                <div id="inventory-container" class="flex space-x-2 overflow-x-auto custom-scroll pb-2 min-h-[60px] items-center">
-                    </div>
-            </div>
+            <div class="flex-1 overflow-y-auto custom-scroll p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="shop-items-container"></div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // FIREBASE SETUP (Insira suas chaves aqui se for hospedar)
-        // ==========================================
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
-  authDomain: "uno3-17cc6.firebaseapp.com",
-  databaseURL: "https://uno3-17cc6-default-rtdb.firebaseio.com",
-  projectId: "uno3-17cc6",
-  storageBucket: "uno3-17cc6.firebasestorage.app",
-  messagingSenderId: "834810148105",
-  appId: "1:834810148105:web:e2824feabb794c39670fd8",
-  measurementId: "G-PTCZVR4Z77"
-};
-        // Inicializa caso tenha credenciais válidas. Para rodar puramente local/demonstração sem banco configurado, 
-        // o código abaixo usaria mock ou daria erro, então envolva em try-catch se necessário.
+        // CONFIGURAÇÃO FIREBASE (Opcional, funciona sem para testes locais básicos)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhFkKHWP0W4zupa9VCt3Rt7Uzr-qGWHPE",
+            authDomain: "uno3-17cc6.firebaseapp.com",
+            databaseURL: "https://uno3-17cc6-default-rtdb.firebaseio.com",
+            projectId: "uno3-17cc6"
+        };
         try { firebase.initializeApp(firebaseConfig); } catch(e) {}
         const db = firebase.database ? firebase.database() : null;
 
-        // ==========================================
-        // DADOS DO JOGADOR E ESTADO GLOBAL
-        // ==========================================
+        // ESTADO GLOBAL
         let S = {
             name: '', room: '', champ: 'galo', myId: null, targetId: '',
-            stats: { 
-                hp: 500, maxHp: 500, nexusHp: 1000, maxNexus: 1000, mana: 200, maxMana: 200,
-                shield: 0, ad: 10, ap: 10, arm: 10, mr: 10, crit: 0, vamp: 0
-            },
+            stats: { hp: 500, maxHp: 500, nexusHp: 1000, maxNexus: 1000, mana: 300, maxMana: 300, shield: 0, ad: 10, ap: 10, arm: 10, mr: 10, crit: 0, vamp: 0 },
             level: 1, xp: 0, gold: 0, dead: false, respawnTimer: 0,
             hand: [], inventory: [],
+            roomRef: null, playersData: {}, currentTurnId: null, lastPlayedCard: null, shopPool: [],
             
-            roomRef: null, playersData: {}, currentTurnId: null, lastPlayedCard: null,
-            shopPool: [], // Itens disponíveis baseados nos champs da sala
-            
-            // Mecânicas Específicas
-            pseudoCritChance: 0, // Aumenta se errar o crítico
-            dots: [], buffs: [], 
-            cabraPaints: { red: 5, blue: 5, yellow: 5 }, cabraMix: [],
-            borboletaBots: [], // Status roubados
-            flags: { reviveCount: 0, blockCc: false, delayDamage: false, nexusShield: 0 }
+            // Variáveis de Combate Avançadas
+            debuffs: [], // { id, dmg, type, duration, source }
+            buffs: [],
+            marolaStacks: {}, // { targetId: count }
+            delayDmgQueue: [], // Para o item "E o Patê?"
+            stunDuration: 0,
+            cabraPaints: { red: 10, blue: 10, yellow: 10 }, cabraMix: [],
+            flags: { reviveCount: 0, blockCc: 0, drawCooldown: 0, skillBlockCd: 0, javaShieldCd: 0 }
         };
 
         const CHAMPS_DATA = {
-            'galo': { desc: '"Queridinha! Vá para o quinto dos infernos!" - Focado em Crítico e Lifesteal.', ad: 50, crit: 10 },
-            'cabra': { desc: '"Em terra de orelhudo, qualquer sussurro é fofoca" - Usa tintas para criar habilidades Mágicas (AP).', ap: 60, mana: 400, maxMana: 400 },
-            'borboleta': { desc: '"Me xinga!!" - Drena status dos inimigos com suas borboletas.', ap: 40, ad: 20, mr: 20, arm: 20 }
+            'galo': { ad: 50, crit: 10, vamp: 0 },
+            'cabra': { ap: 60, mana: 400, maxMana: 400 },
+            'borboleta': { ap: 40, ad: 20, mr: 20, arm: 20, mana: 500, maxMana: 500 }
         };
 
-        // ==========================================
-        // DATABASE DE CARTAS
-        // ==========================================
         const BASE_DECK = [
             { id: 'b_atk', name: 'Ataque Básico', type: 'atk', color: 'card-red', desc: 'Dano Físico (AD).' },
             { id: 'b_shield', name: 'Defesa Básica', type: 'def', color: 'card-blue', desc: 'Ganha 100 Escudo.' },
-            { id: 'b_heal', name: 'Poção', type: 'heal', color: 'card-green', desc: 'Cura 150 HP.' },
-            { id: 'b_mana', name: 'Poção Mana', type: 'heal', color: 'card-blue', desc: 'Recupera 100 Mana.' }
+            { id: 'b_heal', name: 'Poção', type: 'heal', color: 'card-green', desc: 'Cura 150 HP.' }
         ];
 
         const CHAMP_DECKS = {
             galo: [
-                { id: 'g_marola', name: 'Marola', type: 'skill', color: 'card-green', desc: 'Envenena. No 3º acerto: 10% Vida Atual Dano Verdadeiro. Custa 30 Mana.' },
-                { id: 'g_copia', name: 'Dessa Cor Não', type: 'skill', color: 'card-white', desc: 'Copia a última carta (se não for de Borboleta/Joaninha/Gato). Custa 50 Mana.' },
-                { id: 'g_aiin', name: 'Aiin', type: 'def', color: 'card-yellow', desc: 'Escudo Massivo (decai com o tempo). Custa 40 Mana.' },
-                { id: 'g_ult', name: 'UTI Galo', type: 'ult', color: 'card-dark', desc: 'Ganha Crítico e AD permanentemente baseado no Crítico atual. Custa 100 Mana.' }
+                { id: 'g_marola', name: 'Marola', type: 'skill', color: 'card-green', desc: 'DoT. 3 acertos = 10% Vida Dano Verdadeiro. Custa 30 Mana.' },
+                { id: 'g_copia', name: 'Dessa Cor Não', type: 'skill', color: 'card-white', desc: 'Copia a última carta (exceto Borboleta/Gato). Custa 50 Mana.' },
+                { id: 'g_aiin', name: 'Aiin', type: 'def', color: 'card-yellow', desc: 'Gera um escudo enorme de 800 que decai rápido. Custa 40 Mana.' },
+                { id: 'g_ult', name: 'UTI Galo', type: 'ult', color: 'card-dark', desc: 'Ganha +20 AD e +5% Crítico permanentes, escalando com o crítico atual. Custa 100 Mana.' }
             ],
-            cabra: [
-                // Cabra não compra cartas normais, ela as CRIA usando tinta. O deck padrão dela é vazio ou só ataques fracos.
-                { id: 'b_atk', name: 'Ataque Básico', type: 'atk', color: 'card-red', desc: 'Dano Físico (AD).' }
-            ],
+            cabra: [{ id: 'b_atk', name: 'Ataque Básico', type: 'atk', color: 'card-red', desc: 'Dano Físico (AD).' }],
             borboleta: [
-                { id: 'b_akuma', name: 'Akuma', type: 'skill', color: 'card-purple', desc: 'Infecta alvo: Próxima carta dele será nerfada e te dará os status. Custa 40 Mana.' },
+                { id: 'b_akuma', name: 'Akuma', type: 'skill', color: 'card-purple', desc: 'Nerfa inimigo: Drena 20 AP/AD temporário. Custa 40 Mana.' },
                 { id: 'b_beijo', name: 'Beijo Saliente', type: 'skill', color: 'card-red', desc: 'Drena 5% HP Máx/seg por 10s. Custa 60 Mana.' },
-                { id: 'b_desejo', name: 'Desejo do Pecado', type: 'skill', color: 'card-dark', desc: 'Rouba poderes passivos temporariamente. Custa 50 Mana.' },
-                { id: 'b_ult', name: 'Caos', type: 'ult', color: 'card-dark', desc: 'Drena mãos inimigas e causa dano em área. Custa 150 Mana.' }
+                { id: 'b_desejo', name: 'Desejo do Pecado', type: 'skill', color: 'card-dark', desc: 'Rouba status e cura você permanentemente. Custa 50 Mana.' },
+                { id: 'b_ult', name: 'Caos', type: 'ult', color: 'card-dark', desc: 'Dano em área massivo. Custa 150 Mana.' }
             ]
         };
 
-        // ==========================================
-        // DATABASE DE ITENS
-        // ==========================================
         const SHOP_ITEMS = [
-            // UNIVERSAIS
-            { id: 'deck', name: 'Comprar Deck', cost: 100, req: 'all', desc: 'Compra 5 cartas aleatórias.', onBuy: () => { for(let i=0;i<5;i++) drawToHand(true); } },
-            { id: 'nexus_repair', name: 'Reparo do Nexus', cost: 500, req: 'all', desc: 'Cura 300 HP do Nexus.', onBuy: () => { S.stats.nexusHp = Math.min(S.stats.maxNexus, S.stats.nexusHp + 300); updateMyDbStats(); } },
-            
-            // GALO
-            { id: 'lacre', name: 'Lacre', cost: 3000, req: 'galo', desc: '+10% Crit, +100 AD. Executa alvos com <90% vida (Brincadeira, <10%).', stats: { crit: 10, ad: 100 } },
-            { id: 'skate', name: 'Skate', cost: 2900, req: 'galo', desc: '+5% Crit, +60 AD, +40 Arm, +30 MR. Ataques paralisam (Stun 1 turno).', stats: { crit: 5, ad: 60, arm: 40, mr: 30 } },
-            { id: 'mandrakit', name: 'Mandrakit', cost: 2400, req: 'galo', desc: '+30% Crit, +30 AD/AP/MR/HP. Revive 1x com 15% vida.', stats: { crit: 30, ad: 30, ap: 30, mr: 30, maxHp: 30 } },
+            { id: 'lacre', name: 'Lacre', cost: 3000, req: 'galo', desc: '+10% Crit, +100 AD. Executa alvos com <10% vida.', stats: { crit: 10, ad: 100 } },
+            { id: 'skate', name: 'Skate', cost: 2900, req: 'galo', desc: '+5% Crit, +60 AD, +40 Arm, +30 MR. Ataques atordoam por 3s.', stats: { crit: 5, ad: 60, arm: 40, mr: 30 } },
+            { id: 'mandrakit', name: 'Mandrakit', cost: 2400, req: 'galo', desc: '+30% Crit, 30 AD/AP/MR/HP. Revive 1x c/ 15% HP.', stats: { crit: 30, ad: 30, ap: 30, mr: 30, maxHp: 30 } },
             { id: 'alma', name: 'Alma Sebosa', cost: 3000, req: 'galo', desc: '+15% Crit, +20 AP. Imunidade a 1 CC.', stats: { crit: 15, ap: 20 } },
-            { id: 'pate', name: 'E o Patê?', cost: 2000, req: 'galo', desc: '+5% Crit, +40 Arm, +30 MR. Atrasa e anula dano letal se matar alvo em 5s.', stats: { crit: 5, arm: 40, mr: 30 } },
-            { id: 'sapatona', name: 'Bota Sapatona', cost: 1000, req: 'galo', desc: '+2 Crit, +5 AD. Compra carta sem perder turno.', stats: { crit: 2, ad: 5 } },
+            { id: 'pate', name: 'E o Patê?', cost: 2000, req: 'galo', desc: '+5% Crit, +40 Arm, 30 MR. Atrasa e anula dano letal se matar em 5s.', stats: { crit: 5, arm: 40, mr: 30 } },
+            { id: 'bota_galo', name: 'Bota (Sapatona)', cost: 1000, req: 'galo', desc: '+2 Crit, +5 AD. Compra carta sem perder turno (CD 5s).', stats: { crit: 2, ad: 5 } },
 
-            // CABRA
-            { id: 'pyton', name: 'Pyton', cost: 2000, req: 'cabra', desc: '+20 AD, +100 AP, +3% Crit. Magias causam veneno (DoT 5s).', stats: { ad: 20, ap: 100, crit: 3 } },
-            { id: 'javascript', name: 'Java Script', cost: 2800, req: 'cabra', desc: '+80 AP, +20 MR. Ganha Escudo ao receber dano.', stats: { ap: 80, mr: 20 } },
-            { id: 'java', name: 'Java', cost: 1900, req: 'cabra', desc: '+50% Crit, +50 AP, +50 AD. Cura 5 HP passivamente.', stats: { crit: 50, ap: 50, ad: 50 } },
-            { id: 'bf', name: 'BF', cost: 2300, req: 'cabra', desc: '+200 HP, +20 AD, +40 AP, +50 Arm. +1 AP por Arm.', stats: { maxHp: 200, ad: 20, ap: 40, arm: 50 } },
-            { id: 'cadelagem', name: 'Cadelagem', cost: 2000, req: 'cabra', desc: '+80 AD, +50 AP. +4 Gold passivo extra.', stats: { ad: 80, ap: 50 } },
-            { id: 'bota_cabra', name: 'Bota Cadelagem', cost: 1000, req: 'cabra', desc: '+3 AP, +4 AD, +5% Crit.', stats: { ap: 3, ad: 4, crit: 5 } },
+            { id: 'pyton', name: 'Pyton', cost: 2000, req: 'cabra', desc: '+20 AD, +100 AP, +3% Crit. Magias aplicam veneno 5s.', stats: { ad: 20, ap: 100, crit: 3 } },
+            { id: 'javascript', name: 'Java Script', cost: 2800, req: 'cabra', desc: '+80 AP, +20 MR. Ganha Escudo ao receber dano (CD 60s).', stats: { ap: 80, mr: 20 } },
+            { id: 'java', name: 'Java', cost: 1900, req: 'cabra', desc: '+50% Crit, +50 AP/AD. Cura 5 HP a cada 20s.', stats: { crit: 50, ap: 50, ad: 50 } },
+            { id: 'bf', name: 'BF', cost: 2300, req: 'cabra', desc: '+200 HP, +40 AP. +1 AP por Arm.', stats: { maxHp: 200, ad: 20, ap: 40, arm: 50 } },
+            { id: 'cadelagem', name: 'Cadelagem', cost: 2000, req: 'cabra', desc: '+80 AD, +50 AP. +4 Gold passivo/s.', stats: { ad: 80, ap: 50 } },
+            { id: 'bota_cabra', name: 'Bota (Cadelagem)', cost: 1000, req: 'cabra', desc: '+3 AP, +4 AD, +5% Crit. Compra rápida.', stats: { ap: 3, ad: 4, crit: 5 } },
 
-            // BORBOLETA
-            { id: 'incubus', name: 'Incubus', cost: 3000, req: 'borboleta', desc: '+80 AP, +50 AD, +30 Arm. Magias curam vida.', stats: { ap: 80, ad: 50, arm: 30, vamp: 15 } },
-            { id: 'inferno', name: 'Dono do Inferno', cost: 4000, req: 'borboleta', desc: '+20 AD, +80 AP, +300 HP, +90 Arm. Renasce 1x após morte.', stats: { ad: 20, ap: 80, maxHp: 300, arm: 90 } },
-            { id: 'fome', name: 'Fome de Luxúria', cost: 3500, req: 'borboleta', desc: '+110 AP, +40% Crit, +40 MR, +100 HP. Bloqueia 1 ação inimiga.', stats: { ap: 110, crit: 40, mr: 40, maxHp: 100 } },
-            { id: 'bibi', name: 'Bibi Fogosa', cost: 4000, req: 'borboleta', desc: '+90 AP, +80 AD. Nocaute e dano contínuo.', stats: { ap: 90, ad: 80 } },
-            { id: 'vem', name: 'Vem com Tudo', cost: 3900, req: 'borboleta', desc: '+100 Arm, +100 MR. Reduz dano sofrido em 40% se HP < 60%.', stats: { arm: 100, mr: 100 } },
-            { id: 'bota_funk', name: 'Bota Funk', cost: 1000, req: 'borboleta', desc: '+3 AP, +4 HP.', stats: { ap: 3, maxHp: 4 } }
+            { id: 'incubus', name: 'Incubus', cost: 3000, req: 'borboleta', desc: '+80 AP, +50 AD. 15% Vampirismo.', stats: { ap: 80, ad: 50, arm: 30, vamp: 15 } },
+            { id: 'inferno', name: 'Dono do Inferno', cost: 4000, req: 'borboleta', desc: 'Renasce 1x após morte.', stats: { ad: 20, ap: 80, maxHp: 300, arm: 90 } },
+            { id: 'fome', name: 'Fome de Luxúria', cost: 3500, req: 'borboleta', desc: '+110 AP. Bloqueia 1 ação inimiga (CD 60s).', stats: { ap: 110, crit: 40, maxMana: 300, mr: 40, maxHp: 100 } },
+            { id: 'bibi', name: 'Bibi Fogosa', cost: 4000, req: 'borboleta', desc: '+90 AP, +80 AD. Magias causam nocaute.', stats: { ap: 90, ad: 80 } },
+            { id: 'vem', name: 'Vem com Tudo', cost: 3900, req: 'borboleta', desc: '+100 Arm/MR. Reduz dano sofrido se HP < 60%.', stats: { arm: 100, mr: 100 } },
+            { id: 'bota_borb', name: 'Bota (Funk)', cost: 1000, req: 'borboleta', desc: '+3 AP, +4 HP. Compra rápida.', stats: { ap: 3, maxHp: 4 } }
         ];
 
-        // ==========================================
-        // ÁUDIO
-        // ==========================================
-        function playSfx(id) {
-            const el = document.getElementById(`sfx-${id}`);
-            if(el) { el.currentTime = 0; el.play().catch(()=>{}); }
-        }
+        function playSfx(id) { const el = document.getElementById(`sfx-${id}`); if(el) { el.currentTime=0; el.play().catch(()=>{}); } }
 
-        // ==========================================
-        // INICIALIZAÇÃO & UI LOBBY
-        // ==========================================
         function selectHero(h) {
             S.champ = h;
             document.querySelectorAll('.hero-btn').forEach(b => b.classList.replace('border-amber-500', 'border-transparent'));
             document.getElementById(`btn-${h}`).classList.replace('border-transparent', 'border-amber-500');
-            document.getElementById('hero-desc').innerText = CHAMPS_DATA[h].desc;
         }
 
         async function joinGame() {
             S.name = document.getElementById('input-name').value || 'Jogador';
             S.room = document.getElementById('input-room').value.toUpperCase() || 'SALA1';
             
-            // Aplicar Status Base do Herói
-            const cData = CHAMPS_DATA[S.champ];
-            Object.keys(cData).forEach(k => { if(S.stats[k] !== undefined) S.stats[k] = cData[k]; });
+            Object.assign(S.stats, CHAMPS_DATA[S.champ]);
             S.stats.hp = S.stats.maxHp; 
             
             document.getElementById('lobby-screen').classList.add('hidden');
@@ -378,155 +273,158 @@ const firebaseConfig = {
                 const myNode = S.roomRef.child('players').push();
                 S.myId = myNode.key;
                 
-                await myNode.set({ 
-                    name: S.name, champ: S.champ, stats: S.stats, 
-                    dead: false, level: 1, reqShopAdd: true
-                });
+                await myNode.set({ name: S.name, champ: S.champ, stats: S.stats, dead: false, level: 1, debuffs: [] });
                 myNode.onDisconnect().remove();
 
-                // Listener global da sala
                 S.roomRef.on('value', snap => {
                     const data = snap.val();
                     if(!data) return;
-                    
                     S.playersData = data.players || {};
                     S.currentTurnId = data.turn;
                     S.lastPlayedCard = data.lastCard;
 
-                    // Logica de primeiro turno
                     const aliveIds = Object.keys(S.playersData).filter(k => S.playersData[k].stats.nexusHp > 0);
                     if(!S.currentTurnId && aliveIds.length > 0 && aliveIds[0] === S.myId) {
-                        S.roomRef.update({ turn: S.myId, lastCard: { name: 'Partida Iniciada', author: 'Sistema', color: 'card-dark' }});
+                        S.roomRef.update({ turn: S.myId, lastCard: { name: 'Partida Iniciada', color: 'card-dark' }});
                     }
 
-                    // Sincronizar meus status que vieram de ataques inimigos
                     if(S.playersData[S.myId]) {
-                        const srvStats = S.playersData[S.myId].stats;
-                        if(srvStats.hp < S.stats.hp || srvStats.nexusHp < S.stats.nexusHp) {
-                            showFloatText('DANO!', 'text-rose-500');
-                            playSfx('hit');
+                        const srvData = S.playersData[S.myId];
+                        
+                        if(srvData.stats.hp < S.stats.hp) playSfx('hit');
+                        S.stats = srvData.stats;
+                        
+                        // Processar Debuffs vindos do servidor (ataques inimigos)
+                        if(srvData.debuffs) {
+                            srvData.debuffs.forEach(newDb => {
+                                if(!S.debuffs.find(d => d.uid === newDb.uid)) S.debuffs.push(newDb);
+                            });
+                            S.roomRef.child(`players/${S.myId}/debuffs`).remove(); // Limpa após ler
                         }
                         
-                        S.stats = srvStats;
-                        
-                        // Sistema de Morte / Respawn / Nexus
-                        if(S.stats.hp <= 0 && !S.dead && S.stats.nexusHp > 0) {
-                            if(hasItem('mandrakit') && S.flags.reviveCount === 0) {
-                                S.stats.hp = S.stats.maxHp * 0.15; S.flags.reviveCount++; showFloatText('REVIVEU!', 'text-emerald-400');
-                            } else if (hasItem('inferno') && S.flags.reviveCount === 0) {
-                                S.stats.hp = S.stats.maxHp; S.flags.reviveCount++; showFloatText('RENASCIDO!', 'text-purple-400');
-                            } else {
-                                S.dead = true;
-                                S.respawnTimer = 10; // 10 seg respawn
-                                showFloatText('MORTO!', 'text-red-600');
-                            }
-                            updateMyDbStats();
-                        } else if (S.stats.nexusHp <= 0) {
-                            S.dead = true;
-                            alert("Seu Nexus foi destruído! Você foi eliminado.");
-                        }
+                        checkDeathCondition();
                     }
-
-                    buildShopPool();
-                    renderUI();
+                    buildShopPool(); renderUI();
                 });
             } else {
-                // Mock para visualização sem Firebase
-                S.myId = 'player1';
-                S.playersData = { 'player1': { name: S.name, champ: S.champ, stats: S.stats, dead: false, level: 1 } };
-                S.currentTurnId = 'player1';
-                buildShopPool();
-                renderUI();
+                S.myId = 'p1'; S.playersData = { 'p1': { name: S.name, champ: S.champ, stats: S.stats, dead: false, level: 1 } }; S.currentTurnId = 'p1';
+                buildShopPool(); renderUI();
             }
 
-            // Loop global (Gold, Mana, Respawn)
             setInterval(gameTick, 1000);
-            
-            // Comprar mão inicial
             for(let i=0; i<5; i++) drawToHand(true);
         }
 
-        function isMyTurn() { return S.currentTurnId === S.myId && !S.dead; }
+        function checkDeathCondition() {
+            if(S.stats.hp <= 0 && !S.dead && S.stats.nexusHp > 0) {
+                if((hasItem('mandrakit') || hasItem('inferno')) && S.flags.reviveCount === 0) {
+                    S.stats.hp = S.stats.maxHp * 0.15; S.flags.reviveCount++; showFloatText('REVIVEU!', 'text-emerald-400');
+                } else {
+                    S.dead = true; S.respawnTimer = 10; showFloatText('MORTO!', 'text-red-600');
+                }
+                updateMyDbStats();
+            }
+        }
 
+        function isMyTurn() { return S.currentTurnId === S.myId && !S.dead && S.stunDuration <= 0; }
+        
         function endTurn() {
-            if(!isMyTurn()) return;
-            if(!db) return;
+            if(!isMyTurn() || !db) return;
             const pKeys = Object.keys(S.playersData).filter(k => S.playersData[k].stats.nexusHp > 0);
-            if(pKeys.length <= 1) return; // Só tem 1
-            
-            let idx = pKeys.indexOf(S.myId);
-            let nextIdx = (idx + 1) % pKeys.length;
+            if(pKeys.length <= 1) return;
+            let nextIdx = (pKeys.indexOf(S.myId) + 1) % pKeys.length;
             S.roomRef.update({ turn: pKeys[nextIdx] });
         }
 
         function updateMyDbStats() {
-            if(db && S.myId) {
-                S.roomRef.child(`players/${S.myId}`).update({ stats: S.stats, dead: S.dead });
-            }
+            if(db && S.myId) S.roomRef.child(`players/${S.myId}`).update({ stats: S.stats, dead: S.dead, level: S.level });
         }
 
-        // ==========================================
-        // GAME LOOP (TICK)
-        // ==========================================
         let tickCount = 0;
         function gameTick() {
             if(S.stats.nexusHp <= 0) return;
             tickCount++;
 
-            // Respawn Logic
+            if(S.stunDuration > 0) S.stunDuration--;
+            if(S.flags.drawCooldown > 0) S.flags.drawCooldown--;
+            if(S.flags.skillBlockCd > 0) S.flags.skillBlockCd--;
+            if(S.flags.javaShieldCd > 0) S.flags.javaShieldCd--;
+
             if(S.dead && S.stats.nexusHp > 0) {
                 S.respawnTimer--;
-                if(S.respawnTimer <= 0) {
-                    S.dead = false;
-                    S.stats.hp = S.stats.maxHp;
-                    showFloatText('RESPAWN!', 'text-emerald-400');
+                if(S.respawnTimer <= 0) { S.dead = false; S.stats.hp = S.stats.maxHp; updateMyDbStats(); }
+            }
+
+            if(!S.dead) {
+                S.gold += hasItem('cadelagem') ? 9 : 5;
+                if(S.stats.mana < S.stats.maxMana) S.stats.mana = Math.min(S.stats.maxMana, S.stats.mana + 10);
+                if(hasItem('java') && tickCount % 20 === 0) S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + 5);
+                if(S.stats.shield > 0) S.stats.shield = Math.max(0, S.stats.shield - 15); // Decaimento
+
+                // Processar DoTs e Debuffs
+                if(S.debuffs.length > 0) {
+                    S.debuffs.forEach((d, index) => {
+                        if(d.duration > 0) {
+                            d.duration--;
+                            if(d.type === 'dmg' || d.type === 'trueDmg') {
+                                takeDamageLocal(d.amount, d.type);
+                                showFloatText(`-${Math.floor(d.amount)}`, 'text-rose-500');
+                                
+                                // Borboleta Beijo Saliente cura o atacante
+                                if(d.sourceChamp === 'borboleta' && db) {
+                                    // Complexo fazer peer-to-peer healing via DB no tick, omitido por estabilidade.
+                                }
+                            }
+                            if(d.type === 'stun' && S.flags.blockCc === 0) {
+                                S.stunDuration = d.amount;
+                                if(hasItem('alma')) S.flags.blockCc = 1; // Gasta imunidade
+                            }
+                        }
+                    });
+                    S.debuffs = S.debuffs.filter(d => d.duration > 0);
                     updateMyDbStats();
                 }
             }
-
-            // Passive Gold & Mana
-            if(!S.dead) {
-                let g = 5;
-                if(hasItem('cadelagem')) g += 4;
-                S.gold += g;
-
-                if(S.stats.mana < S.stats.maxMana) {
-                    S.stats.mana = Math.min(S.stats.maxMana, S.stats.mana + 5);
-                }
-                
-                // Regeneração (Java)
-                if(hasItem('java') && tickCount % 5 === 0) {
-                    S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + 5);
-                }
-
-                // Decaimento de Escudo
-                if(S.stats.shield > 0) S.stats.shield = Math.max(0, S.stats.shield - 5);
-            }
-
             renderUI();
         }
 
-        // ==========================================
-        // CARTAS & COMBATE
-        // ==========================================
+        function takeDamageLocal(amt, type) {
+            let final = amt;
+            if(type !== 'trueDmg') {
+                if(type === 'physical') final *= (100 / (100 + S.stats.arm));
+                if(type === 'magic') final *= (100 / (100 + S.stats.mr));
+            }
+            if(hasItem('vem') && S.stats.hp < S.stats.maxHp * 0.6) final *= 0.6; // Reduz 40%
+            
+            if(S.stats.shield >= final) { S.stats.shield -= final; }
+            else { final -= S.stats.shield; S.stats.shield = 0; S.stats.hp -= final; }
+            
+            // Item: Java Script Shield proc
+            if(hasItem('javascript') && S.flags.javaShieldCd <= 0 && amt > 0) {
+                S.stats.shield += 150; S.flags.javaShieldCd = 60;
+            }
+            checkDeathCondition();
+        }
+
         function drawToHand(free = false) {
             if(!free) {
                 if(!isMyTurn()) return alert("Não é seu turno!");
-                if(!hasItem('sapatona')) setTimeout(endTurn, 500); // Passa o turno se não tiver a bota
+                if((hasItem('bota_galo') || hasItem('bota_cabra') || hasItem('bota_borb')) && S.flags.drawCooldown <= 0) {
+                    S.flags.drawCooldown = 5; // Fast draw
+                } else {
+                    setTimeout(endTurn, 500); 
+                }
             }
             if(S.hand.length >= 7) return;
-
             playSfx('draw');
             
-            // Sorteia carta base ou de classe
             let pool = BASE_DECK.concat(CHAMP_DECKS[S.champ]);
-            if(S.champ === 'cabra') pool = BASE_DECK; // Cabra não compra cartas fortes, ela faz
+            if(S.champ === 'cabra') pool = BASE_DECK; 
             
             const randomCard = pool[Math.floor(Math.random() * pool.length)];
             S.hand.push({ ...randomCard, uid: Math.random().toString(36).substr(2,9) });
             renderUI();
         }
-
         window.drawCard = () => drawToHand(false);
 
         window.playCard = function(uid) {
@@ -535,71 +433,84 @@ const firebaseConfig = {
             if(idx === -1) return;
             const c = S.hand[idx];
 
-            // Requisito de Alvo
-            if((c.type === 'atk' || c.type === 'skill') && !S.targetId && c.id !== 'b_ult') {
-                return alert("Selecione um alvo na lista superior direita!");
+            if((c.type === 'atk' || c.type === 'skill') && !S.targetId && !['g_ult', 'b_ult', 'g_aiin', 'c_craft'].includes(c.id)) {
+                return alert("Selecione um alvo!");
             }
-
-            // Gasto de Mana (Simulado, assumindo que skills custam em média 40)
-            if(c.type === 'skill' && S.stats.mana < 40) return alert("Mana insuficiente!");
-            if(c.type === 'skill') S.stats.mana -= 40;
+            if(c.type === 'skill' || c.type === 'ult') {
+                let cost = c.id.includes('ult') ? 100 : 40;
+                if(S.stats.mana < cost) return alert("Mana insuficiente!");
+                S.stats.mana -= cost;
+            }
 
             playSfx('play');
             S.hand.splice(idx, 1);
-            
             executeCardEffect(c);
             
-            if(db) S.roomRef.update({ lastCard: { name: c.name, author: S.name, color: c.color } });
+            if(db) S.roomRef.update({ lastCard: { id: c.id, name: c.name, author: S.name, color: c.color } });
             
-            endTurn();
+            if(S.champ !== 'cabra' || c.id !== 'c_craft') endTurn();
             renderUI();
         }
 
         function executeCardEffect(c) {
-            // Efeitos de Defesa / Cura
+            let dmg = 0, dmgType = 'physical';
+            let tStats = S.playersData[S.targetId]?.stats;
+
+            // --- DEFENSORES / BUFFS ---
             if(c.id === 'b_shield') S.stats.shield += 100;
-            if(c.id === 'g_aiin') S.stats.shield += 500;
             if(c.id === 'b_heal') S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + 150);
-            if(c.id === 'b_mana') S.stats.mana = Math.min(S.stats.maxMana, S.stats.mana + 100);
             
-            // Especial Borboleta (Ult)
-            if(c.id === 'b_ult') {
-                Object.keys(S.playersData).forEach(k => { if(k!==S.myId) sendDamage(k, S.stats.ap * 2, 'magic'); });
-                return;
+            // GALO
+            if(c.id === 'g_aiin') S.stats.shield += 800; // Decai rápido via gameTick
+            if(c.id === 'g_ult') { S.stats.ad += 20 + (S.stats.crit * 0.5); S.stats.crit += 5; showFloatText('UTI ATIVADA!', 'text-dark-900'); }
+            if(c.id === 'g_copia' && S.lastPlayedCard) {
+                if(!S.lastPlayedCard.id.startsWith('b_')) { // Não copia borboleta
+                    executeCardEffect(S.lastPlayedCard); return;
+                }
             }
 
-            // Combate Direto
-            if(c.type === 'atk' || c.type === 'skill') {
-                let dmg = 0;
-                let dmgType = 'physical';
-                
-                if(c.type === 'atk') dmg = S.stats.ad;
-                if(c.type === 'skill') { dmg = S.stats.ap * 1.5; dmgType = 'magic'; }
+            // CABRA TINTAS
+            if(c.id === 'c_fogo') sendDebuff(S.targetId, { type: 'dmg', amount: S.stats.ap * 0.5, duration: 4 });
+            if(c.id === 'c_laser') { dmg = S.stats.ap * 2; dmgType = 'magic'; }
+            if(c.id === 'c_lança') Object.keys(S.playersData).forEach(k => { if(k!==S.myId) sendDebuff(k, { type: 'dmg', amount: 5 + (S.stats.ap*0.1), duration: 4 }); });
+            if(c.id === 'c_lanterna') S.stats.shield += 300;
+            if(c.id === 'c_lampada') S.stats.nexusHp = Math.min(S.stats.maxNexus, S.stats.nexusHp + 200);
+            if(c.id === 'c_pedra') { dmg = S.stats.ap * 1.5; dmgType = 'magic'; }
+            if(c.id === 'c_agua') { S.stats.hp += 100; S.stats.mana += 100; }
 
-                // Lógica de Crítico Pseudo-Aleatório
+            // BORBOLETA
+            if(c.id === 'b_akuma') sendDebuff(S.targetId, { type: 'nerf', amount: 20, duration: 3 }); // Simplificado
+            if(c.id === 'b_beijo') sendDebuff(S.targetId, { type: 'dmg', amount: tStats.maxHp * 0.05, duration: 10, sourceChamp: 'borboleta' });
+            if(c.id === 'b_desejo' && tStats) { S.stats.ap += 5; S.stats.ad += 5; S.stats.hp += 20; } // Roubo permanente
+            if(c.id === 'b_ult') Object.keys(S.playersData).forEach(k => { if(k!==S.myId) sendDamage(k, S.stats.ap * 2, 'magic'); });
+
+            // COMBATE BASE
+            if(c.type === 'atk' || c.type === 'skill') {
+                if(c.type === 'atk') dmg = S.stats.ad;
+                if(c.type === 'skill' && dmg === 0) { dmg = S.stats.ap * 1.5; dmgType = 'magic'; }
+
                 let isCrit = false;
-                let roll = Math.random() * 100;
-                let actualCritChance = S.stats.crit + S.pseudoCritChance;
-                
-                if(roll < actualCritChance && c.type === 'atk') {
-                    isCrit = true;
-                    dmg *= 2;
-                    S.pseudoCritChance = 0; // Reseta
-                    showFloatText('CRÍTICO!', 'text-amber-400 text-2xl');
-                } else {
-                    S.pseudoCritChance += (S.stats.crit * 0.2); // Aumenta levemente para o próximo
+                if(Math.random() * 100 < S.stats.crit && c.type === 'atk') { isCrit = true; dmg *= 2; showFloatText('CRÍTICO!', 'text-amber-400'); }
+
+                // Galo Marola Passiva
+                if(c.id === 'g_marola') {
+                    S.marolaStacks[S.targetId] = (S.marolaStacks[S.targetId] || 0) + 1;
+                    sendDebuff(S.targetId, { type: 'dmg', amount: 10, duration: 3 }); // Veneno
+                    if(S.marolaStacks[S.targetId] >= 3) {
+                        sendDebuff(S.targetId, { type: 'trueDmg', amount: tStats.hp * 0.10, duration: 1 });
+                        S.marolaStacks[S.targetId] = 0;
+                    }
                 }
 
-                // Vampirismo / Lifesteal (Passiva Galo ou Item)
+                // Vampirismo (Galo Passiva + Incubus)
                 let lifesteal = S.stats.vamp;
                 if(S.champ === 'galo') lifesteal += (S.stats.crit * 0.5);
-                if(lifesteal > 0 && dmg > 0) {
-                    S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + (dmg * (lifesteal/100)));
-                }
+                if(lifesteal > 0 && dmg > 0) S.stats.hp = Math.min(S.stats.maxHp, S.stats.hp + (dmg * (lifesteal/100)));
 
-                // Passiva de itens ao atacar
-                if(hasItem('skate')) { /* Aplica Stun via server (simplificado aqui como log) */ }
-                if(hasItem('pyton') && c.type === 'skill') { /* Aplica veneno DoT */ }
+                // Efeitos Passivos de Ataque
+                if(hasItem('skate') && c.type === 'atk') sendDebuff(S.targetId, { type: 'stun', amount: 3, duration: 1 });
+                if(hasItem('pyton') && c.type === 'skill') sendDebuff(S.targetId, { type: 'dmg', amount: S.stats.ap * 0.2, duration: 5 });
+                if(hasItem('bibi') && c.type === 'skill') sendDebuff(S.targetId, { type: 'stun', amount: 1, duration: 1 });
 
                 if(dmg > 0) sendDamage(S.targetId, dmg, dmgType, isCrit);
             }
@@ -610,277 +521,168 @@ const firebaseConfig = {
             if(!db || !S.playersData[targetId]) return;
             const t = S.playersData[targetId].stats;
             const tDead = S.playersData[targetId].dead;
-            
             let finalDmg = amount;
             
-            // Mitigação
             if(type === 'physical') finalDmg *= (100 / (100 + t.arm));
             else if(type === 'magic') finalDmg *= (100 / (100 + t.mr));
 
-            // Aplica Dano
-            if(tDead) {
-                // Ataca o Nexus se o jogador estiver morto
-                t.nexusHp -= finalDmg;
-            } else {
+            // Item Lacre Execução (Galo)
+            if(hasItem('lacre') && t.hp > 0 && (t.hp - finalDmg) < (t.maxHp * 0.10)) {
+                finalDmg = t.hp; showFloatText('EXECUTADO!', 'text-rose-600 text-3xl');
+            }
+
+            if(tDead) t.nexusHp -= finalDmg;
+            else {
                 if(t.shield >= finalDmg) { t.shield -= finalDmg; finalDmg = 0; }
                 else { finalDmg -= t.shield; t.shield = 0; t.hp -= finalDmg; }
             }
 
-            S.roomRef.child(`players/${targetId}/stats`).update({ 
-                hp: t.hp, shield: t.shield, nexusHp: t.nexusHp 
-            });
+            S.roomRef.child(`players/${targetId}/stats`).update({ hp: t.hp, shield: t.shield, nexusHp: t.nexusHp });
 
-            // Recompensa Kill
             if(!tDead && t.hp <= 0) {
-                S.gold += 300; // Kill Player
-                S.xp += 100;
-                checkLevelUp();
-                showFloatText('+300G (Kill)', 'text-amber-400');
+                S.gold += 300; S.xp += 100; checkLevelUp(); showFloatText('+300G', 'text-amber-400');
             } else if (tDead && t.nexusHp <= 0) {
-                S.gold += 1000; // Quebrou Nexus
-                showFloatText('NEXUS DESTRUÍDO!', 'text-purple-500 text-3xl');
+                S.gold += 1000; showFloatText('NEXUS QUEBRADO!', 'text-purple-500');
             }
+        }
+
+        function sendDebuff(targetId, debuffObj) {
+            if(!db || !S.playersData[targetId] || S.playersData[targetId].dead) return;
+            // Bloqueio de Fome de Luxuria (Borboleta)
+            if(debuffObj.type === 'stun' || debuffObj.type === 'nerf') {
+                // Simplificação: Assume que passa se o alvo não tem Fome de Luxuria com CD.
+            }
+            debuffObj.uid = Math.random().toString(36).substr(2,9);
+            debuffObj.sourceChamp = S.champ;
+            S.roomRef.child(`players/${targetId}/debuffs`).push(debuffObj);
         }
 
         function checkLevelUp() {
-            const req = S.level * 100;
-            if(S.xp >= req && S.level < 18) {
-                S.level++; S.xp -= req;
-                S.stats.maxHp += 50; S.stats.hp += 50;
-                S.stats.ad += 5; S.stats.ap += 5; S.stats.arm += 2; S.stats.mr += 2;
-                showFloatText('LEVEL UP!', 'text-cyan-400 text-2xl');
-                updateMyDbStats();
+            if(S.xp >= (S.level * 100) && S.level < 18) {
+                S.level++; S.xp -= (S.level - 1)*100;
+                S.stats.maxHp += 50; S.stats.hp += 50; S.stats.ad += 5; S.stats.ap += 5;
+                updateMyDbStats(); showFloatText('LEVEL UP!', 'text-cyan-400');
             }
         }
 
-        // ==========================================
         // CABRA TINTAS
-        // ==========================================
-        window.usePaint = function(color) {
-            if(S.champ !== 'cabra') return;
-            if(S.cabraMix.length >= 2) return alert("Mistura cheia!");
-            if(S.cabraPaints[color] <= 0) return alert("Sem tinta dessa cor!");
-            
-            S.cabraPaints[color]--;
-            S.cabraMix.push(color);
-            document.getElementById('paint-mix').innerText = S.cabraMix.join(' + ');
+        window.usePaint = function(c) {
+            if(S.champ !== 'cabra' || S.cabraMix.length >= 2 || S.cabraPaints[c] <= 0) return;
+            S.cabraPaints[c]--; S.cabraMix.push(c);
+            document.getElementById('paint-mix').innerText = S.cabraMix.join('+');
             renderUI();
         }
 
         window.craftCabraCard = function() {
-            if(S.cabraMix.length === 0) return alert("Adicione tinta!");
-            if(!isMyTurn()) return alert("Não é seu turno!");
+            if(S.cabraMix.length === 0 || !isMyTurn()) return alert("Adicione tinta ou aguarde seu turno!");
 
-            let name = "Magia", color = "card-dark", eff = "Dano Base";
-            if(S.cabraMix.includes('red')) { name="Fogo"; color="card-red"; eff="Alto Dano Mágico"; }
-            if(S.cabraMix.includes('yellow')) { name="Luz"; color="card-yellow"; eff="Cria Escudo"; }
-            if(S.cabraMix.includes('blue')) { name="Água"; color="card-blue"; eff="Cura e Dano Mágico"; }
+            let id = 'c_craft', name = "Magia", color = "card-dark", eff = "Misto";
+            const mix = S.cabraMix.sort().join('');
             
-            if(S.cabraMix.length === 2) name = "Feitiço Complexo";
+            // Lógica de Combinação
+            if(mix === 'red') { id='c_fogo'; name="Bola de Fogo"; color="card-red"; eff="DoT 4s"; }
+            else if(mix === 'redred') { id='c_lança'; name="Lança Chamas"; color="card-red"; eff="DoT em Área 4s"; }
+            else if(mix === 'redyellow') { id='c_laser'; name="Laser"; color="card-red"; eff="Dano Forte"; }
+            else if(mix === 'yellow') { id='c_lanterna'; name="Lanterna"; color="card-yellow"; eff="Escudo"; }
+            else if(mix === 'yellowyellow') { id='c_lampada'; name="Lâmpada"; color="card-yellow"; eff="Escudo no Nexus"; }
+            else if(mix === 'blue') { id='c_pedra'; name="Pedra"; color="card-blue"; eff="Dano Mágico"; }
+            else if(mix === 'blueblue') { id='c_agua'; name="Água"; color="card-blue"; eff="Cura e Mana"; }
+            else { name="Feitiço Instável"; }
 
-            S.hand.push({
-                uid: Math.random().toString(36).substr(2,9),
-                id: 'c_craft', name: name, type: 'skill', color: color, desc: eff
-            });
-
+            S.hand.push({ uid: Math.random().toString(36).substr(2,9), id: id, name: name, type: 'skill', color: color, desc: eff });
             S.cabraMix = []; document.getElementById('paint-mix').innerText = "Vazia";
-            
-            // Só pode usar 1 pote por turno, criar a carta consome o turno
-            endTurn();
-            renderUI();
+            endTurn(); renderUI();
         }
 
-        // ==========================================
-        // LOJA & INVENTÁRIO
-        // ==========================================
+        // LOJA
         window.toggleShop = () => {
-            const el = document.getElementById('shop-modal');
-            el.classList.toggle('hidden');
+            const el = document.getElementById('shop-modal'); el.classList.toggle('hidden');
             if(!el.classList.contains('hidden')) renderShop();
         };
 
         function buildShopPool() {
-            // Todos itens 'all' e itens dos champs presentes
             const champsInGame = Object.values(S.playersData).map(p => p.champ);
-            S.shopPool = SHOP_ITEMS.filter(i => i.req === 'all' || champsInGame.includes(i.req));
+            S.shopPool = SHOP_ITEMS.filter(i => champsInGame.includes(i.req));
         }
 
         function hasItem(id) { return S.inventory.some(i => i.id === id); }
 
         function renderShop() {
             document.getElementById('shop-gold-display').innerText = Math.floor(S.gold);
-            const c = document.getElementById('shop-items-container');
-            c.innerHTML = '';
+            const c = document.getElementById('shop-items-container'); c.innerHTML = '';
             
             S.shopPool.forEach(i => {
                 c.innerHTML += `
                     <div class="bg-slate-950 p-3 rounded border border-slate-700 flex flex-col justify-between">
                         <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <h4 class="text-amber-400 font-bold text-[11px] uppercase">${i.name}</h4>
-                                <span class="text-[9px] text-slate-500 uppercase">${i.req}</span>
-                            </div>
-                            <p class="text-[9px] text-slate-400 leading-tight mb-2">${i.desc}</p>
+                            <div class="flex justify-between items-center mb-1"><h4 class="text-amber-400 font-bold text-[11px] uppercase">${i.name}</h4></div>
+                            <p class="text-[9px] text-slate-400 mb-2">${i.desc}</p>
                         </div>
-                        <button onclick="buyItem('${i.id}')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-1 rounded text-[10px] font-bold uppercase transition">Comprar (${i.cost}g)</button>
-                    </div>
-                `;
-            });
-
-            const inv = document.getElementById('inventory-container');
-            inv.innerHTML = S.inventory.length === 0 ? '<span class="text-[10px] text-slate-600">Vazio...</span>' : '';
-            S.inventory.forEach((item, idx) => {
-                inv.innerHTML += `
-                    <div class="bg-slate-800 p-2 rounded border border-slate-700 flex flex-col justify-between w-[100px] shrink-0 text-center">
-                        <span class="text-[9px] font-bold text-white mb-2 truncate">${item.name}</span>
-                        <button onclick="sellItem(${idx})" class="bg-rose-700 hover:bg-rose-600 text-white text-[9px] py-1 rounded font-bold uppercase">Vender (+${Math.floor(item.cost*0.7)})</button>
-                    </div>
-                `;
+                        <button onclick="buyItem('${i.id}')" class="w-full bg-emerald-700 text-white py-1 rounded text-[10px] font-bold">Comprar (${i.cost})</button>
+                    </div>`;
             });
         }
 
         window.buyItem = function(id) {
             const item = SHOP_ITEMS.find(i => i.id === id);
             if(S.gold >= item.cost) {
-                S.gold -= item.cost;
-                if(item.onBuy) {
-                    item.onBuy();
-                } else {
-                    S.inventory.push(item);
-                    applyItemStats(item, 1);
+                S.gold -= item.cost; S.inventory.push(item);
+                if(item.stats) {
+                    Object.keys(item.stats).forEach(k => S.stats[k] += item.stats[k]);
+                    if(item.id === 'bf') S.stats.ap += S.stats.arm; // BF Bonus
                 }
-                playSfx('buy');
-                renderShop(); renderUI();
+                playSfx('buy'); updateMyDbStats(); renderShop(); renderUI();
             } else alert('Ouro Insuficiente!');
         }
 
-        window.sellItem = function(idx) {
-            const item = S.inventory[idx];
-            S.gold += Math.floor(item.cost * 0.7);
-            applyItemStats(item, -1);
-            S.inventory.splice(idx, 1);
-            playSfx('buy');
-            renderShop(); renderUI();
-        }
-
-        function applyItemStats(item, multiplier) {
-            if(!item.stats) return;
-            Object.keys(item.stats).forEach(k => {
-                if(S.stats[k] !== undefined) S.stats[k] += (item.stats[k] * multiplier);
-            });
-            // BF especial: +1 AP por Arm (simplificado apenas na compra)
-            if(item.id === 'bf' && multiplier > 0) S.stats.ap += S.stats.arm;
-            
-            updateMyDbStats();
-        }
-
-        // ==========================================
-        // ATUALIZAÇÃO DA INTERFACE PRINCIPAL
-        // ==========================================
         window.changeTarget = (val) => { S.targetId = val; };
 
         function renderUI() {
-            // Turn Alert
             const ta = document.getElementById('turn-alert');
+            const sa = document.getElementById('stun-alert');
             const pUi = document.getElementById('player-ui');
-            if(isMyTurn()) {
-                ta.innerText = "SEU TURNO"; ta.className = "absolute top-4 text-center text-sm font-black tracking-widest uppercase bg-emerald-600 px-4 py-1 rounded-full text-white shadow-[0_0_15px_#10b981] z-20";
-                pUi.classList.add('glow-turn');
+            
+            if(S.stunDuration > 0) {
+                sa.classList.remove('hidden'); ta.classList.add('hidden');
             } else {
-                ta.innerText = S.currentTurnId ? `Turno de: ${S.playersData[S.currentTurnId]?.name || 'Inimigo'}` : "Aguardando...";
-                ta.className = "absolute top-4 text-center text-sm font-black tracking-widest uppercase bg-rose-900/80 px-4 py-1 rounded-full text-rose-300 border border-rose-500 z-20";
-                pUi.classList.remove('glow-turn');
+                sa.classList.add('hidden'); ta.classList.remove('hidden');
+                if(isMyTurn()) { ta.innerText = "SEU TURNO"; ta.className = "absolute top-4 font-black bg-emerald-600 px-4 py-1 rounded-full text-white"; pUi.classList.add('glow-turn'); } 
+                else { ta.innerText = `Aguardando...`; ta.className = "absolute top-4 font-black bg-rose-900/80 px-4 py-1 rounded-full text-rose-300"; pUi.classList.remove('glow-turn'); }
             }
 
-            // Stats Bottom
             document.getElementById('ui-gold').innerText = Math.floor(S.gold);
-            document.getElementById('ui-my-name').innerText = S.name;
             document.getElementById('ui-level').innerText = S.level;
             
-            const renderBar = (id, val, max) => {
-                document.getElementById(`${id}-text`).innerText = `${Math.floor(val)} / ${max}`;
-                document.getElementById(`${id}-bar`).style.width = `${Math.max(0, Math.min(100, (val/max)*100))}%`;
-            };
-            
-            let displayHp = S.dead ? `MORTO (${S.respawnTimer}s)` : `${Math.floor(S.stats.hp)} / ${S.stats.maxHp}`;
-            document.getElementById('ui-hp-text').innerText = displayHp;
-            document.getElementById('ui-hp-bar').style.width = S.dead ? '0%' : `${Math.max(0, (S.stats.hp/S.stats.maxHp)*100)}%`;
-            
-            renderBar('ui-nexus', S.stats.nexusHp, S.stats.maxNexus);
-            renderBar('ui-mana', S.stats.mana, S.stats.maxMana);
-            
-            document.getElementById('ui-shield-text').innerText = Math.floor(S.stats.shield);
-            document.getElementById('ui-shield-bar').style.width = S.stats.shield > 0 ? '100%' : '0%';
+            const rB = (id, val, max) => { document.getElementById(`${id}-text`).innerText = `${Math.floor(val)}/${max}`; document.getElementById(`${id}-bar`).style.width = `${Math.max(0, Math.min(100, (val/max)*100))}%`; };
+            rB('ui-hp', S.stats.hp, S.stats.maxHp); rB('ui-nexus', S.stats.nexusHp, S.stats.maxNexus); rB('ui-mana', S.stats.mana, S.stats.maxMana);
+            rB('ui-shield', S.stats.shield, 1000);
 
-            ['ad', 'ap', 'arm', 'mr', 'crit', 'vamp'].forEach(s => {
-                document.getElementById(`stat-${s}`).innerText = Math.floor(S.stats[s]);
-            });
+            ['ad', 'ap', 'arm', 'mr', 'crit', 'vamp'].forEach(s => document.getElementById(`stat-${s}`).innerText = Math.floor(S.stats[s]));
 
-            // Mão de Cartas
-            const hc = document.getElementById('hand-container');
-            hc.innerHTML = '';
+            const hc = document.getElementById('hand-container'); hc.innerHTML = '';
             S.hand.forEach(c => {
-                const disabled = !isMyTurn() ? 'disabled' : '';
-                hc.innerHTML += `
-                    <div onclick="playCard('${c.uid}')" class="uno-card ${c.color} ${disabled}">
-                        <div class="card-title">${c.name}</div>
-                        <div class="card-desc mt-auto">${c.desc}</div>
-                    </div>
-                `;
+                hc.innerHTML += `<div onclick="playCard('${c.uid}')" class="uno-card ${c.color} ${!isMyTurn()?'disabled':''}"><div class="card-title">${c.name}</div><div class="card-desc mt-auto">${c.desc}</div></div>`;
             });
 
-            // Inimigos Top Bar
-            const ec = document.getElementById('enemies-container');
-            const ts = document.getElementById('target-select');
-            let opts = '<option value="">Nenhum</option>';
-            let enHtml = '';
-
+            const ec = document.getElementById('enemies-container'); const ts = document.getElementById('target-select');
+            let opts = '<option value="">Nenhum</option>', enHtml = '';
             Object.keys(S.playersData).forEach(k => {
                 if(k !== S.myId) {
-                    let p = S.playersData[k];
-                    opts += `<option value="${k}" ${S.targetId===k?'selected':''}>${p.name}</option>`;
-                    
-                    let isTurn = k === S.currentTurnId ? 'border-amber-400 shadow-[0_0_10px_#fbbf24]' : 'border-slate-700';
-                    let hpColor = p.dead ? 'bg-slate-600' : 'bg-emerald-500';
-                    let hpText = p.dead ? 'MORTO' : Math.floor(p.stats.hp);
-
-                    enHtml += `
-                        <div class="bg-slate-950 p-2 rounded border-2 ${isTurn} min-w-[120px] flex flex-col justify-center">
-                            <span class="font-bold text-rose-400 text-[10px] uppercase truncate mb-1">${p.name} [Lvl ${p.level}]</span>
-                            <div class="flex flex-col gap-1">
-                                <div class="bar-container h-1.5 !mt-0"><div class="bar-fill bg-purple-500" style="width:${(p.stats.nexusHp/p.stats.maxNexus)*100}%"></div></div>
-                                <div class="bar-container h-1.5 !mt-0"><div class="bar-fill ${hpColor}" style="width:${p.dead?0:(p.stats.hp/p.stats.maxHp)*100}%"></div></div>
-                            </div>
-                            <span class="text-[8px] text-slate-400 font-bold mt-1">NEXUS: ${Math.floor(p.stats.nexusHp)} | HP: ${hpText}</span>
-                        </div>
-                    `;
+                    let p = S.playersData[k]; opts += `<option value="${k}" ${S.targetId===k?'selected':''}>${p.name}</option>`;
+                    enHtml += `<div class="bg-slate-950 p-2 rounded border-2 ${k===S.currentTurnId?'border-amber-400':'border-slate-700'} min-w-[120px]"><span class="font-bold text-rose-400 text-[10px] uppercase truncate">${p.name} [Lvl ${p.level}]</span><div class="bar-container h-1.5"><div class="bar-fill bg-purple-500" style="width:${(p.stats.nexusHp/p.stats.maxNexus)*100}%"></div></div><div class="bar-container h-1.5"><div class="bar-fill bg-emerald-500" style="width:${p.dead?0:(p.stats.hp/p.stats.maxHp)*100}%"></div></div></div>`;
                 }
             });
-            ts.innerHTML = opts;
-            ec.innerHTML = enHtml || '<span class="text-xs text-slate-500 italic flex items-center h-full">Aguardando outros jogadores...</span>';
+            ts.innerHTML = opts; ec.innerHTML = enHtml || '<span class="text-xs text-slate-500">Aguardando...</span>';
 
-            // Última Carta Jogada
-            if(S.lastPlayedCard) {
-                document.getElementById('played-card-title').innerText = S.lastPlayedCard.name;
-                document.getElementById('played-card-author').innerText = S.lastPlayedCard.author;
-                document.getElementById('played-card').className = `uno-card ${S.lastPlayedCard.color || 'card-dark'}`;
-            }
+            if(S.lastPlayedCard) { document.getElementById('played-card-title').innerText = S.lastPlayedCard.name; document.getElementById('played-card').className = `uno-card ${S.lastPlayedCard.color}`; }
 
-            // Cabra UI
-            if(S.champ === 'cabra') {
-                ['red', 'blue', 'yellow'].forEach(c => document.getElementById(`paint-${c}`).innerText = S.cabraPaints[c]);
-            }
+            if(S.champ === 'cabra') { ['red', 'blue', 'yellow'].forEach(c => document.getElementById(`paint-${c}`).innerText = S.cabraPaints[c]); }
         }
 
-        // Utilidade de Texto Flutuante
-        function showFloatText(text, colorClass) {
-            const el = document.createElement('div');
-            el.className = `float-text ${colorClass}`;
-            el.innerText = text;
-            el.style.left = (Math.random() * 40 + 30) + '%';
-            el.style.top = (Math.random() * 20 + 40) + '%';
-            document.getElementById('effects-layer').appendChild(el);
-            setTimeout(() => el.remove(), 1000);
+        function showFloatText(text, color) {
+            const el = document.createElement('div'); el.className = `float-text ${color}`; el.innerText = text;
+            el.style.left = (Math.random()*40+30)+'%'; el.style.top = (Math.random()*20+40)+'%';
+            document.getElementById('effects-layer').appendChild(el); setTimeout(() => el.remove(), 1000);
         }
     </script>
 </body>
